@@ -11,6 +11,7 @@
 #include "InputActionValue.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/PawnMovementComponent.h"
+#include <GameFramework/FloatingPawnMovement.h>
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -21,6 +22,7 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 {
 	// Character doesnt have a rifle at start
 	bHasRifle = false;
+	bIsSprinting = false;
 	
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
@@ -78,6 +80,10 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::ToggleCrouch);
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::ToggleCrouch);
 
+		// Sprinting
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::ToggleSprint);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::ToggleSprint);
+
 		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::Move);
 
@@ -96,8 +102,24 @@ void ABattlemageTheEndlessCharacter::ToggleCrouch()
 	{
 		ACharacter::UnCrouch();
 	}
-	else {
+	else 
+	{
 		ACharacter::Crouch(false);
+	}
+}
+
+void ABattlemageTheEndlessCharacter::ToggleSprint()
+{
+	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
+	if (!bIsSprinting && movement)
+	{
+		movement->MaxWalkSpeed *= 2;
+		bIsSprinting = true;
+	}
+	else if(movement)
+	{
+		movement->MaxWalkSpeed /= 2;
+		bIsSprinting = false;
 	}
 }
 
