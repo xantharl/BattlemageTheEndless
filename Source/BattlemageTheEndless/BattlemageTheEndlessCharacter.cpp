@@ -42,9 +42,13 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 	//Mesh1P->SetRelativeRotation(FRotator(0.9f, -19.19f, 5.2f));
 	Mesh1P->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
 
-	if (GetMovementComponent())
+	JumpMaxCount = 2;
+
+	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
+	if (movement)
 	{
-		GetMovementComponent()->GetNavAgentPropertiesRef().bCanCrouch = true;
+		movement->AirControl = 0.8f;
+		movement->GetNavAgentPropertiesRef().bCanCrouch = true;
 	}
 
 }
