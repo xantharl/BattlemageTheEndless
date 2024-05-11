@@ -12,6 +12,7 @@
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/PawnMovementComponent.h"
 #include <GameFramework/FloatingPawnMovement.h>
+#include <format>
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -80,6 +81,10 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
+		// Jumping
+		EnhancedInputComponent->BindAction(LaunchJumpAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::LaunchJump);
+		EnhancedInputComponent->BindAction(LaunchJumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+
 		// Crouching
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::ToggleCrouch);
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::ToggleCrouch);
@@ -125,6 +130,34 @@ void ABattlemageTheEndlessCharacter::ToggleSprint()
 		movement->MaxWalkSpeed /= 2;
 		bIsSprinting = false;
 	}
+}
+
+void ABattlemageTheEndlessCharacter::LaunchJump()
+{
+	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
+	movement->JumpZVelocity *= 2;
+	FRotator rotator = GetActorRotation();
+	/*if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Launch Jump Starting Vector %s"), *GetActorForwardVector().ToString()));
+	}*/
+	rotator.Pitch = 0;
+	FVector vector = *new FVector();
+	// TODO: Tie these values to a BP var for easier tuning
+	vector.X = 3000.0f;
+	vector.Z = 1500.0f;
+	vector = vector.RotateAngleAxis(rotator.Yaw, FVector::ZAxisVector);
+	/*if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Launching with vector %s"), *vector.ToString()));
+	}*/
+	LaunchCharacter(vector, false, true);
+	/*if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Launch Jump Ending Vector %s"), *GetActorForwardVector().ToString()));
+	}*/
+	Jump();
+	movement->JumpZVelocity /= 2;
 }
 
 
