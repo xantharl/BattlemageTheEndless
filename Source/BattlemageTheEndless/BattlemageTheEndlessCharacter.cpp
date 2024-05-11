@@ -24,6 +24,8 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 	// Character doesnt have a rifle at start
 	bHasRifle = false;
 	bIsSprinting = false;
+	maxLaunches = 1;
+	launchesPerformed = 0;
 	
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
@@ -134,6 +136,11 @@ void ABattlemageTheEndlessCharacter::ToggleSprint()
 
 void ABattlemageTheEndlessCharacter::LaunchJump()
 {
+	if (launchesPerformed >= maxLaunches)
+		return;
+
+	launchesPerformed += 1;
+
 	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
 	movement->JumpZVelocity *= 2;
 	FRotator rotator = GetActorRotation();
@@ -195,4 +202,12 @@ void ABattlemageTheEndlessCharacter::SetHasRifle(bool bNewHasRifle)
 bool ABattlemageTheEndlessCharacter::GetHasRifle()
 {
 	return bHasRifle;
+}
+
+void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
+{
+	if (PrevMovementMode == EMovementMode::MOVE_Falling)
+		launchesPerformed = 0;
+
+	ACharacter::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
 }

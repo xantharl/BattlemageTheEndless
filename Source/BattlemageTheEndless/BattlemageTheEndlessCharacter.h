@@ -59,6 +59,7 @@ public:
 
 protected:
 	virtual void BeginPlay();
+	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0);
 
 public:
 		
@@ -67,6 +68,8 @@ public:
 	class UInputAction* LookAction;
 
 	bool bIsSprinting;
+	int maxLaunches;
+	int launchesPerformed;
 
 	/** Bool for AnimBP to switch to another animation set */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon)
