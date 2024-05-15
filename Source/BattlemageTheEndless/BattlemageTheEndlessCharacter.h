@@ -71,12 +71,17 @@ public:
 	bool bIsSprinting;
 	bool bIsSliding;
 	bool bShouldUncrouch;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float SprintSpeed;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float WalkSpeed;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float SlideDurationSeconds;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float CrouchSpeed;
-	int maxLaunches;
-	int launchesPerformed;
+
+	int MaxLaunches;
 
 	/** Bool for AnimBP to switch to another animation set */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon)
@@ -98,6 +103,7 @@ protected:
 	void Look(const FInputActionValue& Value);
 
 	float slideElapsedSeconds;
+	int launchesPerformed;
 
 protected:
 	// APawn interface

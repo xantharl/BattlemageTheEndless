@@ -26,11 +26,12 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 	bIsSprinting = false;
 	bIsSliding = false;
 	bShouldUncrouch = false;
-	WalkSpeed = 1200.0f;
+	SprintSpeed = 1200.0f;
+	WalkSpeed = 600.0f;
 	CrouchSpeed = 300.0f;
 	SlideDurationSeconds = 0.5f;
 	slideElapsedSeconds = 0.0f;
-	maxLaunches = 1;
+	MaxLaunches = 1;
 	launchesPerformed = 0;
 	
 	// Set size for collision capsule
@@ -207,14 +208,14 @@ void ABattlemageTheEndlessCharacter::ToggleSprint()
 	}
 	else if(movement)
 	{
-		movement->MaxWalkSpeed /= 2;
+		movement->MaxWalkSpeed = WalkSpeed;
 		bIsSprinting = false;
 	}
 }
 
 void ABattlemageTheEndlessCharacter::LaunchJump()
 {
-	if (launchesPerformed >= maxLaunches)
+	if (launchesPerformed >= MaxLaunches)
 		return;
 
 	launchesPerformed += 1;
