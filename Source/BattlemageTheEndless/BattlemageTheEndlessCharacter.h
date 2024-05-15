@@ -60,6 +60,7 @@ public:
 protected:
 	virtual void BeginPlay();
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0);
+	virtual void TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction);
 
 public:
 		
@@ -68,6 +69,12 @@ public:
 	class UInputAction* LookAction;
 
 	bool bIsSprinting;
+	bool bIsSliding;
+	bool bShouldUncrouch;
+	float SprintSpeed;
+	float WalkSpeed;
+	float SlideDurationSeconds;
+	float CrouchSpeed;
 	int maxLaunches;
 	int launchesPerformed;
 
@@ -90,12 +97,15 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
+	float slideElapsedSeconds;
+
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	void ToggleCrouch();
 	void ToggleSprint();
 	void LaunchJump();
+	void TryUnCrouch();
 	// End of APawn interface
 
 public:

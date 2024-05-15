@@ -24,6 +24,12 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 	// Character doesnt have a rifle at start
 	bHasRifle = false;
 	bIsSprinting = false;
+	bIsSliding = false;
+	bShouldUncrouch = false;
+	WalkSpeed = 1200.0f;
+	CrouchSpeed = 300.0f;
+	SlideDurationSeconds = 0.5f;
+	slideElapsedSeconds = 0.0f;
 	maxLaunches = 1;
 	launchesPerformed = 0;
 	
@@ -52,6 +58,7 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 	{
 		movement->AirControl = 0.8f;
 		movement->GetNavAgentPropertiesRef().bCanCrouch = true;
+		SprintSpeed = movement->MaxWalkSpeed * 2;
 	}
 
 }
@@ -89,7 +96,7 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 
 		// Crouching
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::ToggleCrouch);
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::ToggleCrouch);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::TryUnCrouch);
 
 		// Sprinting
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::ToggleSprint);
@@ -116,7 +123,66 @@ void ABattlemageTheEndlessCharacter::ToggleCrouch()
 	else 
 	{
 		ACharacter::Crouch(false);
+
+		UCharacterMovementComponent* movement = GetCharacterMovement();
+		if (bIsSprinting && movement)
+		{
+			bIsSliding = true;
+			// default walk is 1200, crouch is 300
+			movement->MaxWalkSpeedCrouched = SprintSpeed;
+		}
 	}
+}
+
+void ABattlemageTheEndlessCharacter::TryUnCrouch()
+{
+	if (!bIsCrouched)
+		return;
+
+	if (bIsSliding)
+	{
+		bShouldUncrouch = true;
+		return;
+	}
+
+	UnCrouch();
+}
+
+void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction)
+{
+	// If we're sliding, handle it, this is mutually exclusing with the uncrouch case
+	if (bIsSliding)
+	{
+		UCharacterMovementComponent* movement = GetCharacterMovement();
+		slideElapsedSeconds += DeltaTime;
+		if (movement)
+		{
+			// If we've reached the slide's full duration, reset speed and slide data
+			if (slideElapsedSeconds >= SlideDurationSeconds)
+			{
+				movement->MaxWalkSpeedCrouched = CrouchSpeed;
+				bIsSliding = false;
+				slideElapsedSeconds = 0.0f;
+			}
+			else // Otherwise decrement the slide speed
+			{
+				float newSpeed = SprintSpeed * powf(2.7182818284f, -1.39f * slideElapsedSeconds);
+				movement->MaxWalkSpeedCrouched = newSpeed;
+				/*if (GEngine)
+				{
+					GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Elapsed: %f, Setting crouch speed to %f"), slideElapsedSeconds, newSpeed));
+				}*/
+			}
+		}
+	}
+	// If we have a pending uncrouch, uncrouch. This is for the post slide case
+	else if (bShouldUncrouch)
+	{
+		UnCrouch();
+		bShouldUncrouch = false;
+	}
+
+	AActor::TickActor(DeltaTime, TickType, ThisTickFunction);
 }
 
 void ABattlemageTheEndlessCharacter::ToggleSprint()
@@ -124,7 +190,7 @@ void ABattlemageTheEndlessCharacter::ToggleSprint()
 	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
 	if (!bIsSprinting && movement)
 	{
-		movement->MaxWalkSpeed *= 2;
+		movement->MaxWalkSpeed = SprintSpeed;
 		bIsSprinting = true;
 	}
 	else if(movement)
