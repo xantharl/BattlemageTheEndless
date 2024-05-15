@@ -160,9 +160,7 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 			// If we've reached the slide's full duration, reset speed and slide data
 			if (slideElapsedSeconds >= SlideDurationSeconds)
 			{
-				movement->MaxWalkSpeedCrouched = CrouchSpeed;
-				bIsSliding = false;
-				slideElapsedSeconds = 0.0f;
+				EndSlide(movement);
 			}
 			else // Otherwise decrement the slide speed
 			{
@@ -185,11 +183,25 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 	AActor::TickActor(DeltaTime, TickType, ThisTickFunction);
 }
 
+void ABattlemageTheEndlessCharacter::EndSlide(UCharacterMovementComponent* movement)
+{
+	movement->MaxWalkSpeedCrouched = CrouchSpeed;
+	bIsSliding = false;
+	slideElapsedSeconds = 0.0f;
+}
+
 void ABattlemageTheEndlessCharacter::ToggleSprint()
 {
 	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
 	if (!bIsSprinting && movement)
 	{
+		// if sliding, end it before sprinting
+		if (bIsSliding)
+		{
+			EndSlide(movement);
+			UnCrouch();
+		}
+
 		movement->MaxWalkSpeed = SprintSpeed;
 		bIsSprinting = true;
 	}

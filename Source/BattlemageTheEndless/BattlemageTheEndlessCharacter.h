@@ -106,6 +106,7 @@ protected:
 	void ToggleSprint();
 	void LaunchJump();
 	void TryUnCrouch();
+	void EndSlide(UCharacterMovementComponent* movement);
 	// End of APawn interface
 
 public:
