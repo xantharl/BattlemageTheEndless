@@ -13,6 +13,7 @@
 #include "GameFramework/PawnMovementComponent.h"
 #include <GameFramework/FloatingPawnMovement.h>
 #include <format>
+#include <Kismet/GameplayStatics.h>
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -33,6 +34,10 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 	slideElapsedSeconds = 0.0f;
 	MaxLaunches = 1;
 	launchesPerformed = 0;
+
+	// Init Audio Resource
+	static ConstructorHelpers::FObjectFinder<USoundWave> Sound(TEXT("/Game/Sounds/Jump_Landing"));
+	JumpLandingSound = Sound.Object;
 	
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
@@ -286,7 +291,10 @@ bool ABattlemageTheEndlessCharacter::GetHasRifle()
 void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
 {
 	if (PrevMovementMode == EMovementMode::MOVE_Falling)
+	{
 		launchesPerformed = 0;
+		UGameplayStatics::PlaySound2D(this, JumpLandingSound);
+	}
 
 	ACharacter::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
 }
