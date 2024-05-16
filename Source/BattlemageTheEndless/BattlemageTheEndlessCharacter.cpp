@@ -60,7 +60,6 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 	{
 		movement->AirControl = 0.8f;
 		movement->GetNavAgentPropertiesRef().bCanCrouch = true;
-		SprintSpeed = movement->MaxWalkSpeed * 2;
 	}
 
 }
