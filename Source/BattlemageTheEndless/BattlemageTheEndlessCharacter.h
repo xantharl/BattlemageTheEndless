@@ -54,13 +54,13 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* SprintAction;
 
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, Category = Sound)
 	class USoundWave* JumpLandingSound;
 
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, Category = Sound)
 	class USoundWave* RunningSound;
 
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, Category = Sound)
 	class USoundWave* SprintingSound;
 	
 public:
