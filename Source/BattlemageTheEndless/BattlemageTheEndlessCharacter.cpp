@@ -27,10 +27,6 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 	bIsSprinting = false;
 	bIsSliding = false;
 	bShouldUncrouch = false;
-	SprintSpeed = 1200.0f;
-	WalkSpeed = 600.0f;
-	CrouchSpeed = 300.0f;
-	SlideDurationSeconds = 0.5f;
 	slideElapsedSeconds = 0.0f;
 	MaxLaunches = 1;
 	launchesPerformed = 0;
@@ -221,22 +217,22 @@ void ABattlemageTheEndlessCharacter::ToggleSprint()
 void ABattlemageTheEndlessCharacter::LaunchJump()
 {
 	if (launchesPerformed >= MaxLaunches)
+	{
+		// If we can't launch anymore, redirect to jump logic (which checks jump count and handles appropriately)
+		Jump();
 		return;
+	}
 
 	launchesPerformed += 1;
 
 	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
-	movement->JumpZVelocity *= 2;
 	FRotator rotator = GetActorRotation();
 	/*if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Launch Jump Starting Vector %s"), *GetActorForwardVector().ToString()));
 	}*/
 	rotator.Pitch = 0;
-	FVector vector = *new FVector();
-	// TODO: Tie these values to a BP var for easier tuning
-	vector.X = 3000.0f;
-	vector.Z = 1500.0f;
+	FVector vector = *new FVector(LaunchSpeedHorizontal, 0.0f, LaunchSpeedVertical);
 	vector = vector.RotateAngleAxis(rotator.Yaw, FVector::ZAxisVector);
 	/*if (GEngine)
 	{
@@ -247,8 +243,7 @@ void ABattlemageTheEndlessCharacter::LaunchJump()
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Launch Jump Ending Vector %s"), *GetActorForwardVector().ToString()));
 	}*/
-	Jump();
-	movement->JumpZVelocity /= 2;
+	JumpCurrentCount += 1;
 }
 
 
