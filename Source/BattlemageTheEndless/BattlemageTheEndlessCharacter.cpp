@@ -22,6 +22,8 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 {
+	// TODO: Set up camera
+
 	// Character doesnt have a rifle at start
 	bHasRifle = false;
 	bIsSprinting = false;
@@ -76,7 +78,7 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
-		// Jumping
+		// Launch Jump
 		EnhancedInputComponent->BindAction(LaunchJumpAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::LaunchJump);
 		EnhancedInputComponent->BindAction(LaunchJumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
@@ -93,6 +95,9 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::Look);
+
+		// Switch Camera
+		EnhancedInputComponent->BindAction(SwitchCameraAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::SwitchCamera);
 	}
 	else
 	{
@@ -278,4 +283,10 @@ void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMov
 	}
 
 	ACharacter::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
+}
+
+void ABattlemageTheEndlessCharacter::SwitchCamera() 
+{
+	AActor* switchToCamera = GetController()->GetViewTarget() == (AActor*)ThirdPersonCamera ? (AActor*)FirstPersonCamera : (AActor*)ThirdPersonCamera;
+	Cast<APlayerController>(GetController())->SetViewTargetWithBlend(switchToCamera);
 }
