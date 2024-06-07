@@ -123,6 +123,7 @@ void UTP_WeaponComponent::DetachWeapon()
 	}
 
 	this->SetRelativeLocation(Character->GetActorLocation());
+	WeaponDropped.Broadcast();
 }
 
 void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)

@@ -24,7 +24,7 @@ public:
 
 	UTP_PickUpComponent();
 
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	void OnDropped();
 protected:
 

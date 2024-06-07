@@ -8,12 +8,20 @@
 
 class ABattlemageTheEndlessCharacter;
 
+// Declaration of the delegate that will be called when someone picks this up
+// The character picking this up is the parameter sent with the notification
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FWeaponDropped);
+
 UCLASS(Blueprintable, BlueprintType, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class BATTLEMAGETHEENDLESS_API UTP_WeaponComponent : public USkeletalMeshComponent
 {
 	GENERATED_BODY()
 
 public:
+	/** Delegate to whom anyone can subscribe to receive this event */
+	UPROPERTY(BlueprintAssignable, Category = "Interaction")
+	FWeaponDropped WeaponDropped;
+
 	/** Projectile class to spawn */
 	UPROPERTY(EditDefaultsOnly, Category=Projectile)
 	TSubclassOf<class ABattlemageTheEndlessProjectile> ProjectileClass;

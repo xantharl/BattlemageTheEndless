@@ -333,5 +333,7 @@ void ABattlemageTheEndlessCharacter::SwitchCamera()
 void ABattlemageTheEndlessCharacter::DropItem()
 {
 	if (Weapon != nullptr)
+	{
 		Weapon->DetachWeapon();
+	}
 }
