@@ -7,6 +7,7 @@
 #include "Logging/LogMacros.h"
 #include "GameFramework/CharacterMovementComponent.h" 
 #include <GameFramework/SpringArmComponent.h>
+#include "TP_WeaponComponent.h"
 #include "BattlemageTheEndlessCharacter.generated.h"
 
 class UInputComponent;
@@ -62,6 +63,10 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	/** Sprint Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* SwitchCameraAction;
+
+	/** Sprint Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* DropItemAction;
 
 	UPROPERTY(EditAnywhere, Category = Sound)
 	class USoundWave* JumpLandingSound;
@@ -119,11 +124,11 @@ public:
 
 	/** Setter to set the bool */
 	UFUNCTION(BlueprintCallable, Category = Weapon)
-	void SetHasRifle(bool bNewHasRifle);
+	void SetHasWeapon(UTP_WeaponComponent* weapon);
 
 	/** Getter for the bool */
 	UFUNCTION(BlueprintCallable, Category = Weapon)
-	bool GetHasRifle();
+	bool GetHasWeapon();
 
 protected:
 	/** Called for movement input */
@@ -135,6 +140,8 @@ protected:
 	float slideElapsedSeconds;
 	int launchesPerformed;
 
+	UTP_WeaponComponent* Weapon;
+
 protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
@@ -144,6 +151,7 @@ protected:
 	void TryUnCrouch();
 	void EndSlide(UCharacterMovementComponent* movement);
 	void SwitchCamera();
+	void DropItem();
 	// End of APawn interface
 
 };

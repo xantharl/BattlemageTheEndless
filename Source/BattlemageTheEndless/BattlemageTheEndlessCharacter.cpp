@@ -14,7 +14,7 @@
 #include <GameFramework/FloatingPawnMovement.h>
 #include <format>
 #include <Kismet/GameplayStatics.h>
-
+#include "ABMageCharacterMovementComponent.h"
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 //////////////////////////////////////////////////////////////////////////
@@ -22,8 +22,6 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 {
-	// TODO: Set up camera
-
 	// Character doesnt have a rifle at start
 	bHasRifle = false;
 	bIsSprinting = false;
@@ -120,6 +118,9 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 
 		// Switch Camera
 		EnhancedInputComponent->BindAction(SwitchCameraAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::SwitchCamera);
+
+		// Switch Camera
+		EnhancedInputComponent->BindAction(DropItemAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::DropItem);
 	}
 	else
 	{
@@ -284,12 +285,13 @@ void ABattlemageTheEndlessCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
-void ABattlemageTheEndlessCharacter::SetHasRifle(bool bNewHasRifle)
+void ABattlemageTheEndlessCharacter::SetHasWeapon(UTP_WeaponComponent* weapon)
 {
-	bHasRifle = bNewHasRifle;
+	bHasRifle = weapon != nullptr;
+	Weapon = weapon;
 }
 
-bool ABattlemageTheEndlessCharacter::GetHasRifle()
+bool ABattlemageTheEndlessCharacter::GetHasWeapon()
 {
 	return bHasRifle;
 }
@@ -326,6 +328,10 @@ void ABattlemageTheEndlessCharacter::SwitchCamera()
 	}
 
 	Cast<APlayerController>(GetController())->SetViewTargetWithBlend((AActor*)this);
-	/*AActor* switchToCamera = GetController()->GetViewTarget() == (AActor*)ThirdPersonCamera ? (AActor*)FirstPersonCamera : (AActor*)ThirdPersonCamera;
-	Cast<APlayerController>(GetController())->SetViewTargetWithBlend(switchToCamera);*/
+}
+
+void ABattlemageTheEndlessCharacter::DropItem()
+{
+	if (Weapon != nullptr)
+		Weapon->DetachWeapon();
 }

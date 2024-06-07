@@ -45,9 +45,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Weapon")
 	void AttachWeapon(ABattlemageTheEndlessCharacter* TargetCharacter);
 
+	UFUNCTION(BlueprintCallable, Category="Weapon")
+	void DetachWeapon();
+
 	/** Make the weapon Fire a Projectile */
 	UFUNCTION(BlueprintCallable, Category="Weapon")
 	void Fire();
+
 
 protected:
 	/** Ends gameplay for this component. */
@@ -57,4 +61,6 @@ protected:
 private:
 	/** The Character holding this weapon*/
 	ABattlemageTheEndlessCharacter* Character;
+
+	void RemoveContext();
 };

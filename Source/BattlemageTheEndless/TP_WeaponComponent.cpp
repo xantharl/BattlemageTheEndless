@@ -1,7 +1,5 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
-
-#include "TP_WeaponComponent.h"
 #include "BattlemageTheEndlessCharacter.h"
 #include "BattlemageTheEndlessProjectile.h"
 #include "GameFramework/PlayerController.h"
@@ -68,7 +66,7 @@ void UTP_WeaponComponent::AttachWeapon(ABattlemageTheEndlessCharacter* TargetCha
 	Character = TargetCharacter;
 
 	// Check that the character is valid, and has no rifle yet
-	if (Character == nullptr || Character->GetHasRifle())
+	if (Character == nullptr || Character->GetHasWeapon())
 	{
 		return;
 	}
@@ -78,7 +76,7 @@ void UTP_WeaponComponent::AttachWeapon(ABattlemageTheEndlessCharacter* TargetCha
 	AttachToComponent(Character->GetMesh(), AttachmentRules, FName(TEXT("GripPoint")));
 	
 	// switch bHasRifle so the animation blueprint can switch to another animation set
-	Character->SetHasRifle(true);
+	Character->SetHasWeapon(this);
 
 	// Set up action bindings
 	if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))
@@ -97,6 +95,36 @@ void UTP_WeaponComponent::AttachWeapon(ABattlemageTheEndlessCharacter* TargetCha
 	}
 }
 
+void UTP_WeaponComponent::DetachWeapon()
+{
+	// Invalid state, we should only be dropping attached weapons
+	if (Character == nullptr || !Character->GetHasWeapon())
+	{
+		return;
+		// TODO: Figure out how to log an error
+	}
+	DetachFromComponent(FDetachmentTransformRules(EDetachmentRule::KeepRelative, false));
+	Character->SetHasWeapon(nullptr);
+	RemoveContext();
+	if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))
+	{
+		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent))
+		{
+			int bindingCount = EnhancedInputComponent->GetNumActionBindings();
+			for (int i = bindingCount - 1; i >= 0; --i)
+			{
+				if (FireAction->GetName() == (EnhancedInputComponent->GetActionBinding(i)).GetActionName())
+				{
+					EnhancedInputComponent->RemoveActionEventBinding(i);
+					break;
+				}
+			}
+		}
+	}
+
+	this->SetRelativeLocation(Character->GetActorLocation());
+}
+
 void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (Character == nullptr)
@@ -104,6 +132,11 @@ void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 		return;
 	}
 
+	RemoveContext();
+}
+
+void UTP_WeaponComponent::RemoveContext()
+{
 	if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))

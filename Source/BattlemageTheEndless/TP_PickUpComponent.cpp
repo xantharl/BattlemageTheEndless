@@ -13,7 +13,7 @@ void UTP_PickUpComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// Register our Overlap Event
-	OnComponentBeginOverlap.AddDynamic(this, &UTP_PickUpComponent::OnSphereBeginOverlap);
+	OnComponentBeginOverlap.AddDynamic(this, &UTP_PickUpComponent::OnSphereBeginOverlap);	
 }
 
 void UTP_PickUpComponent::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -28,4 +28,10 @@ void UTP_PickUpComponent::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedCo
 		// Unregister from the Overlap Event so it is no longer triggered
 		OnComponentBeginOverlap.RemoveAll(this);
 	}
+}
+
+void  UTP_PickUpComponent::OnDropped()
+{
+	// Register our Overlap Event
+	OnComponentBeginOverlap.AddDynamic(this, &UTP_PickUpComponent::OnSphereBeginOverlap);
 }
