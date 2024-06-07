@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "GameFramework/CharacterMovementComponent.h" 
+#include <GameFramework/SpringArmComponent.h>
 #include "BattlemageTheEndlessCharacter.generated.h"
 
 class UInputComponent;
@@ -25,6 +26,10 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	/** Third person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* ThirdPersonCamera;
+
+	/** Third person camera boom */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	USpringArmComponent* ThirdPersonCameraBoom;
 
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -67,6 +72,9 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, Category = Sound)
 	class USoundWave* SprintingSound;
 	
+private:
+	time_t _lastCameraSwap;
+
 public:
 	ABattlemageTheEndlessCharacter();
 
