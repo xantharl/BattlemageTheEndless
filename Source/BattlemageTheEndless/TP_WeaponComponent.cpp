@@ -57,9 +57,23 @@ void UTP_WeaponComponent::Fire()
 		UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
 		if (AnimInstance != nullptr)
 		{
+			// If we are mid attack montage...
 			if (AnimInstance->GetCurrentActiveMontage() && AnimInstance->GetCurrentActiveMontage()->GetName() == FireAnimation->GetName())
-				AnimInstance->Montage_Resume(FireAnimation);
-			else	
+			{
+				// Resume if paused
+				if (!AnimInstance->Montage_IsPlaying(FireAnimation))
+				{
+					AnimInstance->Montage_Resume(FireAnimation);
+					AttackRequested = false;
+				}
+
+				// Otherwise register that the next attack has been requested
+				// TODO: Make this request auto-expire for the benefit of long duration attacks
+				else
+					AttackRequested = true;
+			}
+			// If we aren't playing a montage start one
+			else 
 				AnimInstance->Montage_Play(FireAnimation, 1.f);
 		}
 	}
@@ -173,7 +187,7 @@ void UTP_WeaponComponent::SuspendAttackSequence()
 				if (notify->NotifyName == "PlayMontageNotify")
 				{
 					float waitBeforePause = notify->GetTriggerTime() - position;
-					Character->GetWorldTimerManager().SetTimer(WaitForPauseTime, this, &UTP_WeaponComponent::PauseCombo, waitBeforePause, false);
+					Character->GetWorldTimerManager().SetTimer(WaitForPauseTime, this, &UTP_WeaponComponent::PauseOrContinueCombo, waitBeforePause, false);
 					return;
 				}
 			}
@@ -181,7 +195,7 @@ void UTP_WeaponComponent::SuspendAttackSequence()
 	}
 }
 
-void UTP_WeaponComponent::PauseCombo()
+void UTP_WeaponComponent::PauseOrContinueCombo()
 {
 	// Make sure we won't crash the program
 	if (FireAnimation != nullptr)
@@ -190,6 +204,11 @@ void UTP_WeaponComponent::PauseCombo()
 		UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
 		if (AnimInstance != nullptr)
 		{
+			if (AttackRequested)
+			{
+				AttackRequested = false;
+				return;
+			}
 			AnimInstance->Montage_Pause(FireAnimation);
 			Character->GetWorldTimerManager().SetTimer(TimeSinceComboPaused, this, &UTP_WeaponComponent::EndComboIfStillPaused, ComboBreakTime, false);
 		}
@@ -205,7 +224,7 @@ void UTP_WeaponComponent::EndComboIfStillPaused()
 		UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
 		if (AnimInstance != nullptr && !AnimInstance->Montage_IsPlaying(FireAnimation))
 		{
-			AnimInstance->Montage_Stop(0.25, FireAnimation);
+				AnimInstance->Montage_Stop(0.25, FireAnimation);
 		}
 	}
 }

@@ -75,9 +75,11 @@ protected:
 
 	virtual void SuspendAttackSequence();
 
-	virtual void PauseCombo();
+	virtual void PauseOrContinueCombo();
 
 	virtual void EndComboIfStillPaused();
+
+	bool AttackRequested = false;
 
 private:
 	/** The Character holding this weapon*/
