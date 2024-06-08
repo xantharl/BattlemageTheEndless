@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "AnimNotifies/AnimNotify_PlayMontageNotify.h"
 #include "TP_WeaponComponent.generated.h"
 
 class ABattlemageTheEndlessCharacter;
@@ -38,6 +39,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
 	FVector MuzzleOffset;
 
+	/** Gun muzzle's offset from the characters location */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combo)
+	float ComboBreakTime = 0.25f;
+
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputMappingContext* FireMappingContext;
@@ -60,11 +65,19 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Weapon")
 	void Fire();
 
+	FTimerHandle WaitForPauseTime;
+	FTimerHandle TimeSinceComboPaused;
 
 protected:
 	/** Ends gameplay for this component. */
 	UFUNCTION()
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	virtual void SuspendAttackSequence();
+
+	virtual void PauseCombo();
+
+	virtual void EndComboIfStillPaused();
 
 private:
 	/** The Character holding this weapon*/

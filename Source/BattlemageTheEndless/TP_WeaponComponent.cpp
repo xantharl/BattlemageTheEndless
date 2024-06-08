@@ -56,7 +56,10 @@ void UTP_WeaponComponent::Fire()
 		UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
 		if (AnimInstance != nullptr)
 		{
-			AnimInstance->Montage_Play(FireAnimation, 1.f);
+			if (AnimInstance->GetCurrentActiveMontage() && AnimInstance->GetCurrentActiveMontage()->GetName() == FireAnimation->GetName())
+				AnimInstance->Montage_Resume(FireAnimation);
+			else	
+				AnimInstance->Montage_Play(FireAnimation, 1.f);
 		}
 	}
 }
@@ -91,6 +94,7 @@ void UTP_WeaponComponent::AttachWeapon(ABattlemageTheEndlessCharacter* TargetCha
 		{
 			// Fire
 			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &UTP_WeaponComponent::Fire);
+			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &UTP_WeaponComponent::SuspendAttackSequence);
 		}
 	}
 }
@@ -110,13 +114,18 @@ void UTP_WeaponComponent::DetachWeapon()
 	{
 		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent))
 		{
+			int removed = 0;
+
 			int bindingCount = EnhancedInputComponent->GetNumActionBindings();
 			for (int i = bindingCount - 1; i >= 0; --i)
 			{
 				if (FireAction->GetName() == (EnhancedInputComponent->GetActionBinding(i)).GetActionName())
 				{
 					EnhancedInputComponent->RemoveActionEventBinding(i);
-					break;
+					removed += 1;
+					// If we've removed both the Triggered and Complete bindings, we're done
+					if (removed == 2)
+						break;
 				}
 			}
 		}
@@ -134,6 +143,70 @@ void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	}
 
 	RemoveContext();
+}
+
+void UTP_WeaponComponent::SuspendAttackSequence()
+{
+	// Make sure we won't crash the program
+	if (FireAnimation != nullptr)
+	{
+		// Get the animation object for the mesh
+		UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
+		if (AnimInstance != nullptr)
+		{
+			// Get current position, I *think* this is time rather than frame
+			float position = AnimInstance->GetActiveMontageInstance()->GetPosition();
+
+			FAnimNotifyContext notifyContext = FAnimNotifyContext();
+			FireAnimation->GetAnimNotifies(position, 1.f, notifyContext);
+
+			// If there are no notifies, this is the last attack, just let it finish
+			int notifyCount = notifyContext.ActiveNotifies.Num();
+			if (notifyCount == 0)
+				return;
+
+			// Find the first UAnimNotify_PlayMontageNotify, dispatch the timer based callback, and return
+			for (int i = 0; i < notifyCount; ++i) 
+			{
+				const FAnimNotifyEvent* notify = notifyContext.ActiveNotifies[0].GetNotify();
+				if (UAnimNotify_PlayMontageNotify* goodNotify = Cast<UAnimNotify_PlayMontageNotify>(notify->Notify)) 
+				{
+					float waitBeforePause = notifyContext.ActiveNotifies[0].GetNotify()->GetTriggerTime() - position;
+					Character->GetWorldTimerManager().SetTimer(WaitForPauseTime, this, &UTP_WeaponComponent::PauseCombo, waitBeforePause, false);
+					return;
+				}
+			}
+		}
+	}
+}
+
+void UTP_WeaponComponent::PauseCombo()
+{
+	// Make sure we won't crash the program
+	if (FireAnimation != nullptr)
+	{
+		// Get the animation object for the mesh
+		UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
+		if (AnimInstance != nullptr)
+		{
+			AnimInstance->Montage_Pause(FireAnimation);
+			Character->GetWorldTimerManager().SetTimer(TimeSinceComboPaused, this, &UTP_WeaponComponent::EndComboIfStillPaused, ComboBreakTime, false);
+		}
+	}
+}
+
+void UTP_WeaponComponent::EndComboIfStillPaused()
+{
+	// Make sure we won't crash the program
+	if (FireAnimation != nullptr)
+	{
+		// Get the animation object for the mesh
+		UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
+		if (AnimInstance != nullptr && !AnimInstance->Montage_IsPlaying(FireAnimation))
+		{
+			AnimInstance->Montage_Stop(0.25, FireAnimation);
+		}
+	}
 }
 
 void UTP_WeaponComponent::RemoveContext()
