@@ -1,5 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
+#include "TP_WeaponComponent.h"
 #include "BattlemageTheEndlessCharacter.h"
 #include "BattlemageTheEndlessProjectile.h"
 #include "GameFramework/PlayerController.h"
@@ -168,10 +169,10 @@ void UTP_WeaponComponent::SuspendAttackSequence()
 			// Find the first UAnimNotify_PlayMontageNotify, dispatch the timer based callback, and return
 			for (int i = 0; i < notifyCount; ++i) 
 			{
-				const FAnimNotifyEvent* notify = notifyContext.ActiveNotifies[0].GetNotify();
-				if (UAnimNotify_PlayMontageNotify* goodNotify = Cast<UAnimNotify_PlayMontageNotify>(notify->Notify)) 
+				const FAnimNotifyEvent* notify = notifyContext.ActiveNotifies[i].GetNotify();
+				if (notify->NotifyName == "PlayMontageNotify")
 				{
-					float waitBeforePause = notifyContext.ActiveNotifies[0].GetNotify()->GetTriggerTime() - position;
+					float waitBeforePause = notify->GetTriggerTime() - position;
 					Character->GetWorldTimerManager().SetTimer(WaitForPauseTime, this, &UTP_WeaponComponent::PauseCombo, waitBeforePause, false);
 					return;
 				}
