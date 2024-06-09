@@ -4,7 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "Components/SkeletalMeshComponent.h"
-//#include "AnimNotifies/AnimNotify_PlayMontageNotify.h"
+#include "Components/CapsuleComponent.h" 	
+#include "Engine/DamageEvents.h"
+#include "PhysicsEngine/PhysicsAsset.h"
+#include "EnhancedInputComponent.h"
 #include "TP_WeaponComponent.generated.h"
 
 class ABattlemageTheEndlessCharacter;
@@ -43,6 +46,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combo)
 	float ComboBreakTime = 0.25f;
 
+	/** Light attack damage */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Damage)
+	float LightAttackDamage = 10.f;
+
+	/** Light attack damage */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Damage)
+	float HeavyAttackDamage = 20.f;
+
+	/** Light attack damage */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Damage)
+	float ComboFinisherMultiple = 1.5f;
+
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputMappingContext* FireMappingContext;
@@ -54,13 +69,6 @@ public:
 	/** Sets default values for this component's properties */
 	UTP_WeaponComponent();
 
-	/** Attaches the actor to a FirstPersonCharacter */
-	UFUNCTION(BlueprintCallable, Category="Weapon")
-	void AttachWeapon(ABattlemageTheEndlessCharacter* TargetCharacter);
-
-	UFUNCTION(BlueprintCallable, Category="Weapon")
-	void DetachWeapon();
-
 	/** Make the weapon Fire a Projectile */
 	UFUNCTION(BlueprintCallable, Category="Weapon")
 	void Fire();
@@ -68,22 +76,24 @@ public:
 	FTimerHandle WaitForPauseTime;
 	FTimerHandle TimeSinceComboPaused;
 
+	/** The Character holding this weapon*/
+	ABattlemageTheEndlessCharacter* Character;
+
+	virtual void SuspendAttackSequence();
+
+	void RemoveContext();
+
+	void AddBindings();
+
+	void DetachWeapon();
 protected:
 	/** Ends gameplay for this component. */
 	UFUNCTION()
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
-	virtual void SuspendAttackSequence();
 
 	virtual void PauseOrContinueCombo();
 
 	virtual void EndComboIfStillPaused();
 
 	bool AttackRequested = false;
-
-private:
-	/** The Character holding this weapon*/
-	ABattlemageTheEndlessCharacter* Character;
-
-	void RemoveContext();
 };

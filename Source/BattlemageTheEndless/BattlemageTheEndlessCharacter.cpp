@@ -20,6 +20,7 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 //////////////////////////////////////////////////////////////////////////
 // ABattlemageTheEndlessCharacter
 
+
 ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 {
 	// Character doesnt have a rifle at start
@@ -118,9 +119,6 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 
 		// Switch Camera
 		EnhancedInputComponent->BindAction(SwitchCameraAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::SwitchCamera);
-
-		// Switch Camera
-		EnhancedInputComponent->BindAction(DropItemAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::DropItem);
 	}
 	else
 	{
@@ -330,10 +328,7 @@ void ABattlemageTheEndlessCharacter::SwitchCamera()
 	Cast<APlayerController>(GetController())->SetViewTargetWithBlend((AActor*)this);
 }
 
-void ABattlemageTheEndlessCharacter::DropItem()
+void ABattlemageTheEndlessCharacter::ApplyDamage(float damage)
 {
-	if (Weapon != nullptr)
-	{
-		Weapon->DetachWeapon();
-	}
+	Health -= damage > Health ? Health : damage;
 }

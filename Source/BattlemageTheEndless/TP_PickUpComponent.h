@@ -9,7 +9,7 @@
 
 // Declaration of the delegate that will be called when someone picks this up
 // The character picking this up is the parameter sent with the notification
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPickUp, ABattlemageTheEndlessCharacter*, PickUpCharacter);
+//DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPickUp, ABattlemageTheEndlessCharacter*, PickUpCharacter);
 
 UCLASS(Blueprintable, BlueprintType, ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class BATTLEMAGETHEENDLESS_API UTP_PickUpComponent : public USphereComponent
@@ -18,14 +18,15 @@ class BATTLEMAGETHEENDLESS_API UTP_PickUpComponent : public USphereComponent
 
 public:
 	
-	/** Delegate to whom anyone can subscribe to receive this event */
-	UPROPERTY(BlueprintAssignable, Category = "Interaction")
-	FOnPickUp OnPickUp;
+	///** Delegate to whom anyone can subscribe to receive this event */
+	//UPROPERTY(BlueprintAssignable, Category = "Interaction")
+	//FOnPickUp OnPickUp;
 
 	UTP_PickUpComponent();
 
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
 	void OnDropped();
+
 protected:
 
 	/** Called when the game starts */

@@ -83,10 +83,18 @@ private:
 public:
 	ABattlemageTheEndlessCharacter();
 
+	void ApplyDamage(float damage);
+
 protected:
 	virtual void BeginPlay();
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0);
 	virtual void TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
+	float Health = 100;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+	float MaxHealth = 100;
 
 public:
 		
@@ -151,7 +159,6 @@ protected:
 	void TryUnCrouch();
 	void EndSlide(UCharacterMovementComponent* movement);
 	void SwitchCamera();
-	void DropItem();
 	// End of APawn interface
 
 };

@@ -14,6 +14,11 @@ UTP_WeaponComponent::UTP_WeaponComponent()
 {
 	// Default offset from the character location for projectiles to spawn
 	MuzzleOffset = FVector(100.0f, 0.0f, 10.0f);
+	//float height = GetSkeletalMeshAsset()->GetBounds().BoxExtent.Z;
+	//WeaponCollision->SetCapsuleHalfHeight(20);
+	//// get the height of WeaponCollision
+	//float weaponCollisionHeight = WeaponCollision->GetUnscaledCapsuleHalfHeight();
+	//WeaponCollision->SetRelativeLocation(FVector(0.f, 0.f, -height+weaponCollisionHeight));
 }
 
 
@@ -77,77 +82,6 @@ void UTP_WeaponComponent::Fire()
 				AnimInstance->Montage_Play(FireAnimation, 1.f);
 		}
 	}
-}
-
-void UTP_WeaponComponent::AttachWeapon(ABattlemageTheEndlessCharacter* TargetCharacter)
-{
-	Character = TargetCharacter;
-
-	// Check that the character is valid, and has no rifle yet
-	if (Character == nullptr || Character->GetHasWeapon())
-	{
-		return;
-	}
-
-	// Attach the weapon to the First Person Character
-	FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
-	AttachToComponent(Character->GetMesh(), AttachmentRules, FName(TEXT("GripPoint")));
-	
-	// switch bHasRifle so the animation blueprint can switch to another animation set
-	Character->SetHasWeapon(this);
-
-	// Set up action bindings
-	if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			// Set the priority of the mapping to 1, so that it overrides the Jump action with the Fire action when using touch input
-			Subsystem->AddMappingContext(FireMappingContext, 1);
-		}
-
-		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent))
-		{
-			// Fire
-			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &UTP_WeaponComponent::Fire);
-			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &UTP_WeaponComponent::SuspendAttackSequence);
-		}
-	}
-}
-
-void UTP_WeaponComponent::DetachWeapon()
-{
-	// Invalid state, we should only be dropping attached weapons
-	if (Character == nullptr || !Character->GetHasWeapon())
-	{
-		return;
-		// TODO: Figure out how to log an error
-	}
-	DetachFromComponent(FDetachmentTransformRules(EDetachmentRule::KeepRelative, false));
-	Character->SetHasWeapon(nullptr);
-	RemoveContext();
-	if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))
-	{
-		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent))
-		{
-			int removed = 0;
-
-			int bindingCount = EnhancedInputComponent->GetNumActionBindings();
-			for (int i = bindingCount - 1; i >= 0; --i)
-			{
-				if (FireAction->GetName() == (EnhancedInputComponent->GetActionBinding(i)).GetActionName())
-				{
-					EnhancedInputComponent->RemoveActionEventBinding(i);
-					removed += 1;
-					// If we've removed both the Triggered and Complete bindings, we're done
-					if (removed == 2)
-						break;
-				}
-			}
-		}
-	}
-
-	this->SetRelativeLocation(Character->GetActorLocation());
-	WeaponDropped.Broadcast();
 }
 
 void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -236,6 +170,53 @@ void UTP_WeaponComponent::RemoveContext()
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			Subsystem->RemoveMappingContext(FireMappingContext);
+		}
+	}
+}
+
+void UTP_WeaponComponent::AddBindings()
+{
+	if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))
+	{
+		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent))
+		{
+			// Fire
+			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &UTP_WeaponComponent::Fire);
+			EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &UTP_WeaponComponent::SuspendAttackSequence);
+		}
+	}
+}
+
+void UTP_WeaponComponent::DetachWeapon()
+{
+	// Invalid state, we should only be dropping attached weapons
+	if (Character == nullptr || !Character->GetHasWeapon())
+	{
+		return;
+		// TODO: Figure out how to log an error
+	}
+
+	DetachFromComponent(FDetachmentTransformRules(EDetachmentRule::KeepRelative, false));
+	Character->SetHasWeapon(nullptr);
+	RemoveContext();
+	if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))
+	{
+		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent))
+		{
+			int removed = 0;
+
+			int bindingCount = EnhancedInputComponent->GetNumActionBindings();
+			for (int i = bindingCount - 1; i >= 0; --i)
+			{
+				if (FireAction->GetName() == (EnhancedInputComponent->GetActionBinding(i)).GetActionName())
+				{
+					EnhancedInputComponent->RemoveActionEventBinding(i);
+					removed += 1;
+					// If we've removed both the Triggered and Complete bindings, we're done
+					if (removed == 2)
+						break;
+				}
+			}
 		}
 	}
 }
