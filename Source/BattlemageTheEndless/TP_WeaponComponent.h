@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include <map>
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/CapsuleComponent.h" 	
 #include "Engine/DamageEvents.h"
@@ -99,4 +100,8 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void OnAnimTraceHit(const FHitResult& Hit);
+
+	int ComboAttackNumber = 0;
+
+	std::map<ABattlemageTheEndlessCharacter*, int> LastHitCharacters = std::map<ABattlemageTheEndlessCharacter*, int>();
 };

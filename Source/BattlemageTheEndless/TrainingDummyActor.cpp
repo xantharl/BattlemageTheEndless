@@ -17,6 +17,18 @@ void ATrainingDummyActor::BeginPlay()
 	
 }
 
+void ATrainingDummyActor::ResetHealth()
+{
+	// Return if this wasn't invoked by the latest hit
+	if (time(0) - LastHitTime > 3.0f)
+	{
+		return;
+	}
+
+	Health = MaxHealth;
+	GetWorldTimerManager().ClearTimer(ResetHealthTimer);
+}
+
 // Called every frame
 void ATrainingDummyActor::Tick(float DeltaTime)
 {
@@ -30,3 +42,10 @@ void ATrainingDummyActor::SetupPlayerInputComponent(UInputComponent* PlayerInput
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
+void ATrainingDummyActor::ApplyDamage(float damage)
+{
+	LastHitTime = time(0);
+	GetWorld()->GetTimerManager().SetTimer(ResetHealthTimer, this, &ATrainingDummyActor::ResetHealth, WaitBeforeResetHealthSeconds, false);
+
+	ABattlemageTheEndlessCharacter::ApplyDamage(damage);
+}

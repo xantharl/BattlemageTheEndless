@@ -320,7 +320,7 @@ void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMov
 void ABattlemageTheEndlessCharacter::SwitchCamera() 
 {
 	time_t now = time(0);
-	if (now - _lastCameraSwap < 1.0f)
+	if (now - _lastCameraSwap < 0.5f)
 		return;
 
 	_lastCameraSwap = time(0);

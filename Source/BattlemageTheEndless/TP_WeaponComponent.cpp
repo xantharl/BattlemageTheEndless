@@ -70,6 +70,7 @@ void UTP_WeaponComponent::Fire()
 				{
 					AnimInstance->Montage_Resume(FireAnimation);
 					AttackRequested = false;
+					ComboAttackNumber += 1;
 				}
 
 				// Otherwise register that the next attack has been requested
@@ -79,7 +80,11 @@ void UTP_WeaponComponent::Fire()
 			}
 			// If we aren't playing a montage start one
 			else 
+			{
+				// In a perfect world this isn't needed, but in this world it's a race condition
+				ComboAttackNumber = 0;
 				AnimInstance->Montage_Play(FireAnimation, 1.f);
+			}
 		}
 	}
 }
@@ -145,6 +150,7 @@ void UTP_WeaponComponent::PauseOrContinueCombo()
 			if (AttackRequested)
 			{
 				AttackRequested = false;
+				ComboAttackNumber += 1;
 				return;
 			}
 			AnimInstance->Montage_Pause(FireAnimation);
@@ -163,6 +169,8 @@ void UTP_WeaponComponent::EndComboIfStillPaused()
 		if (AnimInstance != nullptr && !AnimInstance->Montage_IsPlaying(FireAnimation))
 		{
 				AnimInstance->Montage_Stop(0.25, FireAnimation);
+				ComboAttackNumber = 0;
+				LastHitCharacters.clear();
 		}
 	}
 }
@@ -228,15 +236,30 @@ void UTP_WeaponComponent::DetachWeapon()
 // This is called by the AnimNotify_Collision Blueprint
 void UTP_WeaponComponent::OnAnimTraceHit(const FHitResult& Hit)
 {
+	// If we hit a Battlemage character, apply damage	
 	if (Hit.HitObjectHandle.DoesRepresentClass(ABattlemageTheEndlessCharacter::StaticClass()))
 	{
 		ABattlemageTheEndlessCharacter* otherCharacter = Cast<ABattlemageTheEndlessCharacter>(Hit.HitObjectHandle.FetchActor());
+
+		// If this character has already been hit by this stage of the combo, don't hit them again
+		auto characterIter = LastHitCharacters.find(Cast<ABattlemageTheEndlessCharacter>(otherCharacter));
+		if (characterIter != LastHitCharacters.end() && characterIter->second == ComboAttackNumber)
+		{
+			return;
+		}
+
 		// Stop hitting yourself
 		if (otherCharacter == Character)
 		{
 			return;
 		}
 
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("Hit on ComboAttackNumber %i"), ComboAttackNumber));
+		}
+
+		LastHitCharacters.insert_or_assign(otherCharacter, ComboAttackNumber);
 		float Damage = LightAttackDamage;
 		otherCharacter->ApplyDamage(Damage);
 	}

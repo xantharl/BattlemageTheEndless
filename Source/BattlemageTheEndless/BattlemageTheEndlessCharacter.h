@@ -86,7 +86,7 @@ private:
 public:
 	ABattlemageTheEndlessCharacter();
 
-	void ApplyDamage(float damage);
+	virtual void ApplyDamage(float damage);
 
 protected:
 	virtual void BeginPlay();
