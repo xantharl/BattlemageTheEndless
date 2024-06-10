@@ -76,6 +76,9 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 
 	UPROPERTY(EditAnywhere, Category = Sound)
 	class USoundWave* SprintingSound;
+
+	UPROPERTY(EditAnywhere, Category = Inventory)
+	UTP_WeaponComponent* HeldWeapon;
 	
 private:
 	time_t _lastCameraSwap;
@@ -138,6 +141,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 	bool GetHasWeapon();
 
+	/** Getter for the weapon */
+	UFUNCTION(BlueprintCallable, Category = Weapon)
+	UTP_WeaponComponent* GetHeldWeapon();
+
+	UFUNCTION(BlueprintCallable, Category = Weapon)
+	USkeletalMeshComponent* GetHeldWeaponMeshComponent();
+
 protected:
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
@@ -148,7 +158,6 @@ protected:
 	float slideElapsedSeconds;
 	int launchesPerformed;
 
-	UTP_WeaponComponent* Weapon;
 
 protected:
 	// APawn interface

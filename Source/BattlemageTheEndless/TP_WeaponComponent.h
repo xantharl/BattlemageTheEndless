@@ -96,4 +96,7 @@ protected:
 	virtual void EndComboIfStillPaused();
 
 	bool AttackRequested = false;
+
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	void OnAnimTraceHit(const FHitResult& Hit);
 };

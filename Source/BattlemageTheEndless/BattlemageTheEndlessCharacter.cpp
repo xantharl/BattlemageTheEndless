@@ -286,12 +286,22 @@ void ABattlemageTheEndlessCharacter::Look(const FInputActionValue& Value)
 void ABattlemageTheEndlessCharacter::SetHasWeapon(UTP_WeaponComponent* weapon)
 {
 	bHasRifle = weapon != nullptr;
-	Weapon = weapon;
+	HeldWeapon = weapon;
 }
 
 bool ABattlemageTheEndlessCharacter::GetHasWeapon()
 {
 	return bHasRifle;
+}
+
+UTP_WeaponComponent* ABattlemageTheEndlessCharacter::GetHeldWeapon()
+{
+	return HeldWeapon;
+}
+
+USkeletalMeshComponent* ABattlemageTheEndlessCharacter::GetHeldWeaponMeshComponent()
+{
+	return (USkeletalMeshComponent*)HeldWeapon;
 }
 
 void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)

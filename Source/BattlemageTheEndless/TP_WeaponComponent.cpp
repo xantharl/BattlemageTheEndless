@@ -224,3 +224,20 @@ void UTP_WeaponComponent::DetachWeapon()
 		}
 	}
 }
+
+// This is called by the AnimNotify_Collision Blueprint
+void UTP_WeaponComponent::OnAnimTraceHit(const FHitResult& Hit)
+{
+	if (Hit.HitObjectHandle.DoesRepresentClass(ABattlemageTheEndlessCharacter::StaticClass()))
+	{
+		ABattlemageTheEndlessCharacter* otherCharacter = Cast<ABattlemageTheEndlessCharacter>(Hit.HitObjectHandle.FetchActor());
+		// Stop hitting yourself
+		if (otherCharacter == Character)
+		{
+			return;
+		}
+
+		float Damage = LightAttackDamage;
+		otherCharacter->ApplyDamage(Damage);
+	}
+}
