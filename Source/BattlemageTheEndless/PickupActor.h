@@ -51,8 +51,7 @@ public:
 	void OnDropped();
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
-
+	virtual void OnActorHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector normalImpulse, const FHitResult& Hit);
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

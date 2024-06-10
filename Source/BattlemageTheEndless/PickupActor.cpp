@@ -21,6 +21,7 @@ APickupActor::APickupActor()
 
 	WeaponCollision = CreateDefaultSubobject<UCapsuleComponent>(TEXT("WeaponCollision"));
 	WeaponCollision->SetNotifyRigidBodyCollision(true);
+	WeaponCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	WeaponCollision->SetCollisionProfileName("PhysicsActor");
 	WeaponCollision->SetupAttachment(WeaponMesh);
 
@@ -39,14 +40,24 @@ void APickupActor::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
-void APickupActor::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+void APickupActor::OnActorHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector normalImpulse, const FHitResult& Hit)
 {
 	// Stop hitting yourself
 	if(!Character || OtherActor == Character)
 	{
+		/*if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Stop Hitting Yourself"));
+		}*/
 		return;
 	}
 	// Determine Damage
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Non Self Hit"));
+	}
+
 	float Damage = Weapon->LightAttackDamage;
 	// If the other actor is a game character, apply damage
 	if (ABattlemageTheEndlessCharacter* otherCharacter = Cast<ABattlemageTheEndlessCharacter>(OtherActor))
@@ -65,10 +76,10 @@ void APickupActor::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent
 	if (ABattlemageTheEndlessCharacter* otherCharacter = Cast<ABattlemageTheEndlessCharacter>(OtherActor))
 	{
 		// Unregister from the Overlap Event so it is no longer triggered
-		WeaponCollision->OnComponentBeginOverlap.RemoveAll(this);
+		BaseCapsule->OnComponentBeginOverlap.RemoveAll(this);
 
 		// We don't need to subscribe to this until the weapon is picked up
-		WeaponCollision->OnComponentHit.AddDynamic(this, &APickupActor::OnHit);
+		WeaponCollision->OnComponentHit.AddDynamic(this, &APickupActor::OnActorHit);
 
 		AttachWeapon(otherCharacter);
 	}
@@ -80,7 +91,7 @@ void  APickupActor::OnDropped()
 	RootComponent->SetRelativeLocation(Character->GetActorLocation());
 
 	// Register our Overlap Event // TODO: Make this happen on a delay so it doesn't get immediately picked up
-	WeaponCollision->OnComponentBeginOverlap.AddDynamic(this, &APickupActor::OnSphereBeginOverlap);
+	BaseCapsule->OnComponentBeginOverlap.AddDynamic(this, &APickupActor::OnSphereBeginOverlap);
 
 	// Unregister from the Hit Event so it is no longer triggered
 	WeaponCollision->OnComponentHit.RemoveAll(this);

@@ -103,6 +103,10 @@ void UTP_WeaponComponent::SuspendAttackSequence()
 		UAnimInstance* AnimInstance = Character->GetMesh()->GetAnimInstance();
 		if (AnimInstance != nullptr)
 		{
+			// Race condition, exit if we finished the animation
+			if (!AnimInstance->GetActiveMontageInstance())
+				return;
+
 			// Get current position, I *think* this is time rather than frame
 			float position = AnimInstance->GetActiveMontageInstance()->GetPosition();
 
