@@ -23,9 +23,6 @@ class BATTLEMAGETHEENDLESS_API APickupActor : public AActor
 	UCapsuleComponent* BaseCapsule;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	UCapsuleComponent* WeaponCollision;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	USkeletalMeshComponent* WeaponMesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))

@@ -24,7 +24,6 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 {
 	// Character doesnt have a rifle at start
-	bHasRifle = false;
 	bIsSprinting = false;
 	bIsSliding = false;
 	bShouldUncrouch = false;
@@ -285,13 +284,12 @@ void ABattlemageTheEndlessCharacter::Look(const FInputActionValue& Value)
 
 void ABattlemageTheEndlessCharacter::SetHasWeapon(UTP_WeaponComponent* weapon)
 {
-	bHasRifle = weapon != nullptr;
 	HeldWeapon = weapon;
 }
 
 bool ABattlemageTheEndlessCharacter::GetHasWeapon()
 {
-	return bHasRifle;
+	return HeldWeapon != NULL;
 }
 
 UTP_WeaponComponent* ABattlemageTheEndlessCharacter::GetHeldWeapon()

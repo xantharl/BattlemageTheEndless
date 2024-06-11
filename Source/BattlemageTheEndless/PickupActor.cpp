@@ -19,12 +19,6 @@ APickupActor::APickupActor()
 
 	Weapon = CreateDefaultSubobject<UTP_WeaponComponent>(TEXT("Weapon"));
 
-	WeaponCollision = CreateDefaultSubobject<UCapsuleComponent>(TEXT("WeaponCollision"));
-	WeaponCollision->SetNotifyRigidBodyCollision(true);
-	WeaponCollision->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	WeaponCollision->SetCollisionProfileName("PhysicsActor");
-	WeaponCollision->SetupAttachment(WeaponMesh);
-
 	BaseCapsule->OnComponentBeginOverlap.AddDynamic(this, &APickupActor::OnSphereBeginOverlap);
 }
 
@@ -65,6 +59,12 @@ void APickupActor::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent
 
 void  APickupActor::OnDropped()
 {
+	// It's possible for this to be called when the weapon is not attached to a character
+	//	due to a race condition in removal of action bindings
+	if(!Character || !Character->GetHasWeapon())
+	{
+		return;
+	}
 	DetachWeapon();
 	RootComponent->SetRelativeLocation(Character->GetActorLocation());
 	BaseCapsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -91,7 +91,7 @@ void APickupActor::AttachWeapon(ABattlemageTheEndlessCharacter* TargetCharacter)
 	FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
 	AttachToComponent(Character->GetMesh(), AttachmentRules, FName(TEXT("GripPoint")));
 
-	// switch bHasRifle so the animation blueprint can switch to another animation set
+	// set the weapon so the animation blueprint can switch to another animation set
 	Character->SetHasWeapon(Weapon);
 
 	// Set up action bindings
@@ -123,9 +123,10 @@ void APickupActor::DetachWeapon()
 
 	DetachFromActor(FDetachmentTransformRules(EDetachmentRule::KeepRelative, false));
 
+	Weapon->RemoveContext();
 	Character->SetHasWeapon(nullptr);
 
-	Weapon->RemoveContext();
+	// TODO: This isn't working, figure out why
 	if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))
 	{
 		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent))
@@ -135,12 +136,14 @@ void APickupActor::DetachWeapon()
 			int bindingCount = EnhancedInputComponent->GetNumActionBindings();
 			for (int i = bindingCount - 1; i >= 0; --i)
 			{
-				if (Weapon->FireAction->GetName() == (EnhancedInputComponent->GetActionBinding(i)).GetActionName())
+				FName actionName = (EnhancedInputComponent->GetActionBinding(i)).GetActionName();
+				if (Weapon->FireAction->GetName() == actionName || DropWeaponAction->GetName() == actionName)
 				{
 					EnhancedInputComponent->RemoveActionEventBinding(i);
 					removed += 1;
-					// If we've removed both the Triggered and Complete bindings, we're done
-					if (removed == 2)
+					// If we've removed both the Triggered, Complete and Drop bindings, we're done
+					// TODO: This is very fragile
+					if (removed == 3)
 						break;
 				}
 			}
