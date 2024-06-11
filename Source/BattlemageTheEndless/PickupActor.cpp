@@ -32,6 +32,12 @@ APickupActor::APickupActor()
 void APickupActor::BeginPlay()
 {
 	Super::BeginPlay();
+	if (WeaponMesh) 
+	{
+		// Set Base Capsule to dimensions of Weapon Mesh
+		FVector WeaponMeshBounds = WeaponMesh->CalcBounds(WeaponMesh->GetComponentTransform()).BoxExtent;
+		BaseCapsule->SetCapsuleSize(WeaponMeshBounds.X, WeaponMeshBounds.Z);
+	}
 }
 
 // Called every frame
@@ -49,6 +55,7 @@ void APickupActor::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent
 	// Checking if it is a First Person Character overlapping
 	if (ABattlemageTheEndlessCharacter* otherCharacter = Cast<ABattlemageTheEndlessCharacter>(OtherActor))
 	{
+		BaseCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		// Unregister from the Overlap Event so it is no longer triggered
 		BaseCapsule->OnComponentBeginOverlap.RemoveAll(this);
 
@@ -60,6 +67,7 @@ void  APickupActor::OnDropped()
 {
 	DetachWeapon();
 	RootComponent->SetRelativeLocation(Character->GetActorLocation());
+	BaseCapsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
 	// Register our Overlap Event // TODO: Make this happen on a delay so it doesn't get immediately picked up
 	BaseCapsule->OnComponentBeginOverlap.AddDynamic(this, &APickupActor::OnSphereBeginOverlap);
