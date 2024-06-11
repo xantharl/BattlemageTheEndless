@@ -199,40 +199,6 @@ void UTP_WeaponComponent::AddBindings()
 	}
 }
 
-void UTP_WeaponComponent::DetachWeapon()
-{
-	// Invalid state, we should only be dropping attached weapons
-	if (Character == nullptr || !Character->GetHasWeapon())
-	{
-		return;
-		// TODO: Figure out how to log an error
-	}
-
-	DetachFromComponent(FDetachmentTransformRules(EDetachmentRule::KeepRelative, false));
-	Character->SetHasWeapon(nullptr);
-	RemoveContext();
-	if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))
-	{
-		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent))
-		{
-			int removed = 0;
-
-			int bindingCount = EnhancedInputComponent->GetNumActionBindings();
-			for (int i = bindingCount - 1; i >= 0; --i)
-			{
-				if (FireAction->GetName() == (EnhancedInputComponent->GetActionBinding(i)).GetActionName())
-				{
-					EnhancedInputComponent->RemoveActionEventBinding(i);
-					removed += 1;
-					// If we've removed both the Triggered and Complete bindings, we're done
-					if (removed == 2)
-						break;
-				}
-			}
-		}
-	}
-}
-
 // This is called by the AnimNotify_Collision Blueprint
 void UTP_WeaponComponent::OnAnimTraceHit(const FHitResult& Hit)
 {

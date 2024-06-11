@@ -37,7 +37,9 @@ class BATTLEMAGETHEENDLESS_API APickupActor : public AActor
 
 	/** Attaches the actor to a FirstPersonCharacter */
 	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	void AttachWeapon(ABattlemageTheEndlessCharacter* TargetCharacter);	
+	void AttachWeapon(ABattlemageTheEndlessCharacter* TargetCharacter);
+	void DetachWeapon();
+
 
 public:	
 	// Sets default values for this actor's properties

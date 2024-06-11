@@ -58,11 +58,14 @@ void APickupActor::OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent
 
 void  APickupActor::OnDropped()
 {
-	Weapon->DetachWeapon();
+	DetachWeapon();
 	RootComponent->SetRelativeLocation(Character->GetActorLocation());
 
 	// Register our Overlap Event // TODO: Make this happen on a delay so it doesn't get immediately picked up
 	BaseCapsule->OnComponentBeginOverlap.AddDynamic(this, &APickupActor::OnSphereBeginOverlap);
+
+	// Null out character so we know the weapon can be picked up again
+	Character = nullptr;
 }
 
 void APickupActor::AttachWeapon(ABattlemageTheEndlessCharacter* TargetCharacter)
@@ -98,5 +101,41 @@ void APickupActor::AttachWeapon(ABattlemageTheEndlessCharacter* TargetCharacter)
 		}
 
 		Weapon->AddBindings();
+	}
+}
+
+
+void APickupActor::DetachWeapon()
+{
+	// Invalid state, we should only be dropping attached weapons
+	if (Character == nullptr || !Character->GetHasWeapon())
+	{
+		return;
+	}
+
+	DetachFromActor(FDetachmentTransformRules(EDetachmentRule::KeepRelative, false));
+
+	Character->SetHasWeapon(nullptr);
+
+	Weapon->RemoveContext();
+	if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))
+	{
+		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent))
+		{
+			int removed = 0;
+
+			int bindingCount = EnhancedInputComponent->GetNumActionBindings();
+			for (int i = bindingCount - 1; i >= 0; --i)
+			{
+				if (Weapon->FireAction->GetName() == (EnhancedInputComponent->GetActionBinding(i)).GetActionName())
+				{
+					EnhancedInputComponent->RemoveActionEventBinding(i);
+					removed += 1;
+					// If we've removed both the Triggered and Complete bindings, we're done
+					if (removed == 2)
+						break;
+				}
+			}
+		}
 	}
 }

@@ -85,8 +85,6 @@ public:
 	void RemoveContext();
 
 	void AddBindings();
-
-	void DetachWeapon();
 protected:
 	/** Ends gameplay for this component. */
 	UFUNCTION()
