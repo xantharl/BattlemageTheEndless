@@ -282,24 +282,34 @@ void ABattlemageTheEndlessCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
-void ABattlemageTheEndlessCharacter::SetHasWeapon(UTP_WeaponComponent* weapon)
+void ABattlemageTheEndlessCharacter::SetLeftHandWeapon(UTP_WeaponComponent* weapon)
 {
-	HeldWeapon = weapon;
+	LeftHandWeapon = weapon;
 }
 
-bool ABattlemageTheEndlessCharacter::GetHasWeapon()
+void ABattlemageTheEndlessCharacter::SetRightHandWeapon(UTP_WeaponComponent* weapon)
 {
-	return HeldWeapon != NULL;
+	RightHandWeapon = weapon;
 }
 
-UTP_WeaponComponent* ABattlemageTheEndlessCharacter::GetHeldWeapon()
+bool ABattlemageTheEndlessCharacter::GetHasLeftHandWeapon()
 {
-	return HeldWeapon;
+	return LeftHandWeapon != NULL;
 }
 
-USkeletalMeshComponent* ABattlemageTheEndlessCharacter::GetHeldWeaponMeshComponent()
+bool ABattlemageTheEndlessCharacter::GetHasRightHandWeapon()
 {
-	return (USkeletalMeshComponent*)HeldWeapon;
+	return RightHandWeapon != NULL;
+}
+
+UTP_WeaponComponent* ABattlemageTheEndlessCharacter::GetLeftHandWeapon()
+{
+	return LeftHandWeapon;
+}
+
+UTP_WeaponComponent* ABattlemageTheEndlessCharacter::GetRightHandWeapon()
+{
+	return RightHandWeapon;
 }
 
 void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
@@ -339,4 +349,27 @@ void ABattlemageTheEndlessCharacter::SwitchCamera()
 void ABattlemageTheEndlessCharacter::ApplyDamage(float damage)
 {
 	Health -= damage > Health ? Health : damage;
+}
+
+FName ABattlemageTheEndlessCharacter::GetTargetSocketName(UTP_WeaponComponent::EquipSlot SlotType)
+{
+	return FName(LeftHanded ? "GripLeft": "GripRight");
+}
+
+bool ABattlemageTheEndlessCharacter::TrySetWeapon(UTP_WeaponComponent* Weapon, FName SocketName)
+{
+	if (SocketName == FName("GripRight") && RightHandWeapon == NULL)
+	{
+		RightHandWeapon = Weapon;
+	}
+	else if (SocketName == FName("GripLeft") && LeftHandWeapon == NULL)
+	{
+		LeftHandWeapon = Weapon;
+	}
+	else
+	{
+		return false;
+	}
+
+	return true;
 }

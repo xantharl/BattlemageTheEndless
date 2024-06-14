@@ -78,8 +78,11 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	class USoundWave* SprintingSound;
 
 	UPROPERTY(EditAnywhere, Category = Inventory)
-	UTP_WeaponComponent* HeldWeapon;
-	
+	UTP_WeaponComponent* LeftHandWeapon;
+
+	UPROPERTY(EditAnywhere, Category = Inventory)
+	UTP_WeaponComponent* RightHandWeapon;
+
 private:
 	time_t _lastCameraSwap;
 
@@ -129,20 +132,32 @@ public:
 
 	int MaxLaunches;
 
-	/** Setter to set the bool */
 	UFUNCTION(BlueprintCallable, Category = Weapon)
-	void SetHasWeapon(UTP_WeaponComponent* weapon);
+	void SetLeftHandWeapon(UTP_WeaponComponent* weapon);
 
-	/** Getter for the bool */
 	UFUNCTION(BlueprintCallable, Category = Weapon)
-	bool GetHasWeapon();
+	void SetRightHandWeapon(UTP_WeaponComponent* weapon);
+
+	UFUNCTION(BlueprintCallable, Category = Weapon)
+	bool GetHasLeftHandWeapon();
+
+	UFUNCTION(BlueprintCallable, Category = Weapon)
+	bool GetHasRightHandWeapon();
 
 	/** Getter for the weapon */
 	UFUNCTION(BlueprintCallable, Category = Weapon)
-	UTP_WeaponComponent* GetHeldWeapon();
+	UTP_WeaponComponent* GetLeftHandWeapon();
 
+	/** Getter for the weapon */
 	UFUNCTION(BlueprintCallable, Category = Weapon)
-	USkeletalMeshComponent* GetHeldWeaponMeshComponent();
+	UTP_WeaponComponent* GetRightHandWeapon();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Inventory, meta = (AllowPrivateAccess = "true"))
+	bool LeftHanded = false;
+
+	FName GetTargetSocketName(UTP_WeaponComponent::EquipSlot SlotType);
+
+	bool TrySetWeapon(UTP_WeaponComponent* Weapon, FName SocketName);
 
 protected:
 	/** Called for movement input */

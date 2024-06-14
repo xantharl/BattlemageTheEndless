@@ -61,7 +61,7 @@ void  APickupActor::OnDropped()
 {
 	// It's possible for this to be called when the weapon is not attached to a character
 	//	due to a race condition in removal of action bindings
-	if(!Character || !Character->GetHasWeapon())
+	if(!Character || !Character->GetHasRightHandWeapon())
 	{
 		return;
 	}
@@ -81,18 +81,25 @@ void APickupActor::AttachWeapon(ABattlemageTheEndlessCharacter* TargetCharacter)
 	Character = TargetCharacter;
 	Weapon->Character = Character;
 
-	// Check that the character is valid, and has no rifle yet
-	if (Character == nullptr || Character->GetHasWeapon())
+	// Check that the character is valid, and has room for a weapon
+	if (Character == nullptr || (Character->GetHasRightHandWeapon() && Character->GetHasLeftHandWeapon()))
 	{
 		return;
 	}
 
 	// Attach the weapon to the First Person Character
 	FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
-	AttachToComponent(Character->GetMesh(), AttachmentRules, FName(TEXT("GripPoint")));
+	FName targetSocketName = Character->GetTargetSocketName(Weapon->SlotType);
+	bool wasWeaponSet = Character->TrySetWeapon(Weapon, targetSocketName);
 
-	// set the weapon so the animation blueprint can switch to another animation set
-	Character->SetHasWeapon(Weapon);
+	if (!wasWeaponSet) 
+	{
+		// Weapon slot was already occupied
+		// TODO: Disable auto pickup and make it a prompt
+		return;
+	}
+
+	AttachToComponent(Character->GetMesh(), AttachmentRules, targetSocketName);
 
 	// Set up action bindings
 	if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))
@@ -116,7 +123,7 @@ void APickupActor::AttachWeapon(ABattlemageTheEndlessCharacter* TargetCharacter)
 void APickupActor::DetachWeapon()
 {
 	// Invalid state, we should only be dropping attached weapons
-	if (Character == nullptr || !Character->GetHasWeapon())
+	if (Character == nullptr || !Character->GetHasRightHandWeapon())
 	{
 		return;
 	}
@@ -124,7 +131,10 @@ void APickupActor::DetachWeapon()
 	DetachFromActor(FDetachmentTransformRules(EDetachmentRule::KeepRelative, false));
 
 	Weapon->RemoveContext();
-	Character->SetHasWeapon(nullptr);
+	if(Character->GetHasLeftHandWeapon())
+		Character->SetLeftHandWeapon(nullptr);
+	else
+		Character->SetRightHandWeapon(nullptr);
 
 	// TODO: This isn't working, figure out why
 	if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))

@@ -37,7 +37,6 @@ class BATTLEMAGETHEENDLESS_API APickupActor : public AActor
 	void AttachWeapon(ABattlemageTheEndlessCharacter* TargetCharacter);
 	void DetachWeapon();
 
-
 public:	
 	// Sets default values for this actor's properties
 	APickupActor();

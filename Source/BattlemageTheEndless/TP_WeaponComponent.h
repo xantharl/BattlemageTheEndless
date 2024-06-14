@@ -23,6 +23,14 @@ class BATTLEMAGETHEENDLESS_API UTP_WeaponComponent : public USkeletalMeshCompone
 	GENERATED_BODY()
 
 public:
+	enum class EquipSlot
+	{
+		Primary,
+		Secondary
+	};
+
+	EquipSlot SlotType;
+
 	/** Delegate to whom anyone can subscribe to receive this event */
 	UPROPERTY(BlueprintAssignable, Category = "Interaction")
 	FWeaponDropped WeaponDropped;
