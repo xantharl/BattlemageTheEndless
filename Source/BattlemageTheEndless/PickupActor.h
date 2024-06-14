@@ -8,6 +8,7 @@
 #include "TP_WeaponComponent.h"
 #include "BattlemageTheEndlessCharacter.h"
 #include "EnhancedInputSubsystems.h"
+#include "Engine/SkeletalMeshSocket.h"
 #include "PickupActor.generated.h"
 
 // Declaration of the delegate that will be called when someone picks this up
@@ -21,9 +22,6 @@ class BATTLEMAGETHEENDLESS_API APickupActor : public AActor
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCapsuleComponent* BaseCapsule;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	USkeletalMeshComponent* WeaponMesh;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UTP_WeaponComponent* Weapon;

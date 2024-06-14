@@ -14,10 +14,8 @@ APickupActor::APickupActor()
 	RootComponent = BaseCapsule;
 	// Register our Overlap Event
 
-	WeaponMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("WeaponMesh"));
-	WeaponMesh->SetupAttachment(BaseCapsule);
-
 	Weapon = CreateDefaultSubobject<UTP_WeaponComponent>(TEXT("Weapon"));
+	Weapon->SetupAttachment(BaseCapsule);
 
 	BaseCapsule->OnComponentBeginOverlap.AddDynamic(this, &APickupActor::OnSphereBeginOverlap);
 }
@@ -26,12 +24,6 @@ APickupActor::APickupActor()
 void APickupActor::BeginPlay()
 {
 	Super::BeginPlay();
-	if (WeaponMesh) 
-	{
-		// Set Base Capsule to dimensions of Weapon Mesh
-		FVector WeaponMeshBounds = WeaponMesh->CalcBounds(WeaponMesh->GetComponentTransform()).BoxExtent;
-		BaseCapsule->SetCapsuleSize(WeaponMeshBounds.X, WeaponMeshBounds.Z);
-	}
 }
 
 // Called every frame
@@ -61,7 +53,7 @@ void  APickupActor::OnDropped()
 {
 	// It's possible for this to be called when the weapon is not attached to a character
 	//	due to a race condition in removal of action bindings
-	if(!Character || !Character->GetHasRightHandWeapon())
+	if(!Character || !(Character->GetHasRightHandWeapon() || Character->GetHasLeftHandWeapon()))
 	{
 		return;
 	}
@@ -99,7 +91,7 @@ void APickupActor::AttachWeapon(ABattlemageTheEndlessCharacter* TargetCharacter)
 		return;
 	}
 
-	AttachToComponent(Character->GetMesh(), AttachmentRules, targetSocketName);
+	Weapon->AttachToComponent(Character->GetMesh(), AttachmentRules, targetSocketName);
 
 	// Set up action bindings
 	if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))
@@ -122,13 +114,8 @@ void APickupActor::AttachWeapon(ABattlemageTheEndlessCharacter* TargetCharacter)
 
 void APickupActor::DetachWeapon()
 {
-	// Invalid state, we should only be dropping attached weapons
-	if (Character == nullptr || !Character->GetHasRightHandWeapon())
-	{
-		return;
-	}
-
-	DetachFromActor(FDetachmentTransformRules(EDetachmentRule::KeepRelative, false));
+	Weapon->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
+		//DetachFromActor(FDetachmentTransformRules(EDetachmentRule::KeepRelative, false));
 
 	Weapon->RemoveContext();
 	if(Character->GetHasLeftHandWeapon())
