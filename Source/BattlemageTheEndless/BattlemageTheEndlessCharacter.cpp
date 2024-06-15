@@ -301,6 +301,19 @@ bool ABattlemageTheEndlessCharacter::GetHasRightHandWeapon()
 	return RightHandWeapon != NULL;
 }
 
+UTP_WeaponComponent* ABattlemageTheEndlessCharacter::GetWeapon(EquipSlot SlotType)
+{
+	if (LeftHanded)
+	{
+		return SlotType == EquipSlot::Primary ? LeftHandWeapon : RightHandWeapon;
+	}
+	else
+	{
+		return SlotType == EquipSlot::Primary ? RightHandWeapon : LeftHandWeapon;
+	}
+	
+}
+
 UTP_WeaponComponent* ABattlemageTheEndlessCharacter::GetLeftHandWeapon()
 {
 	return LeftHandWeapon;
@@ -350,7 +363,7 @@ void ABattlemageTheEndlessCharacter::ApplyDamage(float damage)
 	Health -= damage > Health ? Health : damage;
 }
 
-FName ABattlemageTheEndlessCharacter::GetTargetSocketName(UTP_WeaponComponent::EquipSlot SlotType)
+FName ABattlemageTheEndlessCharacter::GetTargetSocketName(EquipSlot SlotType)
 {
 	return FName(LeftHanded ? "GripLeft": "GripRight");
 }

@@ -144,6 +144,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 	bool GetHasRightHandWeapon();
 
+	UFUNCTION(BlueprintCallable, Category = Weapon)
+	UTP_WeaponComponent* GetWeapon(EquipSlot SlotType);
+
 	/** Getter for the weapon */
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 	UTP_WeaponComponent* GetLeftHandWeapon();
@@ -155,7 +158,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Inventory, meta = (AllowPrivateAccess = "true"))
 	bool LeftHanded = false;
 
-	FName GetTargetSocketName(UTP_WeaponComponent::EquipSlot SlotType);
+	FName GetTargetSocketName(EquipSlot SlotType);
 
 	bool TrySetWeapon(UTP_WeaponComponent* Weapon, FName SocketName);
 

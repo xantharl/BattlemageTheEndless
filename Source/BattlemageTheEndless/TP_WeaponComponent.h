@@ -11,6 +11,13 @@
 #include "EnhancedInputComponent.h"
 #include "TP_WeaponComponent.generated.h"
 
+UENUM()
+enum class EquipSlot : uint8
+{
+	Primary UMETA(DisplayName = "Primary"),
+	Secondary UMETA(DisplayName = "Secondary")
+};
+
 class ABattlemageTheEndlessCharacter;
 
 // Declaration of the delegate that will be called when someone picks this up
@@ -23,13 +30,9 @@ class BATTLEMAGETHEENDLESS_API UTP_WeaponComponent : public USkeletalMeshCompone
 	GENERATED_BODY()
 
 public:
-	enum class EquipSlot
-	{
-		Primary,
-		Secondary
-	};
 
-	EquipSlot SlotType;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	EquipSlot SlotType = EquipSlot::Primary;
 
 	/** Delegate to whom anyone can subscribe to receive this event */
 	UPROPERTY(BlueprintAssignable, Category = "Interaction")

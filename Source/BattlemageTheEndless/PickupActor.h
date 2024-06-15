@@ -20,12 +20,6 @@ class BATTLEMAGETHEENDLESS_API APickupActor : public AActor
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	UCapsuleComponent* BaseCapsule;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	UTP_WeaponComponent* Weapon;
-
 	/** Drop Weapon Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* DropWeaponAction;
@@ -48,6 +42,12 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	UCapsuleComponent* BaseCapsule;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	UTP_WeaponComponent* Weapon;
 
 	/** Code for when something overlaps this component */
 	UFUNCTION()

@@ -14,11 +14,6 @@ UTP_WeaponComponent::UTP_WeaponComponent()
 {
 	// Default offset from the character location for projectiles to spawn
 	MuzzleOffset = FVector(100.0f, 0.0f, 10.0f);
-	//float height = GetSkeletalMeshAsset()->GetBounds().BoxExtent.Z;
-	//WeaponCollision->SetCapsuleHalfHeight(20);
-	//// get the height of WeaponCollision
-	//float weaponCollisionHeight = WeaponCollision->GetUnscaledCapsuleHalfHeight();
-	//WeaponCollision->SetRelativeLocation(FVector(0.f, 0.f, -height+weaponCollisionHeight));
 }
 
 

@@ -12,8 +12,13 @@ APickupActor::APickupActor()
 	BaseCapsule->SetNotifyRigidBodyCollision(true);
 	BaseCapsule->SetCollisionProfileName("OverlapAll");
 	RootComponent = BaseCapsule;
-	// Register our Overlap Event
+	// Set Base Capsule to Collision Preset OverlapAll
+	BaseCapsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	BaseCapsule->SetCollisionResponseToAllChannels(ECR_Overlap);
+	// Set Base Capsule to BlockAll for WorldStatic
+	BaseCapsule->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 
+	// Set up WeaponComponent and attach it to BaseCapsule
 	Weapon = CreateDefaultSubobject<UTP_WeaponComponent>(TEXT("Weapon"));
 	Weapon->SetupAttachment(BaseCapsule);
 
