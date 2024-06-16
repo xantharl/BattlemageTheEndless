@@ -9,6 +9,7 @@
 #include "Engine/DamageEvents.h"
 #include "PhysicsEngine/PhysicsAsset.h"
 #include "EnhancedInputComponent.h"
+#include "vector"
 #include "TP_WeaponComponent.generated.h"
 
 UENUM()
@@ -30,7 +31,6 @@ class BATTLEMAGETHEENDLESS_API UTP_WeaponComponent : public USkeletalMeshCompone
 	GENERATED_BODY()
 
 public:
-
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	EquipSlot SlotType = EquipSlot::Primary;
 
@@ -96,6 +96,17 @@ public:
 	void RemoveContext();
 
 	void AddBindings();
+
+	/** Drop Weapon Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	FVector AttachmentOffset;
+
+	/** Light attack damage */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Damage)
+	float ShotsPerMinute = 120;
+
+	time_t LastFireTime = time(0);
+
 protected:
 	/** Ends gameplay for this component. */
 	UFUNCTION()

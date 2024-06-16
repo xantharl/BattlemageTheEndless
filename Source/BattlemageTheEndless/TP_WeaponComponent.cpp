@@ -13,7 +13,7 @@
 UTP_WeaponComponent::UTP_WeaponComponent()
 {
 	// Default offset from the character location for projectiles to spawn
-	MuzzleOffset = FVector(100.0f, 0.0f, 10.0f);
+	MuzzleOffset = FVector(10.0f, 0.0f, 10.0f);
 }
 
 
@@ -24,8 +24,9 @@ void UTP_WeaponComponent::Fire()
 		return;
 	}
 
-	// Try and fire a projectile
-	if (ProjectileClass != nullptr)
+	// Try and fire a projectile, limit by rate of fire
+	time_t secondsBetweenShots = 60.f / ShotsPerMinute;
+	if (ProjectileClass != nullptr && LastFireTime < time(0) - secondsBetweenShots)
 	{
 		UWorld* const World = GetWorld();
 		if (World != nullptr)
@@ -33,7 +34,9 @@ void UTP_WeaponComponent::Fire()
 			APlayerController* PlayerController = Cast<APlayerController>(Character->GetController());
 			const FRotator SpawnRotation = PlayerController->PlayerCameraManager->GetCameraRotation();
 			// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-			const FVector SpawnLocation = GetOwner()->GetActorLocation() + SpawnRotation.RotateVector(MuzzleOffset);
+			FName socketName = Character->GetLeftHandWeapon() == this ? FName("GripLeft") : FName("GripRight");
+			// Spawn the projectile at the attachment point of the weapon with respect for offsets
+			const FVector SpawnLocation = Character->GetMesh()->GetSocketLocation(socketName) + SpawnRotation.RotateVector(MuzzleOffset) + SpawnRotation.RotateVector(AttachmentOffset);
 	
 			//Set Spawn Collision Handling Override
 			FActorSpawnParameters ActorSpawnParams;
@@ -41,6 +44,8 @@ void UTP_WeaponComponent::Fire()
 	
 			// Spawn the projectile at the muzzle
 			World->SpawnActor<ABattlemageTheEndlessProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+
+			LastFireTime = time(0);
 		}
 	}
 	

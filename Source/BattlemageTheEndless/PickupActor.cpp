@@ -12,7 +12,9 @@ APickupActor::APickupActor()
 	BaseCapsule->SetNotifyRigidBodyCollision(true);
 	BaseCapsule->SetCollisionProfileName("OverlapAll");
 	RootComponent = BaseCapsule;
+
 	// Set Base Capsule to Collision Preset OverlapAll
+	BaseCapsule->SetSimulatePhysics(true);
 	BaseCapsule->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	BaseCapsule->SetCollisionResponseToAllChannels(ECR_Overlap);
 	// Set Base Capsule to BlockAll for WorldStatic
@@ -97,6 +99,8 @@ void APickupActor::AttachWeapon(ABattlemageTheEndlessCharacter* TargetCharacter)
 	}
 
 	Weapon->AttachToComponent(Character->GetMesh(), AttachmentRules, targetSocketName);
+	if (Weapon->AttachmentOffset != FVector::ZeroVector)
+		Weapon->AddLocalOffset(Weapon->AttachmentOffset);
 
 	// Set up action bindings
 	if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))

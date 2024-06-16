@@ -365,7 +365,14 @@ void ABattlemageTheEndlessCharacter::ApplyDamage(float damage)
 
 FName ABattlemageTheEndlessCharacter::GetTargetSocketName(EquipSlot SlotType)
 {
-	return FName(LeftHanded ? "GripLeft": "GripRight");
+	if (SlotType == EquipSlot::Primary)
+	{
+		return FName(LeftHanded ? "GripLeft" : "GripRight");
+	}
+	else
+	{
+		return FName(LeftHanded ? "GripRight" : "GripLeft");
+	}
 }
 
 bool ABattlemageTheEndlessCharacter::TrySetWeapon(UTP_WeaponComponent* Weapon, FName SocketName)
