@@ -33,11 +33,17 @@ ABattlemageTheEndlessProjectile::ABattlemageTheEndlessProjectile()
 
 void ABattlemageTheEndlessProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	Destroy();
+
 	// Only add impulse and destroy projectile if we hit a physics
 	if ((OtherActor != nullptr) && (OtherActor != this) && (OtherComp != nullptr) && OtherComp->IsSimulatingPhysics())
 	{
 		OtherComp->AddImpulseAtLocation(GetVelocity() * 100.0f, GetActorLocation());
+	}
 
-		Destroy();
+	// if OtherActor is a BattlemageTheEndlessCharacter, apply damage
+	if (ABattlemageTheEndlessCharacter* otherCharacter = Cast<ABattlemageTheEndlessCharacter>(OtherActor))
+	{
+		otherCharacter->ApplyDamage(this->Damage);
 	}
 }

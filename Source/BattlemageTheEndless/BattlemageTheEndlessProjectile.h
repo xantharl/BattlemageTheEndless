@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "BattlemageTheEndlessCharacter.h"
 #include "BattlemageTheEndlessProjectile.generated.h"
 
 class USphereComponent;
@@ -21,6 +22,9 @@ class ABattlemageTheEndlessProjectile : public AActor
 	/** Projectile movement component */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	UProjectileMovementComponent* ProjectileMovement;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Damage, meta = (AllowPrivateAccess = "true"))
+	float Damage = 10.0f;
 
 public:
 	ABattlemageTheEndlessProjectile();
