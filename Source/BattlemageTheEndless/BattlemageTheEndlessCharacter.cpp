@@ -265,6 +265,24 @@ void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)
 		// add movement 
 		AddMovementInput(GetActorForwardVector(), MovementVector.Y);
 		AddMovementInput(GetActorRightVector(), MovementVector.X);
+
+		TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
+		if (!movement)
+			return;
+
+		FVector forwardVector = movement->Velocity;
+		forwardVector = FVector(forwardVector.RotateAngleAxis(movement->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector));
+
+		// if we've started moving backwards, set the speed to ReverseSpeed
+ 		if (forwardVector.X < 0 && movement->MaxWalkSpeed != ReverseSpeed)
+		{
+			movement->MaxWalkSpeed = ReverseSpeed;
+		}
+		// otherwise set it to WalkSpeed
+		else if (forwardVector.X >= 0 && movement->MaxWalkSpeed == ReverseSpeed)
+		{
+			movement->MaxWalkSpeed = WalkSpeed;
+		}
 	}
 }
 

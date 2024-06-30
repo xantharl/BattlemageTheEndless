@@ -8,6 +8,7 @@
 #include "GameFramework/CharacterMovementComponent.h" 
 #include <GameFramework/SpringArmComponent.h>
 #include "TP_WeaponComponent.h"
+#include "cmath"
 #include "BattlemageTheEndlessCharacter.generated.h"
 
 class UInputComponent;
@@ -117,6 +118,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float WalkSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float ReverseSpeed = 300.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float SlideDurationSeconds;
