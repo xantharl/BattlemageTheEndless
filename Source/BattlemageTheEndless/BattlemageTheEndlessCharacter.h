@@ -41,14 +41,6 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	UInputMappingContext* DefaultMappingContext;
 
-	/** The CapsuleComponent being used for movement collision (by CharacterMovement). Always treated as being vertically aligned in simple collision check functions. */
-	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UCapsuleComponent> CrouchCapsuleComponent;
-
-	/** The CapsuleComponent being used for movement collision (by CharacterMovement). Always treated as being vertically aligned in simple collision check functions. */
-	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UCapsuleComponent> SlideCapsuleComponent;
-
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	UInputAction* JumpAction;
@@ -98,16 +90,13 @@ private:
 public:
 	ABattlemageTheEndlessCharacter();
 
-	void SetupCameras();
-
-	void SetupCollisionComponents();
-
 	virtual void ApplyDamage(float damage);
 
 protected:
 	virtual void BeginPlay();
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0);
 	virtual void TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction);
+	void SetupCameras();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
 	float Health = 100;
@@ -215,8 +204,5 @@ protected:
 	void TryUnCrouch();
 	void EndSlide(UCharacterMovementComponent* movement);
 	void SwitchCamera();
-	// End of APawn interface
-
-	void UseCapsuleForCollision(TObjectPtr<UCapsuleComponent> capsule);
 };
 

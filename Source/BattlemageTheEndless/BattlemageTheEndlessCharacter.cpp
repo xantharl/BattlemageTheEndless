@@ -31,7 +31,9 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 	launchesPerformed = 0;
 
 	SetupCameras();
-	SetupCollisionComponents();
+
+	// Set size for collision capsule
+	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 
 	// Init Audio Resource
 	static ConstructorHelpers::FObjectFinder<USoundWave> Sound(TEXT("/Game/Sounds/Jump_Landing"));
@@ -72,36 +74,6 @@ void ABattlemageTheEndlessCharacter::SetupCameras()
 	ThirdPersonCamera->SetRelativeLocation(FVector(210.f, 0.f, 98.f)); // Position the camera
 	ThirdPersonCamera->SetRelativeRotation(FRotator(-22.f, 0.f, 0.f)); // Position the camera
 	ThirdPersonCamera->bUsePawnControlRotation = true;
-}
-
-void ABattlemageTheEndlessCharacter::SetupCollisionComponents()
-{
-	// Set size for collision capsule
-	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
-
-	CrouchCapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CrouchCapsuleComponent"));
-	CrouchCapsuleComponent->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
-
-	CrouchCapsuleComponent->SetCapsuleSize(35.f, 55.0f);
-	CrouchCapsuleComponent->SetRelativeLocation(FVector(0.f, 0.f, -35.f));
-	CrouchCapsuleComponent->SetupAttachment(GetRootComponent());
-	// Turn off Collision for the CrouchCapsuleComponent
-	CrouchCapsuleComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	// Set responses so they're ready when we need to use it
-	CrouchCapsuleComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
-	CrouchCapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Ignore);
-
-	SlideCapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("SlideCapsuleComponent"));
-	SlideCapsuleComponent->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
-	SlideCapsuleComponent->SetCapsuleSize(35.f, 90.f);
-	SlideCapsuleComponent->SetRelativeLocation(FVector(30.f, 0.f, -55.f));
-	SlideCapsuleComponent->SetRelativeRotation(FRotator(-90.f, 0.f, 0.f));
-	SlideCapsuleComponent->SetupAttachment(GetRootComponent());
-	// Turn off Collision for the SlideCapsuleComponent
-	SlideCapsuleComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	// Set responses so they're ready when we need to use it
-	SlideCapsuleComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
-	SlideCapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Ignore);
 }
 
 void ABattlemageTheEndlessCharacter::BeginPlay()
