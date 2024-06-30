@@ -24,12 +24,33 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 {
 	// Character doesnt have a rifle at start
 	bIsSprinting = false;
-	bIsSliding = false;
+	IsSliding = false;
 	bShouldUncrouch = false;
 	slideElapsedSeconds = 0.0f;
 	MaxLaunches = 1;
 	launchesPerformed = 0;
 
+	SetupCameras();
+	SetupCollisionComponents();
+
+	// Init Audio Resource
+	static ConstructorHelpers::FObjectFinder<USoundWave> Sound(TEXT("/Game/Sounds/Jump_Landing"));
+	JumpLandingSound = Sound.Object;
+
+
+	JumpMaxCount = 2;
+
+	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
+	if (movement)
+	{
+		movement->AirControl = 0.8f;
+		movement->GetNavAgentPropertiesRef().bCanCrouch = true;
+	}
+
+}
+
+void ABattlemageTheEndlessCharacter::SetupCameras()
+{
 	// Create FirstPersonCamera
 	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	// TODO: This throws an exception on startup, doesn't actually break anything but annoying
@@ -51,23 +72,36 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 	ThirdPersonCamera->SetRelativeLocation(FVector(210.f, 0.f, 98.f)); // Position the camera
 	ThirdPersonCamera->SetRelativeRotation(FRotator(-22.f, 0.f, 0.f)); // Position the camera
 	ThirdPersonCamera->bUsePawnControlRotation = true;
+}
 
-	// Init Audio Resource
-	static ConstructorHelpers::FObjectFinder<USoundWave> Sound(TEXT("/Game/Sounds/Jump_Landing"));
-	JumpLandingSound = Sound.Object;
-	
+void ABattlemageTheEndlessCharacter::SetupCollisionComponents()
+{
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 
-	JumpMaxCount = 2;
+	CrouchCapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("CrouchCapsuleComponent"));
+	CrouchCapsuleComponent->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
 
-	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
-	if (movement)
-	{
-		movement->AirControl = 0.8f;
-		movement->GetNavAgentPropertiesRef().bCanCrouch = true;
-	}
+	CrouchCapsuleComponent->SetCapsuleSize(35.f, 55.0f);
+	CrouchCapsuleComponent->SetRelativeLocation(FVector(0.f, 0.f, -35.f));
+	CrouchCapsuleComponent->SetupAttachment(GetRootComponent());
+	// Turn off Collision for the CrouchCapsuleComponent
+	CrouchCapsuleComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// Set responses so they're ready when we need to use it
+	CrouchCapsuleComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+	CrouchCapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Ignore);
 
+	SlideCapsuleComponent = CreateDefaultSubobject<UCapsuleComponent>(TEXT("SlideCapsuleComponent"));
+	SlideCapsuleComponent->SetCollisionObjectType(ECollisionChannel::ECC_Pawn);
+	SlideCapsuleComponent->SetCapsuleSize(35.f, 90.f);
+	SlideCapsuleComponent->SetRelativeLocation(FVector(30.f, 0.f, -55.f));
+	SlideCapsuleComponent->SetRelativeRotation(FRotator(-90.f, 0.f, 0.f));
+	SlideCapsuleComponent->SetupAttachment(GetRootComponent());
+	// Turn off Collision for the SlideCapsuleComponent
+	SlideCapsuleComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	// Set responses so they're ready when we need to use it
+	SlideCapsuleComponent->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Block);
+	SlideCapsuleComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Ignore);
 }
 
 void ABattlemageTheEndlessCharacter::BeginPlay()
@@ -133,11 +167,18 @@ void ABattlemageTheEndlessCharacter::ToggleCrouch()
 	else 
 	{
 		ACharacter::Crouch(false);
+		if (!bIsSprinting)
+		{
+			// Get Crouched Half Height
+
+			return;
+		}
 
 		UCharacterMovementComponent* movement = GetCharacterMovement();
 		if (bIsSprinting && movement)
 		{
-			bIsSliding = true;
+			IsSliding = true;
+			movement->SetCrouchedHalfHeight(SlideHalfHeight);
 			// default walk is 1200, crouch is 300
 			movement->MaxWalkSpeedCrouched = SprintSpeed;
 		}
@@ -149,19 +190,20 @@ void ABattlemageTheEndlessCharacter::TryUnCrouch()
 	if (!bIsCrouched)
 		return;
 
-	if (bIsSliding)
+	if (IsSliding)
 	{
 		bShouldUncrouch = true;
 		return;
 	}
 
 	UnCrouch();
+	GetCharacterMovement()->SetCrouchedHalfHeight(CrouchedHalfHeight);
 }
 
 void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction)
 {
 	// If we're sliding, handle it, this is mutually exclusing with the uncrouch case
-	if (bIsSliding)
+	if (IsSliding)
 	{
 		UCharacterMovementComponent* movement = GetCharacterMovement();
 		slideElapsedSeconds += DeltaTime;
@@ -174,12 +216,8 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 			}
 			else // Otherwise decrement the slide speed
 			{
-				float newSpeed = SprintSpeed * powf(2.7182818284f, -1.39f * slideElapsedSeconds);
+				float newSpeed = SlideSpeed * powf(2.7182818284f, -1.39f * slideElapsedSeconds);
 				movement->MaxWalkSpeedCrouched = newSpeed;
-				/*if (GEngine)
-				{
-					GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Elapsed: %f, Setting crouch speed to %f"), slideElapsedSeconds, newSpeed));
-				}*/
 			}
 		}
 	}
@@ -195,9 +233,10 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 
 void ABattlemageTheEndlessCharacter::EndSlide(UCharacterMovementComponent* movement)
 {
-	movement->MaxWalkSpeedCrouched = CrouchSpeed;
-	bIsSliding = false;
+	movement->MaxWalkSpeedCrouched = bIsCrouched ? CrouchSpeed : WalkSpeed;
+	IsSliding = false;
 	slideElapsedSeconds = 0.0f;
+	movement->SetCrouchedHalfHeight(CrouchedHalfHeight);
 }
 
 void ABattlemageTheEndlessCharacter::ToggleSprint()
@@ -206,7 +245,7 @@ void ABattlemageTheEndlessCharacter::ToggleSprint()
 	if (!bIsSprinting && movement)
 	{
 		// if sliding, end it before sprinting
-		if (bIsSliding)
+		if (IsSliding)
 		{
 			EndSlide(movement);
 			UnCrouch();
@@ -292,7 +331,7 @@ void ABattlemageTheEndlessCharacter::Look(const FInputActionValue& Value)
 
 void ABattlemageTheEndlessCharacter::Jump()
 {
-	if (bIsSliding)
+	if (IsSliding)
 	{
 		EndSlide(GetCharacterMovement());
 	}
