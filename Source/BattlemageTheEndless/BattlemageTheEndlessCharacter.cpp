@@ -94,7 +94,7 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		// Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
 		// Launch Jump
@@ -233,25 +233,16 @@ void ABattlemageTheEndlessCharacter::LaunchJump()
 
 	launchesPerformed += 1;
 
+	// Create the launch vector
 	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
 	FRotator rotator = GetActorRotation();
-	/*if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Launch Jump Starting Vector %s"), *GetActorForwardVector().ToString()));
-	}*/
 	rotator.Pitch = 0;
 	FVector vector = *new FVector(LaunchSpeedHorizontal, 0.0f, LaunchSpeedVertical);
 	vector = vector.RotateAngleAxis(rotator.Yaw, FVector::ZAxisVector);
-	/*if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Launching with vector %s"), *vector.ToString()));
-	}*/
+
+	// Launch the character
 	LaunchCharacter(vector, false, true);
-	/*if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("Launch Jump Ending Vector %s"), *GetActorForwardVector().ToString()));
-	}*/
-	JumpCurrentCount += 1;
+	//JumpCurrentCount += 1;
 }
 
 
@@ -296,6 +287,24 @@ void ABattlemageTheEndlessCharacter::Look(const FInputActionValue& Value)
 		// add yaw and pitch input to controller
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
+	}
+}
+
+void ABattlemageTheEndlessCharacter::Jump()
+{
+	if (bIsSliding)
+	{
+		EndSlide(GetCharacterMovement());
+	}
+
+	if (bIsCrouched)
+	{
+		UnCrouch();
+	}
+
+	if (JumpCurrentCount < JumpMaxCount)
+	{
+		Super::Jump();
 	}
 }
 

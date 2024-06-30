@@ -173,11 +173,12 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
+	void Jump();
+
 	float slideElapsedSeconds;
 	int launchesPerformed;
 
 
-protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	void ToggleCrouch();
