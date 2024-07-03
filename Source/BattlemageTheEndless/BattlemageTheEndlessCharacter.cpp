@@ -111,8 +111,8 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::RequestUnCrouch);
 
 		// Sprinting
-		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::ToggleSprint);
-		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::ToggleSprint);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::StartSprint);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::EndSprint);
 
 		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::Move);
@@ -211,26 +211,37 @@ void ABattlemageTheEndlessCharacter::EndSlide(UCharacterMovementComponent* movem
 	movement->SetCrouchedHalfHeight(CrouchedHalfHeight);
 }
 
-void ABattlemageTheEndlessCharacter::ToggleSprint()
+void ABattlemageTheEndlessCharacter::StartSprint()
 {
-	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
-	if (!bIsSprinting && movement)
-	{
-		// if sliding, end it before sprinting
-		if (IsSliding)
-		{
-			EndSlide(movement);
-			UnCrouch();
-		}
+	if (bIsSprinting)
+		return;
 
-		movement->MaxWalkSpeed = SprintSpeed;
-		bIsSprinting = true;
-	}
-	else if(movement)
+	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
+	if (!movement)
+		return;
+
+	// if sliding, end it before sprinting
+	if (IsSliding)
 	{
-		movement->MaxWalkSpeed = WalkSpeed;
-		bIsSprinting = false;
+		EndSlide(movement);
+		UnCrouch();
 	}
+
+	movement->MaxWalkSpeed = SprintSpeed;
+	bIsSprinting = true;
+}
+
+void ABattlemageTheEndlessCharacter::EndSprint()
+{
+	if (!bIsSprinting)
+		return;
+
+	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
+	if (!movement)
+		return;
+
+	movement->MaxWalkSpeed = WalkSpeed;
+	bIsSprinting = false;
 }
 
 void ABattlemageTheEndlessCharacter::LaunchJump()
@@ -274,7 +285,7 @@ void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)
 		// otherwise set it to WalkSpeed
 		else if (forwardVector.X >= 0 && movement->MaxWalkSpeed == ReverseSpeed)
 		{
-			movement->MaxWalkSpeed = WalkSpeed;
+			movement->MaxWalkSpeed = bIsSprinting ? SprintSpeed: WalkSpeed;
 		}
 	}
 }
