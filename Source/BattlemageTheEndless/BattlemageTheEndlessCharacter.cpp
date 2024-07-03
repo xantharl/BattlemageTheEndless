@@ -107,8 +107,8 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 		EnhancedInputComponent->BindAction(LaunchJumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
 		// Crouching
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::ToggleCrouch);
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::TryUnCrouch);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::Crouch);
+		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::RequestUnCrouch);
 
 		// Sprinting
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::ToggleSprint);
@@ -129,46 +129,35 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 	}
 }
 
-void ABattlemageTheEndlessCharacter::ToggleCrouch() 
+void ABattlemageTheEndlessCharacter::Crouch() 
 {
+	// nothing to do if we're already crouching
 	if (bIsCrouched)
+		return;
+
+	ACharacter::Crouch(false);
+
+	if (!bIsSprinting)
 	{
-		ACharacter::UnCrouch();
+		return;
 	}
-	else 
+
+	UCharacterMovementComponent* movement = GetCharacterMovement();
+	if (& movement)
 	{
-		ACharacter::Crouch(false);
-		if (!bIsSprinting)
-		{
-			// Get Crouched Half Height
-
-			return;
-		}
-
-		UCharacterMovementComponent* movement = GetCharacterMovement();
-		if (bIsSprinting && movement)
-		{
-			IsSliding = true;
-			movement->SetCrouchedHalfHeight(SlideHalfHeight);
-			// default walk is 1200, crouch is 300
-			movement->MaxWalkSpeedCrouched = SprintSpeed;
-		}
+		IsSliding = true;
+		movement->SetCrouchedHalfHeight(SlideHalfHeight);
+		// default walk is 1200, crouch is 300
+		movement->MaxWalkSpeedCrouched = SprintSpeed;
 	}
 }
 
-void ABattlemageTheEndlessCharacter::TryUnCrouch()
+void ABattlemageTheEndlessCharacter::RequestUnCrouch()
 {
 	if (!bIsCrouched)
 		return;
 
-	if (IsSliding)
-	{
-		bShouldUncrouch = true;
-		return;
-	}
-
-	UnCrouch();
-	GetCharacterMovement()->SetCrouchedHalfHeight(CrouchedHalfHeight);
+	bShouldUncrouch = true;
 }
 
 void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction)
@@ -192,16 +181,20 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 			}
 		}
 	}
-	// If we have a pending uncrouch, uncrouch. This is for the post slide case
-	else if (bShouldUncrouch)
+
+	// If we have a pending uncrouch, uncrouch. Evaluate whether a launch triggered it
+	if (bShouldUncrouch)
 	{
 		UnCrouch(false);
 		bShouldUncrouch = false;
 
+		if (IsSliding)
+		{
+			EndSlide(GetCharacterMovement());
+		}
 		if (bLaunchRequested)
 		{
 			UCharacterMovementComponent* movement = GetCharacterMovement();
-			EndSlide(movement);
 			DoLaunchJump();
 			bLaunchRequested = false;
 		}
@@ -242,10 +235,6 @@ void ABattlemageTheEndlessCharacter::ToggleSprint()
 
 void ABattlemageTheEndlessCharacter::LaunchJump()
 {
-	// Launch jump requires a slide to be in progress
-	if (!IsSliding)
-		return;
-
 	// TODO: Remove maxLaunches property, don't think I want more than 1 ever
 	if (launchesPerformed >= MaxLaunches)
 	{
@@ -255,6 +244,7 @@ void ABattlemageTheEndlessCharacter::LaunchJump()
 	}
 
 	bLaunchRequested = true;
+	RequestUnCrouch();
 }
 
 

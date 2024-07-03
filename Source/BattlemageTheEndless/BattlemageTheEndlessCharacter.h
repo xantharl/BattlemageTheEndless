@@ -199,10 +199,10 @@ protected:
 
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
-	void ToggleCrouch();
+	void Crouch();
 	void ToggleSprint();
 	void LaunchJump();
-	void TryUnCrouch();
+	void RequestUnCrouch();
 	void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction);
 	void EndSlide(UCharacterMovementComponent* movement);
 	void SwitchCamera();
