@@ -27,7 +27,6 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 	IsSliding = false;
 	bShouldUncrouch = false;
 	slideElapsedSeconds = 0.0f;
-	MaxLaunches = 1;
 	launchesPerformed = 0;
 
 	SetupCameras();
@@ -196,8 +195,16 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 	// If we have a pending uncrouch, uncrouch. This is for the post slide case
 	else if (bShouldUncrouch)
 	{
-		UnCrouch();
+		UnCrouch(false);
 		bShouldUncrouch = false;
+
+		if (bLaunchRequested)
+		{
+			UCharacterMovementComponent* movement = GetCharacterMovement();
+			EndSlide(movement);
+			DoLaunchJump();
+			bLaunchRequested = false;
+		}
 	}
 
 	AActor::TickActor(DeltaTime, TickType, ThisTickFunction);
@@ -235,6 +242,11 @@ void ABattlemageTheEndlessCharacter::ToggleSprint()
 
 void ABattlemageTheEndlessCharacter::LaunchJump()
 {
+	// Launch jump requires a slide to be in progress
+	if (!IsSliding)
+		return;
+
+	// TODO: Remove maxLaunches property, don't think I want more than 1 ever
 	if (launchesPerformed >= MaxLaunches)
 	{
 		// If we can't launch anymore, redirect to jump logic (which checks jump count and handles appropriately)
@@ -242,18 +254,7 @@ void ABattlemageTheEndlessCharacter::LaunchJump()
 		return;
 	}
 
-	launchesPerformed += 1;
-
-	// Create the launch vector
-	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
-	FRotator rotator = GetActorRotation();
-	rotator.Pitch = 0;
-	FVector vector = *new FVector(LaunchSpeedHorizontal, 0.0f, LaunchSpeedVertical);
-	vector = vector.RotateAngleAxis(rotator.Yaw, FVector::ZAxisVector);
-
-	// Launch the character
-	LaunchCharacter(vector, false, true);
-	//JumpCurrentCount += 1;
+	bLaunchRequested = true;
 }
 
 
@@ -316,6 +317,14 @@ void ABattlemageTheEndlessCharacter::Jump()
 	if (JumpCurrentCount < JumpMaxCount)
 	{
 		Super::Jump();
+
+		UCharacterMovementComponent* movement = GetCharacterMovement();
+		if (movement && movement->MovementMode == EMovementMode::MOVE_Falling)
+		{
+			// redirect the character's current velocity in the direction they're facing
+			float yawDifference = GetBaseAimRotation().Yaw - movement->Velocity.Rotation().Yaw;
+			movement->Velocity = movement->Velocity.RotateAngleAxis(yawDifference, FVector::ZAxisVector);
+		}
 	}
 }
 
@@ -394,6 +403,22 @@ void ABattlemageTheEndlessCharacter::SwitchCamera()
 	}
 
 	Cast<APlayerController>(GetController())->SetViewTargetWithBlend((AActor*)this);
+}
+
+void ABattlemageTheEndlessCharacter::DoLaunchJump()
+{
+	launchesPerformed += 1;
+
+	// Create the launch vector
+	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
+	FRotator rotator = GetActorRotation();
+	rotator.Pitch = 0;
+	FVector vector = *new FVector(LaunchSpeedHorizontal, 0.0f, LaunchSpeedVertical);
+	vector = vector.RotateAngleAxis(rotator.Yaw, FVector::ZAxisVector);
+
+	// Launch the character
+	//EndSlide(movement);
+	LaunchCharacter(vector, false, true);
 }
 
 void ABattlemageTheEndlessCharacter::ApplyDamage(float damage)

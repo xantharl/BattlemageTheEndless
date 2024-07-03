@@ -95,7 +95,6 @@ public:
 protected:
 	virtual void BeginPlay();
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0);
-	virtual void TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction);
 	void SetupCameras();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
@@ -116,6 +115,8 @@ public:
 	bool IsSliding;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	bool bShouldUncrouch;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	bool bLaunchRequested;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float SprintSpeed;
@@ -151,7 +152,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float LaunchSpeedVertical;
 
-	int MaxLaunches;
+	int MaxLaunches = 1;
 
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 	void SetLeftHandWeapon(UTP_WeaponComponent* weapon);
@@ -202,7 +203,10 @@ protected:
 	void ToggleSprint();
 	void LaunchJump();
 	void TryUnCrouch();
+	void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction);
 	void EndSlide(UCharacterMovementComponent* movement);
 	void SwitchCamera();
+	// Executes a launch jump 
+	void DoLaunchJump();
 };
 
