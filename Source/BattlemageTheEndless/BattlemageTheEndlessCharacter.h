@@ -49,6 +49,10 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LaunchJumpAction;
 
+	/** Launch Jump Input Action */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* DodgeAction;
+
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	UInputAction* MoveAction;
@@ -152,6 +156,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float LaunchSpeedVertical;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	FVector DodgeImpulseLateral;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	FVector DodgeImpulseForward;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	FVector DodgeImpulseBackward;
+
 	int MaxLaunches = 1;
 
 	UFUNCTION(BlueprintCallable, Category = Weapon)
@@ -209,5 +222,12 @@ protected:
 	void SwitchCamera();
 	// Executes a launch jump 
 	void DoLaunchJump();
+	void DodgeInput();
+
+	/// <summary>
+	/// Executes a dodge in the given direction
+	/// </summary>
+	/// <param name="Impulse">The force with which to dodge (launch) the character, inclusive of direction</param>
+	void Dodge(FVector Impulse);
 };
 

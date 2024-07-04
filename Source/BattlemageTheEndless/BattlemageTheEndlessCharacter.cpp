@@ -111,7 +111,7 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::RequestUnCrouch);
 
 		// Sprinting
-		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::StartSprint);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::StartSprint);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::EndSprint);
 
 		// Moving
@@ -122,6 +122,9 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 
 		// Switch Camera
 		EnhancedInputComponent->BindAction(SwitchCameraAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::SwitchCamera);
+
+		// Dodge Actions
+		EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::DodgeInput);
 	}
 	else
 	{
@@ -420,6 +423,69 @@ void ABattlemageTheEndlessCharacter::DoLaunchJump()
 	// Launch the character
 	//EndSlide(movement);
 	LaunchCharacter(vector, false, true);
+}
+
+void ABattlemageTheEndlessCharacter::DodgeInput()
+{
+	FVector inputVector = GetLastMovementInputVector();
+	// account for camera rotation
+	inputVector = inputVector.RotateAngleAxis(GetCharacterMovement()->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector);
+
+	// use the strongest input direction to decide which way to dodge
+	bool isLateral = FMath::Abs(inputVector.X) < FMath::Abs(inputVector.Y);
+	// if the movement is not lateral, dodge forward or backward
+	if (!isLateral)
+	{
+		// If the input is forward, dodge forward
+		if (inputVector.X > 0.0f)
+		{
+			Dodge(DodgeImpulseForward);
+		}
+		// If the input is backward, dodge backward
+		else if (inputVector.X < -0.0f)
+		{
+			Dodge(DodgeImpulseBackward);
+		}
+
+		return;
+	}
+	
+	// if the input is left dodge left, if right dodge right
+	if (inputVector.Y < 0.0f)
+	{
+		Dodge(DodgeImpulseLateral);
+	}
+	else if (inputVector.Y > 0.0f)
+	{
+		Dodge(DodgeImpulseLateral * -1);
+	}
+}
+
+void ABattlemageTheEndlessCharacter::Dodge(FVector Impulse)
+{
+	// TODO: Implement a dodge cooldown
+	// TODO: Figure out what I want to do with dodging in air
+	// Currently only allow dodging if on ground
+	UCharacterMovementComponent* movement = GetCharacterMovement();
+	if (movement->MovementMode == EMovementMode::MOVE_Falling)
+	{
+		return;
+	}
+	// If we're sliding, end it before dodging
+	if (IsSliding)
+	{
+		EndSlide(movement);
+	}
+
+	// If we're crouched, uncrouch before dodging
+	if (bIsCrouched)
+	{
+		RequestUnCrouch();
+	}
+
+	// Launch the character
+	FVector dodgeVector = FVector(Impulse.RotateAngleAxis(movement->GetLastUpdateRotation().Yaw, FVector::ZAxisVector));
+	LaunchCharacter(dodgeVector, true, true);
 }
 
 void ABattlemageTheEndlessCharacter::ApplyDamage(float damage)
