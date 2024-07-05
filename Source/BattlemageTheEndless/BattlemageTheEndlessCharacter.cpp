@@ -134,8 +134,15 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 
 void ABattlemageTheEndlessCharacter::Crouch() 
 {
-	// nothing to do if we're already crouching
-	if (bIsCrouched)
+	UCharacterMovementComponent* movement = GetCharacterMovement();
+	if (!movement)
+	{
+		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find a Movement Component!"), *GetNameSafe(this));
+		return;
+	}
+
+	// nothing to do if we're already crouching and can't crouch in the air
+	if (bIsCrouched || movement->MovementMode == EMovementMode::MOVE_Falling)
 		return;
 
 	ACharacter::Crouch(false);
@@ -145,14 +152,11 @@ void ABattlemageTheEndlessCharacter::Crouch()
 		return;
 	}
 
-	UCharacterMovementComponent* movement = GetCharacterMovement();
-	if (& movement)
-	{
-		IsSliding = true;
-		movement->SetCrouchedHalfHeight(SlideHalfHeight);
-		// default walk is 1200, crouch is 300
-		movement->MaxWalkSpeedCrouched = SprintSpeed;
-	}
+	// Start a slide if we've made it this far
+	IsSliding = true;
+	movement->SetCrouchedHalfHeight(SlideHalfHeight);
+	// default walk is 1200, crouch is 300
+	movement->MaxWalkSpeedCrouched = SprintSpeed;
 }
 
 void ABattlemageTheEndlessCharacter::RequestUnCrouch()
