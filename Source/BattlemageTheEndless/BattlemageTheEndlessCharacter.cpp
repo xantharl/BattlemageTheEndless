@@ -128,7 +128,7 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 	}
 	else
 	{
-		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input Component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
+		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input Component!"), *GetNameSafe(this));
 	}
 }
 
@@ -327,7 +327,14 @@ void ABattlemageTheEndlessCharacter::Jump()
 		{
 			// redirect the character's current velocity in the direction they're facing
 			float yawDifference = GetBaseAimRotation().Yaw - movement->Velocity.Rotation().Yaw;
-			movement->Velocity = movement->Velocity.RotateAngleAxis(yawDifference, FVector::ZAxisVector);
+
+			// get rotation of last input vector
+			FVector inputVector = GetLastMovementInputVector();
+			// account for camera rotation
+			inputVector = inputVector.RotateAngleAxis(movement->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector);
+
+			// rotate the velocity vector to match the character's facing direction, accounting for input rotation
+			movement->Velocity = movement->Velocity.RotateAngleAxis(yawDifference + inputVector.Rotation().Yaw, FVector::ZAxisVector);
 		}
 	}
 }
