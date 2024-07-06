@@ -33,6 +33,7 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
+	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnHit);
 
 	// Init Audio Resource
 	static ConstructorHelpers::FObjectFinder<USoundWave> Sound(TEXT("/Game/Sounds/Jump_Landing"));
@@ -495,8 +496,17 @@ void ABattlemageTheEndlessCharacter::Dodge(FVector Impulse)
 	}
 
 	// Launch the character
+	PreviousFriction = movement->GroundFriction;
+	movement->GroundFriction = 0.0f;
 	FVector dodgeVector = FVector(Impulse.RotateAngleAxis(movement->GetLastUpdateRotation().Yaw, FVector::ZAxisVector));
 	LaunchCharacter(dodgeVector, true, true);
+	GetWorldTimerManager().SetTimer(DodgeEndTimer, this, &ABattlemageTheEndlessCharacter::RestoreFriction, DodgeDurationSeconds, false);
+}
+
+void ABattlemageTheEndlessCharacter::RestoreFriction()
+{
+	UCharacterMovementComponent* movement = GetCharacterMovement();
+	movement->GroundFriction = PreviousFriction;
 }
 
 void ABattlemageTheEndlessCharacter::ApplyDamage(float damage)
@@ -532,4 +542,70 @@ bool ABattlemageTheEndlessCharacter::TrySetWeapon(UTP_WeaponComponent* Weapon, F
 	}
 
 	return true;
+}
+
+void ABattlemageTheEndlessCharacter::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	if (CanVault() && ObjectIsVaultable(OtherActor))
+	{
+		Vault();
+	}
+}
+
+bool ABattlemageTheEndlessCharacter::CanVault()
+{
+	// Vaulting is only possible if enabled (this might get more complicated later)
+	return bCanVault;
+}
+
+bool ABattlemageTheEndlessCharacter::ObjectIsVaultable(AActor* Object)
+{
+	// Raycast from cameraSocket straight forward to see if Object is in the way
+	FVector start = GetMesh()->GetSocketLocation(FName("cameraSocket"));
+	// Cast a ray out in look direction 10 units long
+	FVector castVector = (FVector::XAxisVector * 50).RotateAngleAxis(GetCharacterMovement()->GetLastUpdateRotation().Yaw, FVector::ZAxisVector);
+	FVector end = start + castVector;
+
+	// Perform the raycast
+	FHitResult hit;
+	FCollisionQueryParams params;
+	FCollisionObjectQueryParams objectParams;
+	params.AddIgnoredActor(this);
+	GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
+
+	DrawDebugLine(GetWorld(), start, end, FColor::Red, false, 1.0f, 0, 1.0f);
+
+	// If the camera raycast hit the object, we are too low to vault
+	if (hit.GetActor() == Object)
+		return false;
+
+	// Repeat the same process but use socket vaultRaycastSocket
+	start = GetMesh()->GetSocketLocation(FName("vaultRaycastSocket"));
+	end = start + castVector;
+	GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
+
+	DrawDebugLine(GetWorld(), start, end, FColor::Green, false, 1.0f, 0, 1.0f);
+
+	// If the vault raycast hit the object, we can vault
+	return hit.GetActor() == Object;
+}
+
+void ABattlemageTheEndlessCharacter::Vault()
+{
+	IsVaulting = true;
+	DisableInput(Cast<APlayerController>(Controller));
+	// stop movement
+	GetCapsuleComponent()->SetEnableGravity(false);
+	GetCharacterMovement()->Velocity = FVector(0, 0, 0);
+	// anim graph handles the actual movement with a root motion animation to put the character in the right place
+	// register a timer to end the vaulting state
+	GetWorldTimerManager().SetTimer(VaultEndTimer, this, &ABattlemageTheEndlessCharacter::EndVault, VaultDurationSeconds, false);
+}
+
+void ABattlemageTheEndlessCharacter::EndVault()
+{
+	EnableInput(Cast<APlayerController>(Controller));
+	IsVaulting = false;
+	GetCapsuleComponent()->SetEnableGravity(true);
+	// anim graph handles transition back to normal state
 }

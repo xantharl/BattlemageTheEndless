@@ -107,6 +107,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
 	float MaxHealth = 100;
 
+	FTimerHandle DodgeEndTimer;
+
+	FTimerHandle VaultEndTimer;
+
+	float PreviousFriction = 8.0f;
+
 public:
 		
 	/** Look Input Action */
@@ -117,6 +123,8 @@ public:
 	bool bIsSprinting;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	bool IsSliding;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	bool IsVaulting;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	bool bShouldUncrouch;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
@@ -146,6 +154,13 @@ public:
 	// The default value is based on the slide animation length
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float SlideDurationSeconds = 1.67f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float DodgeDurationSeconds = 0.35f;
+
+	// Default duration is based on the animation currently in use
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float VaultDurationSeconds = 1.1f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float CrouchSpeed;
@@ -229,5 +244,19 @@ protected:
 	/// </summary>
 	/// <param name="Impulse">The force with which to dodge (launch) the character, inclusive of direction</param>
 	void Dodge(FVector Impulse);
+
+	UFUNCTION(BlueprintCallable, Category = "Character Movement")
+	void RestoreFriction();
+
+	UFUNCTION(BlueprintCallable, Category = "Collision")
+	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+	bool CanVault();
+	bool ObjectIsVaultable(AActor* Object);
+	void Vault();
+
+	UFUNCTION(BlueprintCallable, Category = "Character Movement")
+	void EndVault();
+
+	bool bCanVault = true;
 };
 
