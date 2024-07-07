@@ -687,6 +687,7 @@ void ABattlemageTheEndlessCharacter::EndVault()
 	VaultTarget = NULL;
 	// anim graph handles transition back to normal state
 	VaultFootPlanted = false;
+	VaultElapsedTimeBeforeFootPlanted = 0;
 	// turn collision with worldstatic back on
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
