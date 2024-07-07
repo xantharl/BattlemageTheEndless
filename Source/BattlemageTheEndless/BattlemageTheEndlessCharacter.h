@@ -113,6 +113,11 @@ protected:
 
 	float PreviousFriction = 8.0f;
 
+	// Object currently being vaulted
+	AActor* VaultTarget;
+	FHitResult VaultHit;
+	FVector VaultAttachPoint;
+
 public:
 		
 	/** Look Input Action */
@@ -161,6 +166,14 @@ public:
 	// Default duration is based on the animation currently in use
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float VaultDurationSeconds = 1.1f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	bool VaultFootPlanted = false;
+
+	float VaultElapsedTimeBeforeFootPlanted = 0.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float VaultEndForwardDistance = 25.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float CrouchSpeed;
