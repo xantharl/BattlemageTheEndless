@@ -253,7 +253,7 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 		}
 
 		// adjust the character's location based on difference between socket location and attach point
-		relativeLocationToAdd.Z = (VaultAttachPoint - socketLocationToUse).Z;
+		relativeLocationToAdd.Z = FMath::Max(0.f, (VaultAttachPoint - socketLocationToUse).Z);
 		GetRootComponent()->AddRelativeLocation(relativeLocationToAdd);
 	}
 
