@@ -650,10 +650,10 @@ void ABattlemageTheEndlessCharacter::Vault()
 	movement->StopMovementImmediately();
 	movement->SetMovementMode(MOVE_Flying);
 
-	// get the difference of VaultHit.ImpactNormal and the chracter's rotation
-	float rotationDifference = VaultHit.ImpactNormal.Rotation().GetInverse().Yaw - movement->GetLastUpdateRotation().Yaw;
+	FRotator targetDirection = VaultHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector).Rotation();
+
 	// Rotate the character to directly face the vaulted object
-	RootComponent->AddRelativeRotation(FRotator(0.0f, rotationDifference, 0.0f));
+	Controller->SetControlRotation(targetDirection);
 
 	// determine the highest point on the vaulted face
 	// NOTE: This logic will only work for objects with flat tops
