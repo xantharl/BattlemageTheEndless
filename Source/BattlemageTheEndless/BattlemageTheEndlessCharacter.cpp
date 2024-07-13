@@ -441,6 +441,7 @@ void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMov
 	if (PrevMovementMode == EMovementMode::MOVE_Falling)
 	{
 		launchesPerformed = 0;
+		bLaunchRequested = false;
 		UGameplayStatics::PlaySoundAtLocation(this,
 			JumpLandingSound,
 			GetActorLocation(), 1.0f);
