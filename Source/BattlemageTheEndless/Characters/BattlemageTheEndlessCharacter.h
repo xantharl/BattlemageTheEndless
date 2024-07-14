@@ -9,6 +9,7 @@
 #include <GameFramework/SpringArmComponent.h>
 #include "../Pickups/TP_WeaponComponent.h"
 #include "cmath"
+#include "../Helpers/VectorMath.h"
 #include "BattlemageTheEndlessCharacter.generated.h"
 
 class UInputComponent;

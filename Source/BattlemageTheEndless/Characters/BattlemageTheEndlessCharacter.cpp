@@ -822,10 +822,9 @@ bool ABattlemageTheEndlessCharacter::ObjectIsWallRunnable(AActor* Object)
 	// Repeat the same process but use socket feetRaycastSocket
 	hit = LineTraceMovementVector(FName("feetRaycastSocket"), 200, drawTrace);
 
-	// If the feet raycast hit the object and the angle of incidence is >= 45, we can wallrun
-	// reference because i will forget https://www.meetoptics.com/academy/angle-of-incidence#choosing-the-angle-of-incidence
-	float angleOfIncidence = FMath::Abs(GetCharacterMovement()->GetLastUpdateRotation().Yaw - hit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector).Rotation().Yaw);
-	if (hit.GetActor() == Object && angleOfIncidence >= 45)
+	FVector impactDirection = WallRunHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector);
+	float yawDifference = VectorMath::Vector2DRotationDifference(GetCharacterMovement()->Velocity, impactDirection);
+	if (hit.GetActor() == Object && yawDifference <= 60)
 	{
 		WallRunHit = hit;
 		return true;	
@@ -840,23 +839,15 @@ void ABattlemageTheEndlessCharacter::WallRun()
 	GetCharacterMovement()->GravityScale = WallRunInitialGravitScale;
 
 	UCharacterMovementComponent* movement = GetCharacterMovement();
-	float characterRotation = movement->GetLastUpdateRotation().Yaw;
-	// force rotation into a 0-360 range to match impact normal
-	if (characterRotation < 0.f)
-	{
-		characterRotation += 360.f;
-	}
-	float impactDireciton = WallRunHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector).Rotation().Yaw;
-	float angleOfIncidence = characterRotation - WallRunHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector).Rotation().Yaw;
+	FVector impactDirection = WallRunHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector);
+	float yawDifference = VectorMath::Vector2DRotationDifference(movement->Velocity, impactDirection);
 
-	// set character's rotation parallel to the wall
-	FRotator targetDirection = movement->GetLastUpdateRotation();
-	float angleToAdd = (90.0f - FMath::Abs(angleOfIncidence)) * (angleOfIncidence > 1.f ? 1.f : -1.f);
-	targetDirection.Yaw += angleToAdd;
-	Controller->SetControlRotation(targetDirection);
+	FRotator rotation = movement->GetLastUpdateRotation();
+	rotation.Yaw += yawDifference;
+	Controller->SetControlRotation(rotation);
 	
 	// redirect character's velocity to be parallel to the wall
-	movement->Velocity = movement->Velocity.RotateAngleAxis(angleToAdd, FVector::ZAxisVector);
+	movement->Velocity = movement->Velocity.RotateAngleAxis(yawDifference, FVector::ZAxisVector);
 	// kill any vertical movement
 	movement->Velocity.Z = 0.f;
 
