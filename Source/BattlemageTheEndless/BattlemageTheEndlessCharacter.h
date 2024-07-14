@@ -37,6 +37,10 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCamera;
 
+	/** Wallrun overlap detection capsule **/
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collision, meta = (AllowPrivateAccess = "true"))
+	UCapsuleComponent* WallRunCapsule;
+
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	UInputMappingContext* DefaultMappingContext;
@@ -295,7 +299,12 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Character Movement")
 	void EndVault();
 
+	UFUNCTION(BlueprintCallable, Category = "Character Movement")
+	void OnWallRunCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION(BlueprintCallable, Category = "Character Movement")
+	void OnWallRunCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 	bool CanWallRun();
+	FHitResult LineTraceMovementVector(FName socketName, float magnitude, bool drawTrace, FColor drawColor);
 	bool ObjectIsWallRunnable(AActor* Object);
 	void WallRun();
 
@@ -303,5 +312,7 @@ protected:
 	void EndWallRun();
 
 	bool bCanVault = true;
+
+	FVector lastTickLocation = FVector::ZeroVector;
 };
 

@@ -35,6 +35,14 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnHit);
 
+	WallRunCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("WallRunCapsule"));
+	WallRunCapsule->InitCapsuleSize(55.f, 96.0f);
+	WallRunCapsule->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
+	WallRunCapsule->SetupAttachment(GetCapsuleComponent());
+	WallRunCapsule->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
+	WallRunCapsule->OnComponentBeginOverlap.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnWallRunCapsuleBeginOverlap);
+	WallRunCapsule->OnComponentEndOverlap.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnWallRunCapsuleEndOverlap);
+
 	// Init Audio Resource
 	static ConstructorHelpers::FObjectFinder<USoundWave> Sound(TEXT("/Game/Sounds/Jump_Landing"));
 	JumpLandingSound = Sound.Object;
@@ -283,6 +291,14 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 
 	}
 	AActor::TickActor(DeltaTime, TickType, ThisTickFunction);
+
+	FVector playerLocationAfter = GetActorLocation();
+	if (IsWallRunning && GEngine)
+		DrawDebugLine(GetWorld(), playerLocationAfter, playerLocationAfter + GetCharacterMovement()->Velocity, FColor::Red, false, 2.0f);
+	//if (IsWallRunning && GEngine && (lastTickLocation - playerLocationAfter) != FVector::ZeroVector)
+	//	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%s' moved by actor tick"), *(lastTickLocation - playerLocationAfter).ToString()));
+
+	lastTickLocation = playerLocationAfter;
 }
 
 bool ABattlemageTheEndlessCharacter::WallRunContinuationRayCast()
@@ -647,6 +663,7 @@ bool ABattlemageTheEndlessCharacter::TrySetWeapon(UTP_WeaponComponent* Weapon, F
 
 void ABattlemageTheEndlessCharacter::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	// We aren't checking for wallrun state since a vault should be able to override a wallrun
 	if (CanVault() && ObjectIsVaultable(OtherActor))
 	{
 		VaultTarget = OtherActor;
@@ -657,12 +674,6 @@ void ABattlemageTheEndlessCharacter::OnHit(UPrimitiveComponent* HitComp, AActor*
 			EndWallRun();
 		}
 	}
-	else if (CanWallRun() && ObjectIsWallRunnable(OtherActor))
-	{
-		WallRunObject = OtherActor;
-		WallRunHit = Hit;
-		WallRun();
-	}
 }
 
 bool ABattlemageTheEndlessCharacter::CanVault()
@@ -671,6 +682,7 @@ bool ABattlemageTheEndlessCharacter::CanVault()
 	return bCanVault;
 }
 
+// TODO: use LineTraceMovementVector
 bool ABattlemageTheEndlessCharacter::ObjectIsVaultable(AActor* Object)
 {
 	// Raycast from cameraSocket straight forward to see if Object is in the way
@@ -755,18 +767,34 @@ void ABattlemageTheEndlessCharacter::EndVault()
 	GetMesh()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 }
 
-bool ABattlemageTheEndlessCharacter::CanWallRun()
+void ABattlemageTheEndlessCharacter::OnWallRunCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	// placeholder pending actual logic to enable/disable
-	return true;
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%s' Began overlap"), *AActor::GetDebugName(OtherActor)));
+	if (CanWallRun() && ObjectIsWallRunnable(OtherActor))
+	{
+		WallRunObject = OtherActor;
+		// WallRunHit is set in ObjectIsWallRunnable
+		WallRun();
+	}
 }
 
-bool ABattlemageTheEndlessCharacter::ObjectIsWallRunnable(AActor* Object)
+void ABattlemageTheEndlessCharacter::OnWallRunCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	// Raycast from vaultRaycastSocket straight forward to see if Object is in the way
-	FVector start = GetMesh()->GetSocketLocation(FName("vaultRaycastSocket"));
-	// Cast a ray out in look direction 100 units long
-	FVector castVector = (FVector::XAxisVector * 100).RotateAngleAxis(GetCharacterMovement()->GetLastUpdateRotation().Yaw, FVector::ZAxisVector);
+	if (OtherActor == WallRunObject)
+		EndWallRun();
+}
+
+bool ABattlemageTheEndlessCharacter::CanWallRun()
+{	
+	return bIsSprinting && GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling;
+}
+
+FHitResult ABattlemageTheEndlessCharacter::LineTraceMovementVector(FName socketName, float magnitude, bool drawTrace = false, FColor drawColor = FColor::Green)
+{
+	FVector start = GetMesh()->GetSocketLocation(socketName);
+	// Cast a ray out in look direction magnitude units long
+	FVector castVector = (FVector::XAxisVector * magnitude).RotateAngleAxis(GetCharacterMovement()->GetLastUpdateRotation().Yaw, FVector::ZAxisVector);
 	FVector end = start + castVector;
 
 	// Perform the raycast
@@ -776,23 +804,34 @@ bool ABattlemageTheEndlessCharacter::ObjectIsWallRunnable(AActor* Object)
 	params.AddIgnoredActor(this);
 	GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
 
-	DrawDebugLine(GetWorld(), start, end, FColor::Red, false, 1.0f, 0, 1.0f);
+	if (drawTrace)
+		DrawDebugLine(GetWorld(), start, end, drawColor, false, 3.0f, 0, 1.0f);
+	return hit;
+}
+
+bool ABattlemageTheEndlessCharacter::ObjectIsWallRunnable(AActor* Object)
+{
+	bool drawTrace = true;
+	// Raycast from vaultRaycastSocket straight forward to see if Object is in the way
+	FHitResult hit = LineTraceMovementVector(FName("vaultRaycastSocket"), 200, drawTrace, FColor::Red);
 
 	// If the camera raycast did not hit the object, we are too high to wall run
 	if (hit.GetActor() != Object)
 		return false;
 
 	// Repeat the same process but use socket feetRaycastSocket
-	start = GetMesh()->GetSocketLocation(FName("feetRaycastSocket"));
-	end = start + castVector;
-	GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
-
-	DrawDebugLine(GetWorld(), start, end, FColor::Green, false, 1.0f, 0, 1.0f);
+	hit = LineTraceMovementVector(FName("feetRaycastSocket"), 200, drawTrace);
 
 	// If the feet raycast hit the object and the angle of incidence is >= 45, we can wallrun
 	// reference because i will forget https://www.meetoptics.com/academy/angle-of-incidence#choosing-the-angle-of-incidence
 	float angleOfIncidence = FMath::Abs(GetCharacterMovement()->GetLastUpdateRotation().Yaw - hit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector).Rotation().Yaw);
-	return hit.GetActor() == Object && angleOfIncidence >= 45;
+	if (hit.GetActor() == Object && angleOfIncidence >= 45)
+	{
+		WallRunHit = hit;
+		return true;	
+	}
+
+	return false;
 }
 
 void ABattlemageTheEndlessCharacter::WallRun()
