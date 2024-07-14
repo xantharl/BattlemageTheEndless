@@ -118,6 +118,12 @@ protected:
 	FHitResult VaultHit;
 	FVector VaultAttachPoint;
 
+	// Object currently being wallrunned
+	AActor* WallRunObject;
+	FHitResult WallRunHit;
+	FVector WallRunAttachPoint;
+	FTimerHandle WallRunTimer;
+
 public:
 		
 	/** Look Input Action */
@@ -130,6 +136,8 @@ public:
 	bool IsSliding;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	bool IsVaulting;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	bool IsWallRunning;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	bool bShouldUncrouch;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
@@ -193,6 +201,22 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	FVector DodgeImpulseBackward;
 
+	// Value expressed in m/s^2
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float WallRunInitialGravitScale = 0.0f;
+
+	// Value expressed in m/s^2
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float CharacterBaseGravityScale = 1.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float WallRunSpeed = 1000.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float WallRunMaxDuration = 2.0f;
+
+	// TODO: Probably remove this since we can only launch out of crouch now
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	int MaxLaunches = 1;
 
 	UFUNCTION(BlueprintCallable, Category = Weapon)
@@ -246,6 +270,7 @@ protected:
 	void LaunchJump();
 	void RequestUnCrouch();
 	void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction);
+	bool WallRunContinuationRayCast();
 	void EndSlide(UCharacterMovementComponent* movement);
 	void SwitchCamera();
 	// Executes a launch jump 
@@ -269,6 +294,13 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "Character Movement")
 	void EndVault();
+
+	bool CanWallRun();
+	bool ObjectIsWallRunnable(AActor* Object);
+	void WallRun();
+
+	UFUNCTION(BlueprintCallable, Category = "Character Movement")
+	void EndWallRun();
 
 	bool bCanVault = true;
 };

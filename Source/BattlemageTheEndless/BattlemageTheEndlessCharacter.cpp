@@ -256,8 +256,54 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 		relativeLocationToAdd.Z = FMath::Max(0.f, (VaultAttachPoint - socketLocationToUse).Z);
 		GetRootComponent()->AddRelativeLocation(relativeLocationToAdd);
 	}
+	if (IsWallRunning)
+	{
+		UCharacterMovementComponent* movement = GetCharacterMovement();
+		// end conditions for wall run
+		//	no need to check time since there's a timer running for that
+		//	if we are on the ground, end the wall run
+		//	if a raycast doesn't find the wall, end the wall run
+		if (movement->MovementMode == EMovementMode::MOVE_Walking || !WallRunContinuationRayCast())
+		{
+			EndWallRun();
+		}
+		else // if we're still wall running
+		{
+			// increase gravity linearly based on time elapsed
+			movement->GravityScale += (DeltaTime / WallRunMaxDuration) * (CharacterBaseGravityScale - WallRunInitialGravitScale);
 
+			// if gravity is over CharacterBaseGravityScale, set it to CharacterBaseGravityScale and end the wall run
+			if (movement->GravityScale > CharacterBaseGravityScale)
+			{
+				movement->GravityScale = CharacterBaseGravityScale;
+				EndWallRun();
+			}
+		}
+
+
+	}
 	AActor::TickActor(DeltaTime, TickType, ThisTickFunction);
+}
+
+bool ABattlemageTheEndlessCharacter::WallRunContinuationRayCast()
+{
+	// Raycast from vaultRaycastSocket straight forward to see if Object is in the way
+	FVector start = GetMesh()->GetSocketLocation(FName("feetRaycastSocket"));
+	// Cast a ray out in hit normal direction 100 units long
+	FVector castVector = (FVector::XAxisVector * 100).RotateAngleAxis(WallRunHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector).Rotation().Yaw, FVector::ZAxisVector);
+	FVector end = start + castVector;
+
+	// Perform the raycast
+	FHitResult hit;
+	FCollisionQueryParams params;
+	FCollisionObjectQueryParams objectParams;
+	params.AddIgnoredActor(this);
+	GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
+
+	DrawDebugLine(GetWorld(), start, end, FColor::Red, false, 1.0f, 0, 1.0f);
+
+	// If the camera raycast did not hit the object, we are too high to wall run
+	return hit.GetActor() == WallRunObject;
 }
 
 void ABattlemageTheEndlessCharacter::EndSlide(UCharacterMovementComponent* movement)
@@ -370,6 +416,11 @@ void ABattlemageTheEndlessCharacter::Jump()
 	if (bIsCrouched)
 	{
 		UnCrouch();
+	}
+
+	if (IsWallRunning)
+	{
+		EndWallRun();
 	}
 
 	if (JumpCurrentCount < JumpMaxCount)
@@ -601,6 +652,16 @@ void ABattlemageTheEndlessCharacter::OnHit(UPrimitiveComponent* HitComp, AActor*
 		VaultTarget = OtherActor;
 		VaultHit = Hit;
 		Vault();
+		if(IsWallRunning)
+		{
+			EndWallRun();
+		}
+	}
+	else if (CanWallRun() && ObjectIsWallRunnable(OtherActor))
+	{
+		WallRunObject = OtherActor;
+		WallRunHit = Hit;
+		WallRun();
 	}
 }
 
@@ -625,7 +686,7 @@ bool ABattlemageTheEndlessCharacter::ObjectIsVaultable(AActor* Object)
 	params.AddIgnoredActor(this);
 	GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
 
-	DrawDebugLine(GetWorld(), start, end, FColor::Red, false, 1.0f, 0, 1.0f);
+	//DrawDebugLine(GetWorld(), start, end, FColor::Red, false, 1.0f, 0, 1.0f);
 
 	// If the camera raycast hit the object, we are too low to vault
 	if (hit.GetActor() == Object)
@@ -636,7 +697,7 @@ bool ABattlemageTheEndlessCharacter::ObjectIsVaultable(AActor* Object)
 	end = start + castVector;
 	GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
 
-	DrawDebugLine(GetWorld(), start, end, FColor::Green, false, 1.0f, 0, 1.0f);
+	//DrawDebugLine(GetWorld(), start, end, FColor::Green, false, 1.0f, 0, 1.0f);
 
 	// If the vault raycast hit the object, we can vault
 	return hit.GetActor() == Object;
@@ -692,4 +753,85 @@ void ABattlemageTheEndlessCharacter::EndVault()
 	// turn collision with worldstatic back on
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+}
+
+bool ABattlemageTheEndlessCharacter::CanWallRun()
+{
+	// placeholder pending actual logic to enable/disable
+	return true;
+}
+
+bool ABattlemageTheEndlessCharacter::ObjectIsWallRunnable(AActor* Object)
+{
+	// Raycast from vaultRaycastSocket straight forward to see if Object is in the way
+	FVector start = GetMesh()->GetSocketLocation(FName("vaultRaycastSocket"));
+	// Cast a ray out in look direction 100 units long
+	FVector castVector = (FVector::XAxisVector * 100).RotateAngleAxis(GetCharacterMovement()->GetLastUpdateRotation().Yaw, FVector::ZAxisVector);
+	FVector end = start + castVector;
+
+	// Perform the raycast
+	FHitResult hit;
+	FCollisionQueryParams params;
+	FCollisionObjectQueryParams objectParams;
+	params.AddIgnoredActor(this);
+	GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
+
+	DrawDebugLine(GetWorld(), start, end, FColor::Red, false, 1.0f, 0, 1.0f);
+
+	// If the camera raycast did not hit the object, we are too high to wall run
+	if (hit.GetActor() != Object)
+		return false;
+
+	// Repeat the same process but use socket feetRaycastSocket
+	start = GetMesh()->GetSocketLocation(FName("feetRaycastSocket"));
+	end = start + castVector;
+	GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
+
+	DrawDebugLine(GetWorld(), start, end, FColor::Green, false, 1.0f, 0, 1.0f);
+
+	// If the feet raycast hit the object and the angle of incidence is >= 45, we can wallrun
+	// reference because i will forget https://www.meetoptics.com/academy/angle-of-incidence#choosing-the-angle-of-incidence
+	float angleOfIncidence = FMath::Abs(GetCharacterMovement()->GetLastUpdateRotation().Yaw - hit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector).Rotation().Yaw);
+	return hit.GetActor() == Object && angleOfIncidence >= 45;
+}
+
+void ABattlemageTheEndlessCharacter::WallRun()
+{
+	IsWallRunning = true;
+	GetCharacterMovement()->GravityScale = WallRunInitialGravitScale;
+
+	UCharacterMovementComponent* movement = GetCharacterMovement();
+	float characterRotation = movement->GetLastUpdateRotation().Yaw;
+	// force rotation into a 0-360 range to match impact normal
+	if (characterRotation < 0.f)
+	{
+		characterRotation += 360.f;
+	}
+	float impactDireciton = WallRunHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector).Rotation().Yaw;
+	float angleOfIncidence = characterRotation - WallRunHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector).Rotation().Yaw;
+
+	// set character's rotation parallel to the wall
+	FRotator targetDirection = movement->GetLastUpdateRotation();
+	float angleToAdd = (90.0f - FMath::Abs(angleOfIncidence)) * (angleOfIncidence > 1.f ? 1.f : -1.f);
+	targetDirection.Yaw += angleToAdd;
+	Controller->SetControlRotation(targetDirection);
+	
+	// redirect character's velocity to be parallel to the wall
+	movement->Velocity = movement->Velocity.RotateAngleAxis(angleToAdd, FVector::ZAxisVector);
+	// kill any vertical movement
+	movement->Velocity.Z = 0.f;
+
+	GetWorldTimerManager().SetTimer(WallRunTimer, this, &ABattlemageTheEndlessCharacter::EndWallRun, WallRunMaxDuration, false);
+
+}
+
+void ABattlemageTheEndlessCharacter::EndWallRun()
+{
+	// This can be called before the timer goes off, so check if we're actually wall running
+	if (!IsWallRunning)
+		return;
+
+	IsWallRunning = false;
+	GetCharacterMovement()->GravityScale = CharacterBaseGravityScale;
+	WallRunObject = NULL;
 }
