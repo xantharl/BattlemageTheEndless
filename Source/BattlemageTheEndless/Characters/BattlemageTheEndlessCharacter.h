@@ -128,6 +128,7 @@ protected:
 	FHitResult WallRunHit;
 	FVector WallRunAttachPoint;
 	FTimerHandle WallRunTimer;
+	bool WallIsToLeft;
 
 public:
 		
@@ -212,10 +213,14 @@ public:
 
 	// Value expressed in m/s^2
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float CharacterBaseGravityScale = 1.0f;
+	float CharacterBaseGravityScale = 1.75f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float WallRunSpeed = 1000.f;
+
+	/** Time before gravity starts to apply again **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float WallRunGravityDelay = 0.5f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float WallRunMaxDuration = 2.0f;
@@ -306,6 +311,7 @@ protected:
 	void OnWallRunCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 	bool CanWallRun();
 	FHitResult LineTraceMovementVector(FName socketName, float magnitude, bool drawTrace, FColor drawColor);
+	FHitResult LineTraceGeneric(FVector start, FVector end);
 	bool ObjectIsWallRunnable(AActor* Object);
 	void WallRun();
 

@@ -278,7 +278,7 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 		else // if we're still wall running
 		{
 			// increase gravity linearly based on time elapsed
-			movement->GravityScale += (DeltaTime / WallRunMaxDuration) * (CharacterBaseGravityScale - WallRunInitialGravitScale);
+			movement->GravityScale += (DeltaTime / (WallRunMaxDuration - WallRunGravityDelay)) * (CharacterBaseGravityScale - WallRunInitialGravitScale);
 
 			// if gravity is over CharacterBaseGravityScale, set it to CharacterBaseGravityScale and end the wall run
 			if (movement->GravityScale > CharacterBaseGravityScale)
@@ -385,9 +385,20 @@ void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)
 
 	if (Controller != nullptr)
 	{
-		// add movement 
-		AddMovementInput(GetActorForwardVector(), MovementVector.Y);
-		AddMovementInput(GetActorRightVector(), MovementVector.X);
+		// add movement
+		if (!IsWallRunning)
+		{
+			AddMovementInput(GetActorForwardVector(), MovementVector.Y);
+			AddMovementInput(GetActorRightVector(), MovementVector.X);
+		}
+		else
+		{
+			// if we're wall running, we want to apply all movement to the direction the character is facing (instead of the camera)
+			// To do that we'll synthesize a world direction vector by rotating the XAxisVector by the character's yaw
+			AddMovementInput(FVector::XAxisVector.RotateAngleAxis(GetRootComponent()->GetComponentRotation().Yaw, FVector::ZAxisVector), MovementVector.X);
+
+			// Don't apply lateral movement, only jumping or dodging can break a wallrun			
+		}
 
 		TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
 		if (!movement)
@@ -505,13 +516,28 @@ UTP_WeaponComponent* ABattlemageTheEndlessCharacter::GetRightHandWeapon()
 
 void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
 {
-	if (PrevMovementMode == EMovementMode::MOVE_Falling)
+	if (PrevMovementMode == EMovementMode::MOVE_Falling && GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Walking)
 	{
 		launchesPerformed = 0;
 		bLaunchRequested = false;
 		UGameplayStatics::PlaySoundAtLocation(this,
 			JumpLandingSound,
 			GetActorLocation(), 1.0f);
+	} else if (PrevMovementMode == EMovementMode::MOVE_Walking && GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
+	{
+		// check if there are any eligible wallrun objects
+		TArray<AActor*> overlappingActors;
+		GetOverlappingActors(overlappingActors, nullptr);
+		for(AActor* actor: overlappingActors)
+		{
+			if (ObjectIsWallRunnable(actor))
+			{
+				WallRunObject = actor;
+				// WallRunHit is set in ObjectIsWallRunnable
+				WallRun();
+				break;
+			}
+		}
 	}
 
 	ACharacter::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
@@ -798,38 +824,49 @@ FHitResult ABattlemageTheEndlessCharacter::LineTraceMovementVector(FName socketN
 	FVector end = start + castVector;
 
 	// Perform the raycast
-	FHitResult hit;
-	FCollisionQueryParams params;
-	FCollisionObjectQueryParams objectParams;
-	params.AddIgnoredActor(this);
-	GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
+	FHitResult hit = LineTraceGeneric(start, end);
 
 	if (drawTrace)
 		DrawDebugLine(GetWorld(), start, end, drawColor, false, 3.0f, 0, 1.0f);
 	return hit;
 }
 
+FHitResult ABattlemageTheEndlessCharacter::LineTraceGeneric(FVector start, FVector end)
+{
+	// Perform the raycast
+	FHitResult hit;
+	FCollisionQueryParams params;
+	FCollisionObjectQueryParams objectParams;
+	params.AddIgnoredActor(this);
+	GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
+	return hit;
+}
+
 bool ABattlemageTheEndlessCharacter::ObjectIsWallRunnable(AActor* Object)
 {
+	// TODO: make input direction factor into traces 
 	bool drawTrace = true;
 	// Raycast from vaultRaycastSocket straight forward to see if Object is in the way
-	FHitResult hit = LineTraceMovementVector(FName("vaultRaycastSocket"), 200, drawTrace, FColor::Red);
+	FHitResult hit = LineTraceMovementVector(FName("vaultRaycastSocket"), 500, drawTrace, FColor::Red);
 
 	// If the camera raycast did not hit the object, we are too high to wall run
 	if (hit.GetActor() != Object)
 		return false;
 
 	// Repeat the same process but use socket feetRaycastSocket
-	hit = LineTraceMovementVector(FName("feetRaycastSocket"), 200, drawTrace);
+	hit = LineTraceMovementVector(FName("feetRaycastSocket"), 500, drawTrace);
 
-	FVector impactDirection = WallRunHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector);
-	float yawDifference = VectorMath::Vector2DRotationDifference(GetCharacterMovement()->Velocity, impactDirection);
+	FVector impactDirection = hit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector);
+	float yawDifference = 90.f - VectorMath::Vector2DRotationDifference(GetCharacterMovement()->Velocity, impactDirection);
+
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%f' yaw diff"), yawDifference));
+
 	if (hit.GetActor() == Object && yawDifference <= 60)
 	{
 		WallRunHit = hit;
 		return true;	
 	}
-
 	return false;
 }
 
@@ -838,19 +875,41 @@ void ABattlemageTheEndlessCharacter::WallRun()
 	IsWallRunning = true;
 	GetCharacterMovement()->GravityScale = WallRunInitialGravitScale;
 
-	UCharacterMovementComponent* movement = GetCharacterMovement();
+	UCharacterMovementComponent* movement = GetCharacterMovement(); 
 	FVector impactDirection = WallRunHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector);
-	float yawDifference = VectorMath::Vector2DRotationDifference(movement->Velocity, impactDirection);
+	float yawDifference = 90.f - VectorMath::Vector2DRotationDifference(movement->Velocity, impactDirection);
 
-	FRotator rotation = movement->GetLastUpdateRotation();
-	rotation.Yaw += yawDifference;
+	FRotator rotation = WallRunCapsule->GetComponentRotation();
+	FVector characterLocation = GetRootComponent()->GetComponentLocation();
+
+	FVector start = GetMesh()->GetSocketLocation(FName("feetRaycastSocket"));
+	FVector end = start + FVector::LeftVector.RotateAngleAxis(GetRootComponent()->GetComponentRotation().Yaw, FVector::ZAxisVector) * 200;
+	WallIsToLeft = LineTraceGeneric(start, end).GetActor() == WallRunObject;
+
+	rotation.Yaw += yawDifference * (WallIsToLeft ? 1: -1);
 	Controller->SetControlRotation(rotation);
 	
 	// redirect character's velocity to be parallel to the wall
-	movement->Velocity = movement->Velocity.RotateAngleAxis(yawDifference, FVector::ZAxisVector);
+	movement->Velocity = movement->Velocity.RotateAngleAxis(yawDifference * (WallIsToLeft ? 1 : -1), FVector::ZAxisVector);
 	// kill any vertical movement
 	movement->Velocity.Z = 0.f;
+	
+	// disable player rotation from input
+	bUseControllerRotationYaw = false;
+	
+	// set max pan angle to 60 degrees
+	if (APlayerCameraManager* cameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0))
+	{
+		float currentYaw = rotation.Yaw;
+		cameraManager->ViewYawMax = currentYaw + 90.f;
+		cameraManager->ViewYawMin = currentYaw - 90.f;
+	}
+	
 
+	// set max pitch angle to 30 degrees
+
+
+	// set a timer to end the wall run
 	GetWorldTimerManager().SetTimer(WallRunTimer, this, &ABattlemageTheEndlessCharacter::EndWallRun, WallRunMaxDuration, false);
 
 }
@@ -858,10 +917,21 @@ void ABattlemageTheEndlessCharacter::WallRun()
 void ABattlemageTheEndlessCharacter::EndWallRun()
 {
 	// This can be called before the timer goes off, so check if we're actually wall running
-	if (!IsWallRunning)
+	if (!IsWallRunning && GetCharacterMovement()->GravityScale == CharacterBaseGravityScale && bUseControllerRotationYaw)
 		return;
 
 	IsWallRunning = false;
 	GetCharacterMovement()->GravityScale = CharacterBaseGravityScale;
 	WallRunObject = NULL;
+
+	// re-enable player rotation from input
+	bUseControllerRotationYaw = true;
+
+	// set max pan angle to 60 degrees
+	if (APlayerCameraManager* cameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0))
+	{
+		float currentYaw = Controller->GetControlRotation().Yaw;
+		cameraManager->ViewYawMax = 359.998993f;
+		cameraManager->ViewYawMin = 0.f;
+	}
 }
