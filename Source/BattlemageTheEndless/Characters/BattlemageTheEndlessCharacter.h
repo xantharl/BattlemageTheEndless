@@ -225,6 +225,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float WallRunMaxDuration = 2.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	int WallRunJumpRefundCount = 1;
+
 	// TODO: Probably remove this since we can only launch out of crouch now
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	int MaxLaunches = 1;

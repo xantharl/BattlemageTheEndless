@@ -905,7 +905,7 @@ void ABattlemageTheEndlessCharacter::WallRun()
 
 	// Wall running refunds a jump charge
 	if (JumpCurrentCount > 0)
-		JumpCurrentCount -= 1;
+		JumpCurrentCount -= WallRunJumpRefundCount;
 
 	UCharacterMovementComponent* movement = GetCharacterMovement();
 	/*FVector impactDirection = WallRunHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector);
