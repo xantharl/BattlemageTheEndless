@@ -17,4 +17,6 @@ public:
 	// returns the angle between two 2D vectors, or float::min if the vectors are invalid
 	// this version takes 3d vectors and discards the z component
 	static float Vector2DRotationDifference(FVector A, FVector B);
+
+	static void NormalizeRotator(FRotator& Vector);
 };

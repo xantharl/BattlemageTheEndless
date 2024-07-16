@@ -20,3 +20,16 @@ float VectorMath::Vector2DRotationDifference(FVector A, FVector B)
 {
 	return Vector2DRotationDifference(FVector2D(A.X, A.Y), FVector2D(B.X, B.Y));
 }
+
+void VectorMath::NormalizeRotator(FRotator& Vector)
+{
+	if (Vector.Pitch < 0) {
+		Vector.Pitch += 360.f;
+	}
+	if (Vector.Yaw < 0) {
+		Vector.Yaw += 360.f;
+	}
+	if (Vector.Roll < 0) {
+		Vector.Roll += 360.f;
+	}
+}

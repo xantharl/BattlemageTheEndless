@@ -904,8 +904,8 @@ void ABattlemageTheEndlessCharacter::WallRun()
 	IsWallRunning = true;
 	GetCharacterMovement()->GravityScale = WallRunInitialGravitScale;
 
-	UCharacterMovementComponent* movement = GetCharacterMovement(); 
-	FVector impactDirection = WallRunHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector);
+	UCharacterMovementComponent* movement = GetCharacterMovement();
+	/*FVector impactDirection = WallRunHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector);
 	float yawDifference = 90.f - VectorMath::Vector2DRotationDifference(movement->Velocity, impactDirection);
 
 	FRotator rotation = WallRunCapsule->GetComponentRotation();
@@ -915,11 +915,36 @@ void ABattlemageTheEndlessCharacter::WallRun()
 	FVector end = start + FVector::LeftVector.RotateAngleAxis(GetRootComponent()->GetComponentRotation().Yaw, FVector::ZAxisVector) * 200;
 	WallIsToLeft = LineTraceGeneric(start, end).GetActor() == WallRunObject;
 
-	rotation.Yaw += yawDifference * (WallIsToLeft ? 1: -1);
-	Controller->SetControlRotation(rotation);
+	rotation.Yaw += yawDifference * (WallIsToLeft ? 1: -1);*/
+
+	// get vectors parallel to the wall
+	FRotator possibleWallRunDirectionOne = WallRunHit.ImpactNormal.RotateAngleAxis(90.f, FVector::ZAxisVector).Rotation();
+	FRotator possibleWallRunDirectionTwo = WallRunHit.ImpactNormal.RotateAngleAxis(-90.f, FVector::ZAxisVector).Rotation();
+	FRotator lookDirection = movement->GetLastUpdateRotation();
+
+	int normalizedLookYaw = ((int)lookDirection.Yaw + 360) % 360;
+	bool isQuadrant3 = normalizedLookYaw > 180 && normalizedLookYaw < 270;
+
+	// Special case to treat 0 and 360 as the same value
+	if (isQuadrant3 && FMath::Abs((double)possibleWallRunDirectionTwo.Yaw) < 0.00001)
+		possibleWallRunDirectionTwo.Yaw = 360.f;
+
+	// Normalize rotations to be between 0 and 360
+	// NOTE: There is a rotator normalization function built into ue but it seems to be doing nothing
+	//VectorMath::NormalizeRotator(possibleWallRunDirectionOne);
+	//VectorMath::NormalizeRotator(possibleWallRunDirectionTwo);
+	//VectorMath::NormalizeRotator(lookDirection);
+
+	// determine which direction is closer to the character's current look direction
+	float yawDiffOne = possibleWallRunDirectionOne.Yaw - lookDirection.Yaw;
+	float yawDiffTwo = possibleWallRunDirectionTwo.Yaw - lookDirection.Yaw;
+	bool isOneLess = FMath::Abs(yawDiffOne) <= FMath::Abs(yawDiffTwo);
+	FRotator targetRotation = isOneLess ? possibleWallRunDirectionOne : possibleWallRunDirectionTwo;
+
+	Controller->SetControlRotation(targetRotation);
 	
 	// redirect character's velocity to be parallel to the wall
-	movement->Velocity = movement->Velocity.RotateAngleAxis(yawDifference * (WallIsToLeft ? 1 : -1), FVector::ZAxisVector);
+	movement->Velocity = movement->Velocity.RotateAngleAxis(isOneLess ? yawDiffOne : yawDiffTwo, FVector::ZAxisVector);
 	// kill any vertical movement
 	movement->Velocity.Z = 0.f;
 	
@@ -929,7 +954,7 @@ void ABattlemageTheEndlessCharacter::WallRun()
 	// set max pan angle to 60 degrees
 	if (APlayerCameraManager* cameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0))
 	{
-		float currentYaw = rotation.Yaw;
+		float currentYaw = targetRotation.Yaw;
 		cameraManager->ViewYawMax = currentYaw + 90.f;
 		cameraManager->ViewYawMin = currentYaw - 90.f;
 	}
