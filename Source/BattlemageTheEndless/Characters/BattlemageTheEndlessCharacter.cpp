@@ -47,7 +47,6 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 	static ConstructorHelpers::FObjectFinder<USoundWave> Sound(TEXT("/Game/Sounds/Jump_Landing"));
 	JumpLandingSound = Sound.Object;
 
-
 	JumpMaxCount = 2;
 
 	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
@@ -903,6 +902,10 @@ void ABattlemageTheEndlessCharacter::WallRun()
 {
 	IsWallRunning = true;
 	GetCharacterMovement()->GravityScale = WallRunInitialGravitScale;
+
+	// Wall running refunds a jump charge
+	if (JumpCurrentCount > 0)
+		JumpCurrentCount -= 1;
 
 	UCharacterMovementComponent* movement = GetCharacterMovement();
 	/*FVector impactDirection = WallRunHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector);
