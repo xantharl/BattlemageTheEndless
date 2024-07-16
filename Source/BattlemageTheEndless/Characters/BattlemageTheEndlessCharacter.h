@@ -310,7 +310,7 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Character Movement")
 	void OnWallRunCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 	bool CanWallRun();
-	FHitResult LineTraceMovementVector(FName socketName, float magnitude, bool drawTrace, FColor drawColor);
+	FHitResult LineTraceMovementVector(FName socketName, float magnitude, bool drawTrace, FColor drawColor, float rotateYawByDegrees);
 	FHitResult LineTraceGeneric(FVector start, FVector end);
 	bool ObjectIsWallRunnable(AActor* Object);
 	void WallRun();

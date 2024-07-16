@@ -816,11 +816,11 @@ bool ABattlemageTheEndlessCharacter::CanWallRun()
 	return bIsSprinting && GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling;
 }
 
-FHitResult ABattlemageTheEndlessCharacter::LineTraceMovementVector(FName socketName, float magnitude, bool drawTrace = false, FColor drawColor = FColor::Green)
+FHitResult ABattlemageTheEndlessCharacter::LineTraceMovementVector(FName socketName, float magnitude, bool drawTrace = false, FColor drawColor = FColor::Green, float rotateYawByDegrees = 0.f)
 {
 	FVector start = GetMesh()->GetSocketLocation(socketName);
 	// Cast a ray out in look direction magnitude units long
-	FVector castVector = (FVector::XAxisVector * magnitude).RotateAngleAxis(GetCharacterMovement()->GetLastUpdateRotation().Yaw, FVector::ZAxisVector);
+	FVector castVector = (FVector::XAxisVector * magnitude).RotateAngleAxis(GetCharacterMovement()->GetLastUpdateRotation().Yaw+rotateYawByDegrees, FVector::ZAxisVector);
 	FVector end = start + castVector;
 
 	// Perform the raycast
@@ -844,26 +844,55 @@ FHitResult ABattlemageTheEndlessCharacter::LineTraceGeneric(FVector start, FVect
 
 bool ABattlemageTheEndlessCharacter::ObjectIsWallRunnable(AActor* Object)
 {
-	// TODO: make input direction factor into traces 
 	bool drawTrace = true;
+	/* Don't think I care about this for now, we wouldn't be trying to wallrun during a vault anyway
 	// Raycast from vaultRaycastSocket straight forward to see if Object is in the way
 	FHitResult hit = LineTraceMovementVector(FName("vaultRaycastSocket"), 500, drawTrace, FColor::Red);
 
 	// If the camera raycast did not hit the object, we are too high to wall run
 	if (hit.GetActor() != Object)
 		return false;
+	*/
 
 	// Repeat the same process but use socket feetRaycastSocket
-	hit = LineTraceMovementVector(FName("feetRaycastSocket"), 500, drawTrace);
+	FHitResult hit = LineTraceMovementVector(FName("feetRaycastSocket"), 500, drawTrace);
+
+	bool hitLeft = false;
+	bool hitRight = false;
+	// If we didn't hit the object, try again with a vector 45 degress left
+	if (hit.GetActor() != Object)
+	{
+		hit = LineTraceMovementVector(FName("feetRaycastSocket"), 500, drawTrace, FColor::Red, -45.f);
+
+		hitLeft = hit.GetActor() == Object;
+		// if we still didn't hit, try 45 right
+		if(!hitLeft)
+		{
+			hit = LineTraceMovementVector(FName("feetRaycastSocket"), 500, drawTrace, FColor::Red, 45.f);
+			hitRight = hit.GetActor() == Object;
+		}
+
+		// We have now tried all supported directions, if we didn't hit the object, we can't wall run
+		if (!hitRight)
+			return false;
+	}		
 
 	FVector impactDirection = hit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector);
 	float yawDifference = 90.f - VectorMath::Vector2DRotationDifference(GetCharacterMovement()->Velocity, impactDirection);
+	// correct for cast direction if we hit on a left/right probe
+	// TODO: This isn't working yet
+	if (hitLeft)
+		yawDifference += 45.f;
+	else if (hitRight)
+		yawDifference -= 45.f;
 
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%f' yaw diff"), yawDifference));
 
-	if (hit.GetActor() == Object && yawDifference <= 60)
+	if (yawDifference <= 60)
 	{
+		if (GEngine)
+			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, TEXT("Starting Wall Run"));
 		WallRunHit = hit;
 		return true;	
 	}
