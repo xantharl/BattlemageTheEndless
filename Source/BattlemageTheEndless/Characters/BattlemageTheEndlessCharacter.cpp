@@ -107,7 +107,7 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		// Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::Jump);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
 		// Launch Jump
@@ -434,6 +434,14 @@ void ABattlemageTheEndlessCharacter::Look(const FInputActionValue& Value)
 
 void ABattlemageTheEndlessCharacter::Jump()
 {
+	// This is a hack to prevent the character from jumping twice in a row
+	// The input trigger is firing twice even though it's using pressed
+	time_t now = time(0);
+	if (now - _lastJumpTime < JumpCooldown)
+		return;
+
+	_lastJumpTime = now;
+
 	if (IsSliding)
 	{
 		EndSlide(GetCharacterMovement());
@@ -451,8 +459,6 @@ void ABattlemageTheEndlessCharacter::Jump()
 
 	if (JumpCurrentCount < JumpMaxCount)
 	{
-		Super::Jump();
-
 		UCharacterMovementComponent* movement = GetCharacterMovement();
 		if (movement && movement->MovementMode == EMovementMode::MOVE_Falling)
 		{
@@ -460,13 +466,13 @@ void ABattlemageTheEndlessCharacter::Jump()
 			float yawDifference = GetBaseAimRotation().Yaw - movement->Velocity.Rotation().Yaw;
 
 			// get rotation of last input vector
-			FVector inputVector = GetLastMovementInputVector();
-			// account for camera rotation
-			inputVector = inputVector.RotateAngleAxis(movement->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector);
+			FRotator inputRotator = LastControlInputVector.RotateAngleAxis(movement->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector).Rotation();
 
 			// rotate the velocity vector to match the character's facing direction, accounting for input rotation
-			movement->Velocity = movement->Velocity.RotateAngleAxis(yawDifference + inputVector.Rotation().Yaw, FVector::ZAxisVector);
+			movement->Velocity = movement->Velocity.RotateAngleAxis(inputRotator.Yaw, FVector::ZAxisVector);
 		}
+
+		Super::Jump();
 	}
 }
 
@@ -548,7 +554,7 @@ void ABattlemageTheEndlessCharacter::SwitchCamera()
 	if (now - _lastCameraSwap < 0.5f)
 		return;
 
-	_lastCameraSwap = time(0);
+	_lastCameraSwap = now;
 	if (ThirdPersonCamera->IsActive())
 	{
 		ThirdPersonCamera->Deactivate();
@@ -861,29 +867,25 @@ bool ABattlemageTheEndlessCharacter::ObjectIsWallRunnable(AActor* Object)
 	// If we didn't hit the object, try again with a vector 45 degress left
 	if (hit.GetActor() != Object)
 	{
-		hit = LineTraceMovementVector(FName("feetRaycastSocket"), 500, drawTrace, FColor::Red, -45.f);
+		hit = LineTraceMovementVector(FName("feetRaycastSocket"), 500, drawTrace, FColor::Blue, -45.f);
 
 		hitLeft = hit.GetActor() == Object;
 		// if we still didn't hit, try 45 right
 		if(!hitLeft)
 		{
-			hit = LineTraceMovementVector(FName("feetRaycastSocket"), 500, drawTrace, FColor::Red, 45.f);
+			hit = LineTraceMovementVector(FName("feetRaycastSocket"), 500, drawTrace, FColor::Emerald, 45.f);
 			hitRight = hit.GetActor() == Object;
 		}
 
 		// We have now tried all supported directions, if we didn't hit the object, we can't wall run
-		if (!hitRight)
+		if (!hitLeft && !hitRight)
 			return false;
 	}		
 
 	FVector impactDirection = hit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector);
 	float yawDifference = 90.f - VectorMath::Vector2DRotationDifference(GetCharacterMovement()->Velocity, impactDirection);
-	// correct for cast direction if we hit on a left/right probe
-	// TODO: This isn't working yet
-	if (hitLeft)
-		yawDifference += 45.f;
-	else if (hitRight)
-		yawDifference -= 45.f;
+
+	// there is no need to correct for the left or right hit cases since the impact normal will be the same
 
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%f' yaw diff"), yawDifference));
@@ -905,7 +907,9 @@ void ABattlemageTheEndlessCharacter::WallRun()
 
 	// Wall running refunds a jump charge
 	if (JumpCurrentCount > 0)
-		JumpCurrentCount -= WallRunJumpRefundCount;
+	{
+		JumpCurrentCount = FMath::Max(0, JumpCurrentCount-WallRunJumpRefundCount);
+	}
 
 	UCharacterMovementComponent* movement = GetCharacterMovement();
 	/*FVector impactDirection = WallRunHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector);
@@ -946,8 +950,8 @@ void ABattlemageTheEndlessCharacter::WallRun()
 
 	Controller->SetControlRotation(targetRotation);
 	
-	// redirect character's velocity to be parallel to the wall
-	movement->Velocity = movement->Velocity.RotateAngleAxis(isOneLess ? yawDiffOne : yawDiffTwo, FVector::ZAxisVector);
+	// redirect character's velocity to be parallel to the wall, ignore input
+	movement->Velocity = targetRotation.Vector() * movement->Velocity.Size();
 	// kill any vertical movement
 	movement->Velocity.Z = 0.f;
 	

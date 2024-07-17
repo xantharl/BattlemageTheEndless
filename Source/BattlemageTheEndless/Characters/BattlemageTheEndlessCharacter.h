@@ -95,6 +95,7 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 
 private:
 	time_t _lastCameraSwap;
+	time_t _lastJumpTime;
 
 public:
 	ABattlemageTheEndlessCharacter();
@@ -231,6 +232,9 @@ public:
 	// TODO: Probably remove this since we can only launch out of crouch now
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	int MaxLaunches = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	double JumpCooldown = 0.05;
 
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 	void SetLeftHandWeapon(UTP_WeaponComponent* weapon);
