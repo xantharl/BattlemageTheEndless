@@ -435,12 +435,11 @@ void ABattlemageTheEndlessCharacter::Look(const FInputActionValue& Value)
 void ABattlemageTheEndlessCharacter::Jump()
 {
 	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, TEXT("Jump Triggered"));
+		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%i' Jump Triggered"), JumpCurrentCount));
 
-	// This is a hack to prevent the character from jumping twice in a row
-	// The input trigger is firing twice even though it's using pressed
-	time_t now = time(0);
-	if (now - _lastJumpTime < JumpCooldown)
+	// jump cooldown
+	milliseconds now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+	if (now - _lastJumpTime < (JumpCooldown*1000ms))
 		return;
 
 	_lastJumpTime = now;
@@ -553,8 +552,8 @@ void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMov
 
 void ABattlemageTheEndlessCharacter::SwitchCamera() 
 {
-	time_t now = time(0);
-	if (now - _lastCameraSwap < 0.5f)
+	milliseconds now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+	if (now - _lastCameraSwap < 500ms)
 		return;
 
 	_lastCameraSwap = now;

@@ -9,6 +9,7 @@
 #include <GameFramework/SpringArmComponent.h>
 #include "../Pickups/TP_WeaponComponent.h"
 #include "cmath"
+#include <chrono>
 #include "../Helpers/VectorMath.h"
 #include "BattlemageTheEndlessCharacter.generated.h"
 
@@ -18,6 +19,7 @@ class UCameraComponent;
 class UInputAction;
 class UInputMappingContext;
 struct FInputActionValue;
+using namespace std::chrono;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -94,8 +96,8 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	UTP_WeaponComponent* RightHandWeapon;
 
 private:
-	time_t _lastCameraSwap;
-	time_t _lastJumpTime;
+	milliseconds _lastCameraSwap;
+	milliseconds _lastJumpTime;
 
 public:
 	ABattlemageTheEndlessCharacter();
