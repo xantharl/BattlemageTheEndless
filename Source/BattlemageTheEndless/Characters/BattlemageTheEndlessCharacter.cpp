@@ -434,6 +434,9 @@ void ABattlemageTheEndlessCharacter::Look(const FInputActionValue& Value)
 
 void ABattlemageTheEndlessCharacter::Jump()
 {
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, TEXT("Jump Triggered"));
+
 	// This is a hack to prevent the character from jumping twice in a row
 	// The input trigger is firing twice even though it's using pressed
 	time_t now = time(0);
