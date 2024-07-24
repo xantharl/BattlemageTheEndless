@@ -914,17 +914,10 @@ void ABattlemageTheEndlessCharacter::WallRun()
 	}
 
 	UCharacterMovementComponent* movement = GetCharacterMovement();
-	/*FVector impactDirection = WallRunHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector);
-	float yawDifference = 90.f - VectorMath::Vector2DRotationDifference(movement->Velocity, impactDirection);
-
-	FRotator rotation = WallRunCapsule->GetComponentRotation();
-	FVector characterLocation = GetRootComponent()->GetComponentLocation();
 
 	FVector start = GetMesh()->GetSocketLocation(FName("feetRaycastSocket"));
 	FVector end = start + FVector::LeftVector.RotateAngleAxis(GetRootComponent()->GetComponentRotation().Yaw, FVector::ZAxisVector) * 200;
 	WallIsToLeft = LineTraceGeneric(start, end).GetActor() == WallRunObject;
-
-	rotation.Yaw += yawDifference * (WallIsToLeft ? 1: -1);*/
 
 	// get vectors parallel to the wall
 	FRotator possibleWallRunDirectionOne = WallRunHit.ImpactNormal.RotateAngleAxis(90.f, FVector::ZAxisVector).Rotation();

@@ -131,6 +131,8 @@ protected:
 	FHitResult WallRunHit;
 	FVector WallRunAttachPoint;
 	FTimerHandle WallRunTimer;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	bool WallIsToLeft;
 
 public:
