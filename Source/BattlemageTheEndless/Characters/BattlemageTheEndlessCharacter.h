@@ -330,7 +330,5 @@ protected:
 	void EndWallRun();
 
 	bool bCanVault = true;
-
-	FVector lastTickLocation = FVector::ZeroVector;
 };
 

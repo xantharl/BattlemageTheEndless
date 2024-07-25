@@ -290,14 +290,6 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 
 	}
 	AActor::TickActor(DeltaTime, TickType, ThisTickFunction);
-
-	FVector playerLocationAfter = GetActorLocation();
-	if (IsWallRunning && GEngine)
-		DrawDebugLine(GetWorld(), playerLocationAfter, playerLocationAfter + GetCharacterMovement()->Velocity, FColor::Red, false, 2.0f);
-	//if (IsWallRunning && GEngine && (lastTickLocation - playerLocationAfter) != FVector::ZeroVector)
-	//	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%s' moved by actor tick"), *(lastTickLocation - playerLocationAfter).ToString()));
-
-	lastTickLocation = playerLocationAfter;
 }
 
 bool ABattlemageTheEndlessCharacter::WallRunContinuationRayCast()
@@ -434,8 +426,8 @@ void ABattlemageTheEndlessCharacter::Look(const FInputActionValue& Value)
 
 void ABattlemageTheEndlessCharacter::Jump()
 {
-	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%i' Jump Triggered"), JumpCurrentCount));
+	/*if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%i' Jump Triggered"), JumpCurrentCount));*/
 
 	// jump cooldown
 	milliseconds now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
@@ -802,8 +794,8 @@ void ABattlemageTheEndlessCharacter::EndVault()
 
 void ABattlemageTheEndlessCharacter::OnWallRunCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%s' Began overlap"), *AActor::GetDebugName(OtherActor)));
+	/*if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%s' Began overlap"), *AActor::GetDebugName(OtherActor)));*/
 	if (CanWallRun() && ObjectIsWallRunnable(OtherActor))
 	{
 		WallRunObject = OtherActor;
