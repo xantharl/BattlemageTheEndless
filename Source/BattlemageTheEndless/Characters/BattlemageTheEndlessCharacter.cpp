@@ -52,7 +52,7 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
 	if (movement)
 	{
-		movement->AirControl = 0.8f;
+		movement->AirControl = BaseAirControl;
 		movement->GetNavAgentPropertiesRef().bCanCrouch = true;
 	}
 
@@ -953,9 +953,8 @@ void ABattlemageTheEndlessCharacter::WallRun()
 		cameraManager->ViewYawMin = currentYaw - 90.f;
 	}
 	
-
-	// set max pitch angle to 30 degrees
-
+	// set air control to 100% to allow for continued movement parallel to the wall
+	movement->AirControl = 1.0f;
 
 	// set a timer to end the wall run
 	GetWorldTimerManager().SetTimer(WallRunTimer, this, &ABattlemageTheEndlessCharacter::EndWallRun, WallRunMaxDuration, false);
@@ -967,6 +966,9 @@ void ABattlemageTheEndlessCharacter::EndWallRun()
 	// This can be called before the timer goes off, so check if we're actually wall running
 	if (!IsWallRunning && GetCharacterMovement()->GravityScale == CharacterBaseGravityScale && bUseControllerRotationYaw)
 		return;
+
+	// reset air control to default
+	GetCharacterMovement()->AirControl = BaseAirControl;
 
 	IsWallRunning = false;
 	GetCharacterMovement()->GravityScale = CharacterBaseGravityScale;
