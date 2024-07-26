@@ -187,6 +187,12 @@ public:
 	float VaultDurationSeconds = 1.1f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float DoubleJumpHorizontalWeight = 1.5f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	bool ApplyMovementInputToJump = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	bool VaultFootPlanted = false;
 
 	float VaultElapsedTimeBeforeFootPlanted = 0.0f;

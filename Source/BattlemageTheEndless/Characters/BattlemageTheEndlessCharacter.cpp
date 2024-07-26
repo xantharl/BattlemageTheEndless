@@ -426,8 +426,8 @@ void ABattlemageTheEndlessCharacter::Look(const FInputActionValue& Value)
 
 void ABattlemageTheEndlessCharacter::Jump()
 {
-	/*if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%i' Jump Triggered"), JumpCurrentCount));*/
+	//if (GEngine)
+	//	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%i' Jump Triggered"), JumpCurrentCount));
 
 	// jump cooldown
 	milliseconds now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
@@ -446,9 +446,11 @@ void ABattlemageTheEndlessCharacter::Jump()
 		UnCrouch();
 	}
 
+	bool wallrunEnded = false;
 	if (IsWallRunning)
 	{
 		EndWallRun();
+		wallrunEnded = true;
 	}
 
 	if (JumpCurrentCount < JumpMaxCount)
@@ -456,18 +458,39 @@ void ABattlemageTheEndlessCharacter::Jump()
 		UCharacterMovementComponent* movement = GetCharacterMovement();
 		if (movement && movement->MovementMode == EMovementMode::MOVE_Falling)
 		{
-			// redirect the character's current velocity in the direction they're facing
-			float yawDifference = GetBaseAimRotation().Yaw - movement->Velocity.Rotation().Yaw;
+			// rotate movement to look direction
+			FRotator originalRotation = movement->Velocity.Rotation();
+			float yawDifference = movement->Velocity.Rotation().Yaw - movement->GetLastUpdateRotation().Yaw;
+			movement->Velocity = movement->Velocity.RotateAngleAxis(yawDifference, FVector::ZAxisVector);
 
-			// get rotation of last input vector
-			FRotator inputRotator = LastControlInputVector.RotateAngleAxis(movement->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector).Rotation();
+			// rotate movement based on input additively
+			if (ApplyMovementInputToJump)
+			{
+				FVector inputUnrotated = LastControlInputVector.RotateAngleAxis(originalRotation.GetInverse().Yaw, FVector::ZAxisVector);
+				inputUnrotated.Y *= DoubleJumpHorizontalWeight;
+				FVector inputReRotated = inputUnrotated.RotateAngleAxis(originalRotation.Yaw, FVector::ZAxisVector);
+				movement->Velocity = movement->Velocity.RotateAngleAxis(inputUnrotated.Rotation().Yaw, FVector::ZAxisVector);
 
-			// rotate the velocity vector to match the character's facing direction, accounting for input rotation
-			movement->Velocity = movement->Velocity.RotateAngleAxis(inputRotator.Yaw, FVector::ZAxisVector);
+				if (GEngine)
+				{
+					GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, FString::Printf(TEXT("InputRotator: %s"), *inputUnrotated.ToString()));
+				}
+			}
 		}
 
-		Super::Jump();
 	}
+
+	Super::Jump();
+	// this is to get around the double jump check in CheckJumpInput
+	if (wallrunEnded)
+	{
+		JumpCurrentCount--;
+	}
+
+	/*if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, FString::Printf(TEXT("InputRotator: %s"), *LastControlInputVector.ToString()));
+	}*/
 }
 
 void ABattlemageTheEndlessCharacter::SetLeftHandWeapon(UTP_WeaponComponent* weapon)
@@ -877,14 +900,15 @@ bool ABattlemageTheEndlessCharacter::ObjectIsWallRunnable(AActor* Object)
 	}		
 
 	FVector impactDirection = hit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector);
-	float yawDifference = 90.f - VectorMath::Vector2DRotationDifference(GetCharacterMovement()->Velocity, impactDirection);
+	float yawDifference = VectorMath::Vector2DRotationDifference(GetCharacterMovement()->Velocity, impactDirection);
 
 	// there is no need to correct for the left or right hit cases since the impact normal will be the same
 
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%f' yaw diff"), yawDifference));
 
-	if (yawDifference <= 60)
+	// wall run if we're more than 20 degrees rotated from the wall
+	if (yawDifference > 20.f)
 	{
 		if (GEngine)
 			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, TEXT("Starting Wall Run"));
@@ -958,7 +982,6 @@ void ABattlemageTheEndlessCharacter::WallRun()
 
 	// set a timer to end the wall run
 	GetWorldTimerManager().SetTimer(WallRunTimer, this, &ABattlemageTheEndlessCharacter::EndWallRun, WallRunMaxDuration, false);
-
 }
 
 void ABattlemageTheEndlessCharacter::EndWallRun()
@@ -966,6 +989,11 @@ void ABattlemageTheEndlessCharacter::EndWallRun()
 	// This can be called before the timer goes off, so check if we're actually wall running
 	if (!IsWallRunning && GetCharacterMovement()->GravityScale == CharacterBaseGravityScale && bUseControllerRotationYaw)
 		return;
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, FString::Printf(TEXT("Start of EndWallRun ForwardVector: %s"), *GetActorForwardVector().ToString()));
+	}
 
 	// reset air control to default
 	GetCharacterMovement()->AirControl = BaseAirControl;
@@ -983,5 +1011,10 @@ void ABattlemageTheEndlessCharacter::EndWallRun()
 		float currentYaw = Controller->GetControlRotation().Yaw;
 		cameraManager->ViewYawMax = 359.998993f;
 		cameraManager->ViewYawMin = 0.f;
+	}
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, FString::Printf(TEXT("End of EndWallRun ForwardVector: %s"), *GetActorForwardVector().ToString()));
 	}
 }
