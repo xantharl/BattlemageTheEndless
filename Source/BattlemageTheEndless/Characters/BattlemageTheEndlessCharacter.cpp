@@ -456,26 +456,33 @@ void ABattlemageTheEndlessCharacter::Jump()
 	if (JumpCurrentCount < JumpMaxCount)
 	{
 		UCharacterMovementComponent* movement = GetCharacterMovement();
+		// redirect movement in the direction of the look vector, optionally adding directional input influence
 		if (movement && movement->MovementMode == EMovementMode::MOVE_Falling)
 		{
-			// rotate movement to look direction
-			FRotator originalRotation = movement->Velocity.Rotation();
-			float yawDifference = movement->Velocity.Rotation().Yaw - movement->GetLastUpdateRotation().Yaw;
-			movement->Velocity = movement->Velocity.RotateAngleAxis(yawDifference, FVector::ZAxisVector);
+			UCameraComponent* activeCamera = FirstPersonCamera->IsActive() ? FirstPersonCamera : ThirdPersonCamera;
+			// use the already normalized rotation vector as the base
+			// NOTE: we are using the camera's rotation instead of the character's rotation to support wall running, which disables camera based character yaw control
+			FVector targetDirectionVector = activeCamera->GetComponentRotation().Vector();
+			//movement->GetLastUpdateRotation().Vector();
 
-			// rotate movement based on input additively
-			if (ApplyMovementInputToJump)
+			// we only want to apply the movement input if it hasn't already been consumed
+			if (ApplyMovementInputToJump && LastControlInputVector != FVector::ZeroVector && !wallrunEnded)
 			{
-				FVector inputUnrotated = LastControlInputVector.RotateAngleAxis(originalRotation.GetInverse().Yaw, FVector::ZAxisVector);
-				inputUnrotated.Y *= DoubleJumpHorizontalWeight;
-				FVector inputReRotated = inputUnrotated.RotateAngleAxis(originalRotation.Yaw, FVector::ZAxisVector);
-				movement->Velocity = movement->Velocity.RotateAngleAxis(inputUnrotated.Rotation().Yaw, FVector::ZAxisVector);
-
-				if (GEngine)
-				{
-					GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, FString::Printf(TEXT("InputRotator: %s"), *inputUnrotated.ToString()));
-				}
+				FVector movementImpact = LastControlInputVector;				
+				targetDirectionVector += movementImpact;
 			}
+
+			// normalize both rotators to positive rotation so we can safely use them to calculate the yaw difference
+			FRotator targetRotator = targetDirectionVector.Rotation();
+			FRotator movementRotator = movement->Velocity.Rotation();
+			VectorMath::NormalizeRotator(targetRotator);
+			VectorMath::NormalizeRotator(movementRotator);
+
+			// calculate the yaw difference
+			float yawDifference = targetRotator.Yaw - movementRotator.Yaw;
+
+			// rotate the movement vector to the target direction
+			movement->Velocity = movement->Velocity.RotateAngleAxis(yawDifference, FVector::ZAxisVector);
 		}
 
 	}
