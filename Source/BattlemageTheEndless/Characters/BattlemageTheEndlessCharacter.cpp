@@ -820,7 +820,7 @@ void ABattlemageTheEndlessCharacter::Vault()
 	// Box extent seems to be distance from origin (so we're not halving it)
 	VaultAttachPoint.Z = VaultHit.Component->Bounds.Origin.Z + VaultHit.Component->Bounds.BoxExtent.Z;
 
-	DrawDebugSphere(GetWorld(), VaultAttachPoint, 10.0f, 12, FColor::Green, false, 1.0f, 0, 1.0f);
+	//DrawDebugSphere(GetWorld(), VaultAttachPoint, 10.0f, 12, FColor::Green, false, 1.0f, 0, 1.0f);
 
 	// check which hand is higher
 	FVector socketLocationLeftHand = GetMesh()->GetSocketLocation(FName("GripLeft"));
