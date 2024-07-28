@@ -155,7 +155,7 @@ void ABattlemageTheEndlessCharacter::Crouch()
 
 	ACharacter::Crouch(false);
 
-	if (!bIsSprinting)
+	if (!bIsSprinting && !IsDodging())
 	{
 		return;
 	}
@@ -177,10 +177,12 @@ void ABattlemageTheEndlessCharacter::RequestUnCrouch()
 
 void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction)
 {
+	// lots of dependencies on movement in here, just get it since we always need it
+	UCharacterMovementComponent* movement = GetCharacterMovement();
+
 	// If we're sliding, handle it
 	if (IsSliding)
 	{
-		UCharacterMovementComponent* movement = GetCharacterMovement();
 		slideElapsedSeconds += DeltaTime;
 		if (movement)
 		{
@@ -205,11 +207,10 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 
 		if (IsSliding)
 		{
-			EndSlide(GetCharacterMovement());
+			EndSlide(movement);
 		}
 		if (bLaunchRequested)
 		{
-			UCharacterMovementComponent* movement = GetCharacterMovement();
 			DoLaunchJump();
 			bLaunchRequested = false;
 		}
@@ -265,7 +266,6 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 	}
 	if (IsWallRunning)
 	{
-		UCharacterMovementComponent* movement = GetCharacterMovement();
 		// end conditions for wall run
 		//	no need to check time since there's a timer running for that
 		//	if we are on the ground, end the wall run
@@ -289,7 +289,19 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 
 
 	}
+
+	// call super to apply movement before we evaluate a change in z velocity
 	AActor::TickActor(DeltaTime, TickType, ThisTickFunction);
+
+	// if we're past the apex, apply the falling gravity scale
+	// ignore this clause if we're wall running
+	if (PreviousVelocity.Z >= 0.0f && movement->Velocity.Z < -0.00001f && !IsWallRunning)
+	{
+		// this is undone in OnMovementModeChanged when the character lands
+		movement->GravityScale = CharacterPastJumpApexGravityScale;
+	}
+
+	PreviousVelocity = GetCharacterMovement()->Velocity;
 }
 
 bool ABattlemageTheEndlessCharacter::WallRunContinuationRayCast()
@@ -439,6 +451,7 @@ void ABattlemageTheEndlessCharacter::Jump()
 	if (IsSliding)
 	{
 		EndSlide(GetCharacterMovement());
+		LaunchJump();
 	}
 
 	if (bIsCrouched)
@@ -456,6 +469,11 @@ void ABattlemageTheEndlessCharacter::Jump()
 	if (JumpCurrentCount < JumpMaxCount)
 	{
 		UCharacterMovementComponent* movement = GetCharacterMovement();
+		// jumping past apex will have the different gravity scale, reset it to the base
+		if (movement->GravityScale != CharacterBaseGravityScale)
+		{
+			movement->GravityScale = CharacterBaseGravityScale;
+		}
 		// redirect movement in the direction of the look vector, optionally adding directional input influence
 		if (movement && movement->MovementMode == EMovementMode::MOVE_Falling)
 		{
@@ -552,6 +570,9 @@ void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMov
 		UGameplayStatics::PlaySoundAtLocation(this,
 			JumpLandingSound,
 			GetActorLocation(), 1.0f);
+
+		GetCharacterMovement()->GravityScale = CharacterBaseGravityScale;
+
 	} else if (PrevMovementMode == EMovementMode::MOVE_Walking && GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
 	{
 		// check if there are any eligible wallrun objects
@@ -675,6 +696,11 @@ void ABattlemageTheEndlessCharacter::Dodge(FVector Impulse)
 	GetWorldTimerManager().SetTimer(DodgeEndTimer, this, &ABattlemageTheEndlessCharacter::RestoreFriction, DodgeDurationSeconds, false);
 }
 
+bool ABattlemageTheEndlessCharacter::IsDodging()
+{
+	return GetWorldTimerManager().IsTimerActive(DodgeEndTimer);
+}
+
 void ABattlemageTheEndlessCharacter::RestoreFriction()
 {
 	UCharacterMovementComponent* movement = GetCharacterMovement();
@@ -733,8 +759,8 @@ void ABattlemageTheEndlessCharacter::OnHit(UPrimitiveComponent* HitComp, AActor*
 
 bool ABattlemageTheEndlessCharacter::CanVault()
 {
-	// Vaulting is only possible if enabled (this might get more complicated later)
-	return bCanVault;
+	// Vaulting is only possible if enabled and in the air
+	return bCanVault && GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling;
 }
 
 // TODO: use LineTraceMovementVector

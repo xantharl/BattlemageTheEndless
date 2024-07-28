@@ -226,6 +226,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float CharacterBaseGravityScale = 1.75f;
 
+	// Value expressed in m/s^2
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float CharacterPastJumpApexGravityScale = 2.f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float WallRunSpeed = 1000.f;
 
@@ -313,6 +317,8 @@ protected:
 	/// <param name="Impulse">The force with which to dodge (launch) the character, inclusive of direction</param>
 	void Dodge(FVector Impulse);
 
+	bool IsDodging();
+
 	UFUNCTION(BlueprintCallable, Category = "Character Movement")
 	void RestoreFriction();
 
@@ -334,6 +340,8 @@ protected:
 	FHitResult LineTraceGeneric(FVector start, FVector end);
 	bool ObjectIsWallRunnable(AActor* Object);
 	void WallRun();
+
+	FVector PreviousVelocity;
 
 	UFUNCTION(BlueprintCallable, Category = "Character Movement")
 	void EndWallRun();
