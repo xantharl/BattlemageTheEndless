@@ -18,5 +18,6 @@ public:
 	// this version takes 3d vectors and discards the z component
 	static float Vector2DRotationDifference(FVector A, FVector B);
 
-	static void NormalizeRotator(FRotator& Vector);
+	static FRotator NormalizeRotator0To360(FRotator Rotator);
+	static FRotator NormalizeRotator180s(FRotator Rotator);
 };

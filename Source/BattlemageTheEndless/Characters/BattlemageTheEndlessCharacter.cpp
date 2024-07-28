@@ -475,8 +475,8 @@ void ABattlemageTheEndlessCharacter::Jump()
 			// normalize both rotators to positive rotation so we can safely use them to calculate the yaw difference
 			FRotator targetRotator = targetDirectionVector.Rotation();
 			FRotator movementRotator = movement->Velocity.Rotation();
-			VectorMath::NormalizeRotator(targetRotator);
-			VectorMath::NormalizeRotator(movementRotator);
+			VectorMath::NormalizeRotator0To360(targetRotator);
+			VectorMath::NormalizeRotator0To360(movementRotator);
 
 			// calculate the yaw difference
 			float yawDifference = targetRotator.Yaw - movementRotator.Yaw;
@@ -911,14 +911,14 @@ bool ABattlemageTheEndlessCharacter::ObjectIsWallRunnable(AActor* Object)
 
 	// there is no need to correct for the left or right hit cases since the impact normal will be the same
 
-	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%f' yaw diff"), yawDifference));
+	//if (GEngine)
+	//	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%f' yaw diff"), yawDifference));
 
 	// wall run if we're more than 20 degrees rotated from the wall
 	if (yawDifference > 20.f)
 	{
-		if (GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, TEXT("Starting Wall Run"));
+		/*if (GEngine)
+			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, TEXT("Starting Wall Run"));*/
 		WallRunHit = hit;
 		return true;	
 	}
@@ -938,35 +938,46 @@ void ABattlemageTheEndlessCharacter::WallRun()
 
 	UCharacterMovementComponent* movement = GetCharacterMovement();
 
+	// This is used by the anim graph to determine which way to mirror the wallrun animation
 	FVector start = GetMesh()->GetSocketLocation(FName("feetRaycastSocket"));
-	FVector end = start + FVector::LeftVector.RotateAngleAxis(GetRootComponent()->GetComponentRotation().Yaw, FVector::ZAxisVector) * 200;
+	// add 30 degrees to the left of the forward vector to account for wall runs starting near the start of the wall
+	FVector end = start + FVector::LeftVector.RotateAngleAxis(GetRootComponent()->GetComponentRotation().Yaw+30.f, FVector::ZAxisVector) * 200;
 	WallIsToLeft = LineTraceGeneric(start, end).GetActor() == WallRunObject;
 
 	// get vectors parallel to the wall
 	FRotator possibleWallRunDirectionOne = WallRunHit.ImpactNormal.RotateAngleAxis(90.f, FVector::ZAxisVector).Rotation();
 	FRotator possibleWallRunDirectionTwo = WallRunHit.ImpactNormal.RotateAngleAxis(-90.f, FVector::ZAxisVector).Rotation();
-	FRotator lookDirection = movement->GetLastUpdateRotation();
 
-	int normalizedLookYaw = ((int)lookDirection.Yaw + 360) % 360;
-	bool isQuadrant3 = normalizedLookYaw > 180 && normalizedLookYaw < 270;
+	float dirOne360 = VectorMath::NormalizeRotator0To360(possibleWallRunDirectionOne).Yaw;
+	float dirTwo360 = VectorMath::NormalizeRotator0To360(possibleWallRunDirectionTwo).Yaw;
+	float dirOne180 = VectorMath::NormalizeRotator180s(possibleWallRunDirectionOne).Yaw;
+	float dirTwo180 = VectorMath::NormalizeRotator180s(possibleWallRunDirectionTwo).Yaw;
 
-	// Special case to treat 0 and 360 as the same value
-	if (isQuadrant3 && FMath::Abs((double)possibleWallRunDirectionTwo.Yaw) < 0.00001)
-		possibleWallRunDirectionTwo.Yaw = 360.f;
+	float lookDirection = movement->GetLastUpdateRotation().Yaw;
 
-	// Normalize rotations to be between 0 and 360
-	// NOTE: There is a rotator normalization function built into ue but it seems to be doing nothing
-	//VectorMath::NormalizeRotator(possibleWallRunDirectionOne);
-	//VectorMath::NormalizeRotator(possibleWallRunDirectionTwo);
-	//VectorMath::NormalizeRotator(lookDirection);
-
-	// determine which direction is closer to the character's current look direction
-	float yawDiffOne = possibleWallRunDirectionOne.Yaw - lookDirection.Yaw;
-	float yawDiffTwo = possibleWallRunDirectionTwo.Yaw - lookDirection.Yaw;
-	bool isOneLess = FMath::Abs(yawDiffOne) <= FMath::Abs(yawDiffTwo);
-	FRotator targetRotation = isOneLess ? possibleWallRunDirectionOne : possibleWallRunDirectionTwo;
-
+	// find the least yaw difference
+	float closestDir = dirOne360;
+	if (FMath::Abs(dirTwo360 - lookDirection) < FMath::Abs(closestDir - lookDirection))
+	{
+		closestDir = dirTwo360;
+	}
+	if(FMath::Abs(dirOne180 - lookDirection) < FMath::Abs(closestDir - lookDirection))
+	{
+		closestDir = dirOne180;
+	}
+	if (FMath::Abs(dirTwo180 - lookDirection) < FMath::Abs(closestDir - lookDirection))
+	{
+		closestDir = dirTwo180;
+	}
+	FRotator targetRotation = FRotator(0.f, closestDir, 0.f);
 	Controller->SetControlRotation(targetRotation);
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, 
+			FString::Printf(TEXT("Wallrun Start Direction: %s, Is Wall Left? %s"), 
+				*targetRotation.ToString(), WallIsToLeft ? TEXT("true") : TEXT("false")));
+	}
 	
 	// redirect character's velocity to be parallel to the wall, ignore input
 	movement->Velocity = targetRotation.Vector() * movement->Velocity.Size();
@@ -997,10 +1008,10 @@ void ABattlemageTheEndlessCharacter::EndWallRun()
 	if (!IsWallRunning && GetCharacterMovement()->GravityScale == CharacterBaseGravityScale && bUseControllerRotationYaw)
 		return;
 
-	if (GEngine)
+	/*if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, FString::Printf(TEXT("Start of EndWallRun ForwardVector: %s"), *GetActorForwardVector().ToString()));
-	}
+	}*/
 
 	// reset air control to default
 	GetCharacterMovement()->AirControl = BaseAirControl;
@@ -1020,8 +1031,8 @@ void ABattlemageTheEndlessCharacter::EndWallRun()
 		cameraManager->ViewYawMin = 0.f;
 	}
 
-	if (GEngine)
+	/*if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, FString::Printf(TEXT("End of EndWallRun ForwardVector: %s"), *GetActorForwardVector().ToString()));
-	}
+	}*/
 }

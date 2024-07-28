@@ -21,15 +21,41 @@ float VectorMath::Vector2DRotationDifference(FVector A, FVector B)
 	return Vector2DRotationDifference(FVector2D(A.X, A.Y), FVector2D(B.X, B.Y));
 }
 
-void VectorMath::NormalizeRotator(FRotator& Vector)
+FRotator VectorMath::NormalizeRotator0To360(FRotator Rotator)
 {
-	if (Vector.Pitch < 0) {
-		Vector.Pitch += 360.f;
-	}
-	if (Vector.Yaw < 0) {
-		Vector.Yaw += 360.f;
-	}
-	if (Vector.Roll < 0) {
-		Vector.Roll += 360.f;
-	}
+	// don't use .0f, use -0.00001f to account for floating point errors
+	Rotator.Pitch = FMath::Fmod(Rotator.Pitch, 360.f);
+	if (Rotator.Pitch < -0.00001f)
+		Rotator.Pitch += 360.f;
+
+	Rotator.Yaw = FMath::Fmod(Rotator.Yaw, 360.f);
+	if (Rotator.Yaw < -0.00001f)
+		Rotator.Yaw += 360.f;
+
+	Rotator.Roll = FMath::Fmod(Rotator.Roll, 360.f);
+	if (Rotator.Roll < -0.00001f)
+		Rotator.Roll += 360.f;
+
+	return Rotator;
+}
+
+FRotator VectorMath::NormalizeRotator180s(FRotator Rotator)
+{
+	// don't use .0f, use -0.00001f to account for floating point errors
+	Rotator.Pitch = FMath::Fmod(Rotator.Pitch + 180.f, 360.f);
+	if (Rotator.Pitch < -0.00001f)
+		Rotator.Pitch += 360.f;
+	Rotator.Pitch -= 180.f;
+
+	Rotator.Yaw = FMath::Fmod(Rotator.Yaw + 180.f, 360.f);
+	if (Rotator.Yaw < -0.00001f)
+		Rotator.Yaw += 360.f;
+	Rotator.Yaw -= 180.f;
+
+	Rotator.Roll = FMath::Fmod(Rotator.Roll + 180.f, 360.f);
+	if (Rotator.Roll < -0.00001f)
+		Rotator.Roll += 360.f;
+	Rotator.Roll -= 180.f;
+
+	return Rotator;
 }
