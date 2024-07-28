@@ -914,7 +914,7 @@ bool ABattlemageTheEndlessCharacter::ObjectIsWallRunnable(AActor* Object)
 	//if (GEngine)
 	//	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%f' yaw diff"), yawDifference));
 
-	// wall run if we're more than 20 degrees rotated from the wall but less than 
+	// wall run if we're more than 20 degrees rotated from the wall
 	if (yawDifference > 20.f && yawDifference < 180.f)
 	{
 		/*if (GEngine)
