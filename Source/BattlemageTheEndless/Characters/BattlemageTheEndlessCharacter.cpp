@@ -766,6 +766,10 @@ bool ABattlemageTheEndlessCharacter::CanVault()
 // TODO: use LineTraceMovementVector
 bool ABattlemageTheEndlessCharacter::ObjectIsVaultable(AActor* Object)
 {
+	// if the object is a pawn, was cannot vault it
+	if (Object->IsA(APawn::StaticClass()))
+		return false;
+
 	// Raycast from cameraSocket straight forward to see if Object is in the way
 	FVector start = GetMesh()->GetSocketLocation(FName("cameraSocket"));
 	// Cast a ray out in look direction 10 units long
@@ -899,15 +903,11 @@ FHitResult ABattlemageTheEndlessCharacter::LineTraceGeneric(FVector start, FVect
 
 bool ABattlemageTheEndlessCharacter::ObjectIsWallRunnable(AActor* Object)
 {
-	bool drawTrace = true;
-	/* Don't think I care about this for now, we wouldn't be trying to wallrun during a vault anyway
-	// Raycast from vaultRaycastSocket straight forward to see if Object is in the way
-	FHitResult hit = LineTraceMovementVector(FName("vaultRaycastSocket"), 500, drawTrace, FColor::Red);
-
-	// If the camera raycast did not hit the object, we are too high to wall run
-	if (hit.GetActor() != Object)
+	// if the object is a pawn, was cannot wallrun on it
+	if (Object->IsA(APawn::StaticClass()))
 		return false;
-	*/
+
+	bool drawTrace = true;
 
 	// Repeat the same process but use socket feetRaycastSocket
 	FHitResult hit = LineTraceMovementVector(FName("feetRaycastSocket"), 500, drawTrace);
