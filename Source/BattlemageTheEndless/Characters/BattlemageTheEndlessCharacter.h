@@ -11,6 +11,7 @@
 #include "cmath"
 #include <chrono>
 #include "../Helpers/VectorMath.h"
+#include "../GameMode/BattlemageTheEndlessGameMode.h"
 #include "BattlemageTheEndlessCharacter.generated.h"
 
 class UInputComponent;
@@ -80,6 +81,9 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* DropItemAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* RespawnAction;
+
 	UPROPERTY(EditAnywhere, Category = Sound)
 	class USoundWave* JumpLandingSound;
 
@@ -101,6 +105,12 @@ private:
 
 public:
 	ABattlemageTheEndlessCharacter();
+
+	//Called when our Actor is destroyed during Gameplay.
+	virtual void Destroyed();
+
+	//Call Gamemode class to Restart Player Character.
+	void CallRestartPlayer();
 
 	virtual void ApplyDamage(float damage);
 

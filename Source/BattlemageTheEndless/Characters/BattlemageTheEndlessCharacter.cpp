@@ -58,6 +58,38 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 
 }
 
+void ABattlemageTheEndlessCharacter::Destroyed()
+{
+	Super::Destroyed();
+
+	// Example to bind to OnPlayerDied event in GameMode. 
+	if (UWorld* World = GetWorld())
+	{
+		if (ABattlemageTheEndlessGameMode* GameMode = Cast<ABattlemageTheEndlessGameMode>(World->GetAuthGameMode()))
+		{
+			GameMode->GetOnPlayerDied().Broadcast(this);
+		}
+	}
+}
+
+void ABattlemageTheEndlessCharacter::CallRestartPlayer()
+{
+	//Get a reference to the Pawn Controller.
+	AController* CortollerRef = GetController();
+
+	//Destroy the Player.   
+	Destroy();
+
+	//Get the World and GameMode in the world to invoke its restart player function.
+	if (UWorld* World = GetWorld())
+	{
+		if (ABattlemageTheEndlessGameMode* GameMode = Cast<ABattlemageTheEndlessGameMode>(World->GetAuthGameMode()))
+		{
+			GameMode->RestartPlayer(CortollerRef);
+		}
+	}
+}
+
 void ABattlemageTheEndlessCharacter::SetupCameras()
 {
 	// Create FirstPersonCamera
@@ -133,6 +165,8 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 
 		// Dodge Actions
 		EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::DodgeInput);
+
+		EnhancedInputComponent->BindAction(RespawnAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::CallRestartPlayer);
 	}
 	else
 	{
