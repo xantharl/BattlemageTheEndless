@@ -34,6 +34,7 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnHit);
+	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap);
 
 	WallRunCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("WallRunCapsule"));
 	WallRunCapsule->InitCapsuleSize(55.f, 96.0f);
@@ -74,8 +75,10 @@ void ABattlemageTheEndlessCharacter::Destroyed()
 
 void ABattlemageTheEndlessCharacter::CallRestartPlayer()
 {
-	//Get a reference to the Pawn Controller.
-	AController* CortollerRef = GetController();
+	//Get the Controller of the Character.
+	AController* controllerRef = GetController();
+	if (LastCheckPoint)
+		controllerRef->StartSpot = LastCheckPoint;
 
 	//Destroy the Player.   
 	Destroy();
@@ -85,7 +88,7 @@ void ABattlemageTheEndlessCharacter::CallRestartPlayer()
 	{
 		if (ABattlemageTheEndlessGameMode* GameMode = Cast<ABattlemageTheEndlessGameMode>(World->GetAuthGameMode()))
 		{
-			GameMode->RestartPlayer(CortollerRef);
+			GameMode->RestartPlayer(controllerRef);
 		}
 	}
 }
@@ -902,6 +905,15 @@ void ABattlemageTheEndlessCharacter::OnWallRunCapsuleEndOverlap(UPrimitiveCompon
 {
 	if (OtherActor == WallRunObject)
 		EndWallRun();
+}
+
+void ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	// if the other actor is not a CheckPoint, return
+	if (ACheckPoint* checkpoint = Cast<ACheckPoint>(OtherActor))
+	{
+		LastCheckPoint = checkpoint;
+	}
 }
 
 bool ABattlemageTheEndlessCharacter::CanWallRun()

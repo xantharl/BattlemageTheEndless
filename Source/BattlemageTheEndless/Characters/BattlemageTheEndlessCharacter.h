@@ -12,6 +12,7 @@
 #include <chrono>
 #include "../Helpers/VectorMath.h"
 #include "../GameMode/BattlemageTheEndlessGameMode.h"
+#include "../GameMode/CheckPoint.h"
 #include "BattlemageTheEndlessCharacter.generated.h"
 
 class UInputComponent;
@@ -144,6 +145,8 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	bool WallIsToLeft;
+
+	ACheckPoint* LastCheckPoint;
 
 public:
 		
@@ -345,6 +348,8 @@ protected:
 	void OnWallRunCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	UFUNCTION(BlueprintCallable, Category = "Character Movement")
 	void OnWallRunCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+	UFUNCTION(BlueprintCallable, Category = "CheckPoint")
+	void OnBaseCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	bool CanWallRun();
 	FHitResult LineTraceMovementVector(FName socketName, float magnitude, bool drawTrace, FColor drawColor, float rotateYawByDegrees);
 	FHitResult LineTraceGeneric(FVector start, FVector end);

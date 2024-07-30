@@ -22,7 +22,6 @@ void ABattlemageTheEndlessGameMode::BeginPlay()
     {
         OnPlayerDied.AddDynamic(this, &ABattlemageTheEndlessGameMode::PlayerDied);
     }
-
 }
 
 void ABattlemageTheEndlessGameMode::RestartPlayer(AController* NewPlayer)
