@@ -107,6 +107,8 @@ private:
 public:
 	ABattlemageTheEndlessCharacter();
 
+	void SetupCapsules();
+
 	//Called when our Actor is destroyed during Gameplay.
 	virtual void Destroyed();
 
@@ -118,6 +120,10 @@ public:
 protected:
 	virtual void BeginPlay();
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0);
+
+	// Starts a wallrun if any walls are applicable
+	void TryBeginWallrun();
+	void OnJumpLanded();
 	void SetupCameras();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
@@ -163,7 +169,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	bool IsWallRunning;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	bool bShouldUncrouch;
+	bool bShouldUnCrouch;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	bool bLaunchRequested;
 
@@ -233,7 +239,7 @@ public:
 
 	// Value expressed in m/s^2
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float WallRunInitialGravitScale = 0.0f;
+	float WallRunInitialGravityScale = 0.0f;
 
 	// Value expressed in m/s^2
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
@@ -263,12 +269,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	int MaxLaunches = 1;
 
+	/** Jump Cooldown expressed in seconds**/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	double JumpCooldown = 0.05;
 
+	/** TODO: Handle this in c++ rather than BP **/
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 	void SetLeftHandWeapon(UTP_WeaponComponent* weapon);
 
+	/** TODO: Handle this in c++ rather than BP **/
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 	void SetRightHandWeapon(UTP_WeaponComponent* weapon);
 
@@ -281,11 +290,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 	UTP_WeaponComponent* GetWeapon(EquipSlot SlotType);
 
-	/** Getter for the weapon */
+	/** TODO: Is this redundant since the property is public? **/
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 	UTP_WeaponComponent* GetLeftHandWeapon();
 
-	/** Getter for the weapon */
+	/** TODO: Is this redundant since the property is public? **/
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 	UTP_WeaponComponent* GetRightHandWeapon();
 
@@ -305,6 +314,8 @@ protected:
 
 	void Jump();
 
+	void RedirectVelocityToLookDirection(bool wallrunEnded);
+
 	float slideElapsedSeconds;
 	int launchesPerformed;
 
@@ -317,6 +328,10 @@ protected:
 	void LaunchJump();
 	void RequestUnCrouch();
 	void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction);
+	void TickWallRun(UCharacterMovementComponent* movement, float DeltaTime);
+	void TickVault(float DeltaTime);
+	void DoUnCrouch(UCharacterMovementComponent* movement);
+	void TickSlide(float DeltaTime, UCharacterMovementComponent* movement);
 	bool WallRunContinuationRayCast();
 	void EndSlide(UCharacterMovementComponent* movement);
 	void SwitchCamera();

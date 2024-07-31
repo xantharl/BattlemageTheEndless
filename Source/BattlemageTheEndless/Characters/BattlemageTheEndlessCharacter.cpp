@@ -25,24 +25,12 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 	// Character doesnt have a rifle at start
 	bIsSprinting = false;
 	IsSliding = false;
-	bShouldUncrouch = false;
+	bShouldUnCrouch = false;
 	slideElapsedSeconds = 0.0f;
 	launchesPerformed = 0;
 
 	SetupCameras();
-
-	// Set size for collision capsule
-	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
-	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnHit);
-	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap);
-
-	WallRunCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("WallRunCapsule"));
-	WallRunCapsule->InitCapsuleSize(55.f, 96.0f);
-	WallRunCapsule->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
-	WallRunCapsule->SetupAttachment(GetCapsuleComponent());
-	WallRunCapsule->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
-	WallRunCapsule->OnComponentBeginOverlap.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnWallRunCapsuleBeginOverlap);
-	WallRunCapsule->OnComponentEndOverlap.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnWallRunCapsuleEndOverlap);
+	SetupCapsules();
 
 	// Init Audio Resource
 	static ConstructorHelpers::FObjectFinder<USoundWave> Sound(TEXT("/Game/Sounds/Jump_Landing"));
@@ -57,6 +45,22 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 		movement->GetNavAgentPropertiesRef().bCanCrouch = true;
 	}
 
+}
+
+void ABattlemageTheEndlessCharacter::SetupCapsules()
+{
+	// Set size for collision capsule
+	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
+	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnHit);
+	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap);
+
+	WallRunCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("WallRunCapsule"));
+	WallRunCapsule->InitCapsuleSize(55.f, 96.0f);
+	WallRunCapsule->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
+	WallRunCapsule->SetupAttachment(GetCapsuleComponent());
+	WallRunCapsule->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
+	WallRunCapsule->OnComponentBeginOverlap.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnWallRunCapsuleBeginOverlap);
+	WallRunCapsule->OnComponentEndOverlap.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnWallRunCapsuleEndOverlap);
 }
 
 void ABattlemageTheEndlessCharacter::Destroyed()
@@ -209,7 +213,7 @@ void ABattlemageTheEndlessCharacter::RequestUnCrouch()
 	if (!bIsCrouched)
 		return;
 
-	bShouldUncrouch = true;
+	bShouldUnCrouch = true;
 }
 
 void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction)
@@ -217,128 +221,139 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 	// lots of dependencies on movement in here, just get it since we always need it
 	UCharacterMovementComponent* movement = GetCharacterMovement();
 
-	// If we're sliding, handle it
 	if (IsSliding)
-	{
-		slideElapsedSeconds += DeltaTime;
-		if (movement)
-		{
-			// If we've reached the slide's full duration, reset speed and slide data
-			if (slideElapsedSeconds >= SlideDurationSeconds)
-			{
-				EndSlide(movement);
-			}
-			else // Otherwise decrement the slide speed
-			{
-				float newSpeed = SlideSpeed * powf(2.7182818284f, -1.39f * slideElapsedSeconds);
-				movement->MaxWalkSpeedCrouched = newSpeed;
-			}
-		}
-	}
+		TickSlide(DeltaTime, movement);
 
-	// If we have a pending uncrouch, uncrouch. Evaluate whether a launch triggered it
-	if (bShouldUncrouch)
-	{
-		UnCrouch(false);
-		bShouldUncrouch = false;
-
-		if (IsSliding)
-		{
-			EndSlide(movement);
-		}
-		if (bLaunchRequested)
-		{
-			DoLaunchJump();
-			bLaunchRequested = false;
-		}
-	}
+	if (bShouldUnCrouch)
+		DoUnCrouch(movement);
 
 	if (IsVaulting)
-	{
-		FVector socketLocationToUse;
-		FVector relativeLocationToAdd = FVector::Zero();
+		TickVault(DeltaTime);
 
-		// If a foot is planted, check which one is higher
-		if (VaultFootPlanted)
-		{
-			// check whether a foot is on top of the vaulted object
-			FVector socketLocationLeftFoot = GetMesh()->GetSocketLocation(FName("foot_l_Socket"));
-			FVector socketLocationRightFoot = GetMesh()->GetSocketLocation(FName("foot_r_Socket"));
-
-			if (VaultAttachPoint.Z < socketLocationLeftFoot.Z)
-			{
-				socketLocationToUse = socketLocationLeftFoot;
-			}
-			else
-			{
-				socketLocationToUse = socketLocationRightFoot;
-			}
-
-			// if the foot is planted, move the character forward
-			float timeRemaining = VaultDurationSeconds - VaultElapsedTimeBeforeFootPlanted;
-			FVector forwardMotionToAdd = FVector(VaultEndForwardDistance * (DeltaTime / timeRemaining), 0.f, 0.f);
-			relativeLocationToAdd += forwardMotionToAdd.RotateAngleAxis(GetActorRotation().Yaw, FVector::ZAxisVector);
-		}
-		// otherwise, use the hand that is higher
-		else
-		{
-			VaultElapsedTimeBeforeFootPlanted += DeltaTime;
-
-			FVector socketLocationLeftHand = GetMesh()->GetSocketLocation(FName("GripLeft"));
-			FVector socketLocationRightHand = GetMesh()->GetSocketLocation(FName("GripRight"));
-
-			if (VaultAttachPoint.Z < socketLocationLeftHand.Z)
-			{
-				socketLocationToUse = socketLocationLeftHand;
-			}
-			else
-			{
-				socketLocationToUse = socketLocationRightHand;
-			}
-		}
-
-		// adjust the character's location based on difference between socket location and attach point
-		relativeLocationToAdd.Z = FMath::Max(0.f, (VaultAttachPoint - socketLocationToUse).Z);
-		GetRootComponent()->AddRelativeLocation(relativeLocationToAdd);
-	}
 	if (IsWallRunning)
-	{
-		// end conditions for wall run
-		//	no need to check time since there's a timer running for that
-		//	if we are on the ground, end the wall run
-		//	if a raycast doesn't find the wall, end the wall run
-		if (movement->MovementMode == EMovementMode::MOVE_Walking || !WallRunContinuationRayCast())
-		{
-			EndWallRun();
-		}
-		else // if we're still wall running
-		{
-			// increase gravity linearly based on time elapsed
-			movement->GravityScale += (DeltaTime / (WallRunMaxDuration - WallRunGravityDelay)) * (CharacterBaseGravityScale - WallRunInitialGravitScale);
-
-			// if gravity is over CharacterBaseGravityScale, set it to CharacterBaseGravityScale and end the wall run
-			if (movement->GravityScale > CharacterBaseGravityScale)
-			{
-				movement->GravityScale = CharacterBaseGravityScale;
-				EndWallRun();
-			}
-		}
-
-
-	}
+		TickWallRun(movement, DeltaTime);
 
 	// call super to apply movement before we evaluate a change in z velocity
 	AActor::TickActor(DeltaTime, TickType, ThisTickFunction);
 
 	// if we're past the apex, apply the falling gravity scale
 	// ignore this clause if we're wall running
-	if (PreviousVelocity.Z >= 0.0f && movement->Velocity.Z < -0.00001f && !IsWallRunning)
+	if (movement && PreviousVelocity.Z >= 0.0f && movement->Velocity.Z < -0.00001f && !IsWallRunning)
 	{
 		// this is undone in OnMovementModeChanged when the character lands
 		movement->GravityScale = CharacterPastJumpApexGravityScale;
 	}
 
 	PreviousVelocity = GetCharacterMovement()->Velocity;
+}
+
+void ABattlemageTheEndlessCharacter::TickWallRun(UCharacterMovementComponent* movement, float DeltaTime)
+{
+	// end conditions for wall run
+	//	no need to check time since there's a timer running for that
+	//	if we are on the ground, end the wall run
+	//	if a raycast doesn't find the wall, end the wall run
+	if (movement->MovementMode == EMovementMode::MOVE_Walking || !WallRunContinuationRayCast())
+	{
+		EndWallRun();
+	}
+	else // if we're still wall running
+	{
+		// increase gravity linearly based on time elapsed
+		movement->GravityScale += (DeltaTime / (WallRunMaxDuration - WallRunGravityDelay)) * (CharacterBaseGravityScale - WallRunInitialGravityScale);
+
+		// if gravity is over CharacterBaseGravityScale, set it to CharacterBaseGravityScale and end the wall run
+		if (movement->GravityScale > CharacterBaseGravityScale)
+		{
+			movement->GravityScale = CharacterBaseGravityScale;
+			EndWallRun();
+		}
+	}
+}
+
+void ABattlemageTheEndlessCharacter::TickVault(float DeltaTime)
+{
+	FVector socketLocationToUse;
+	FVector relativeLocationToAdd = FVector::Zero();
+	USkeletalMeshComponent* mesh = GetMesh();
+
+	// If a foot is planted, check which one is higher
+	if (VaultFootPlanted)
+	{
+		// check whether a foot is on top of the vaulted object
+		FVector socketLocationLeftFoot = mesh->GetSocketLocation(FName("foot_l_Socket"));
+		FVector socketLocationRightFoot = mesh->GetSocketLocation(FName("foot_r_Socket"));
+
+		if (VaultAttachPoint.Z < socketLocationLeftFoot.Z)
+		{
+			socketLocationToUse = socketLocationLeftFoot;
+		}
+		else
+		{
+			socketLocationToUse = socketLocationRightFoot;
+		}
+
+		// if the foot is planted, move the character forward
+		float timeRemaining = VaultDurationSeconds - VaultElapsedTimeBeforeFootPlanted;
+		FVector forwardMotionToAdd = FVector(VaultEndForwardDistance * (DeltaTime / timeRemaining), 0.f, 0.f);
+		relativeLocationToAdd += forwardMotionToAdd.RotateAngleAxis(GetActorRotation().Yaw, FVector::ZAxisVector);
+	}
+	// otherwise, use the hand that is higher
+	else
+	{
+		VaultElapsedTimeBeforeFootPlanted += DeltaTime;
+
+		FVector socketLocationLeftHand = mesh->GetSocketLocation(FName("GripLeft"));
+		FVector socketLocationRightHand = mesh->GetSocketLocation(FName("GripRight"));
+
+		if (VaultAttachPoint.Z < socketLocationLeftHand.Z)
+		{
+			socketLocationToUse = socketLocationLeftHand;
+		}
+		else
+		{
+			socketLocationToUse = socketLocationRightHand;
+		}
+	}
+
+	// adjust the character's location based on difference between socket location and attach point
+	relativeLocationToAdd.Z = FMath::Max(0.f, (VaultAttachPoint - socketLocationToUse).Z);
+	GetRootComponent()->AddRelativeLocation(relativeLocationToAdd);
+}
+
+void ABattlemageTheEndlessCharacter::DoUnCrouch(UCharacterMovementComponent* movement)
+{
+	UnCrouch(false);
+	bShouldUnCrouch = false;
+
+	if (IsSliding)
+	{
+		EndSlide(movement);
+	}
+	if (bLaunchRequested)
+	{
+		DoLaunchJump();
+		bLaunchRequested = false;
+	}
+}
+
+void ABattlemageTheEndlessCharacter::TickSlide(float DeltaTime, UCharacterMovementComponent* movement)
+{
+	slideElapsedSeconds += DeltaTime;
+
+	if (!movement)
+		return;
+	
+	// If we've reached the slide's full duration, reset speed and slide data
+	if (slideElapsedSeconds >= SlideDurationSeconds)
+	{
+		EndSlide(movement);
+	}
+	else // Otherwise decrement the slide speed
+	{
+		float newSpeed = SlideSpeed * powf(2.7182818284f, -1.39f * slideElapsedSeconds);
+		movement->MaxWalkSpeedCrouched = newSpeed;
+	}	
 }
 
 bool ABattlemageTheEndlessCharacter::WallRunContinuationRayCast()
@@ -417,7 +432,6 @@ void ABattlemageTheEndlessCharacter::LaunchJump()
 	RequestUnCrouch();
 }
 
-
 void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
@@ -475,9 +489,6 @@ void ABattlemageTheEndlessCharacter::Look(const FInputActionValue& Value)
 
 void ABattlemageTheEndlessCharacter::Jump()
 {
-	//if (GEngine)
-	//	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%i' Jump Triggered"), JumpCurrentCount));
-
 	// jump cooldown
 	milliseconds now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 	if (now - _lastJumpTime < (JumpCooldown*1000ms))
@@ -503,42 +514,10 @@ void ABattlemageTheEndlessCharacter::Jump()
 		wallrunEnded = true;
 	}
 
+	// movement redirection logic
 	if (JumpCurrentCount < JumpMaxCount)
 	{
-		UCharacterMovementComponent* movement = GetCharacterMovement();
-		// jumping past apex will have the different gravity scale, reset it to the base
-		if (movement->GravityScale != CharacterBaseGravityScale)
-		{
-			movement->GravityScale = CharacterBaseGravityScale;
-		}
-		// redirect movement in the direction of the look vector, optionally adding directional input influence
-		if (movement && movement->MovementMode == EMovementMode::MOVE_Falling)
-		{
-			UCameraComponent* activeCamera = FirstPersonCamera->IsActive() ? FirstPersonCamera : ThirdPersonCamera;
-			// use the already normalized rotation vector as the base
-			// NOTE: we are using the camera's rotation instead of the character's rotation to support wall running, which disables camera based character yaw control
-			FVector targetDirectionVector = activeCamera->GetComponentRotation().Vector();
-			//movement->GetLastUpdateRotation().Vector();
-
-			// we only want to apply the movement input if it hasn't already been consumed
-			if (ApplyMovementInputToJump && LastControlInputVector != FVector::ZeroVector && !wallrunEnded)
-			{
-				FVector movementImpact = LastControlInputVector;				
-				targetDirectionVector += movementImpact;
-			}
-
-			// normalize both rotators to positive rotation so we can safely use them to calculate the yaw difference
-			FRotator targetRotator = targetDirectionVector.Rotation();
-			FRotator movementRotator = movement->Velocity.Rotation();
-			VectorMath::NormalizeRotator0To360(targetRotator);
-			VectorMath::NormalizeRotator0To360(movementRotator);
-
-			// calculate the yaw difference
-			float yawDifference = targetRotator.Yaw - movementRotator.Yaw;
-
-			// rotate the movement vector to the target direction
-			movement->Velocity = movement->Velocity.RotateAngleAxis(yawDifference, FVector::ZAxisVector);
-		}
+		RedirectVelocityToLookDirection(wallrunEnded);
 
 	}
 
@@ -548,11 +527,42 @@ void ABattlemageTheEndlessCharacter::Jump()
 	{
 		JumpCurrentCount--;
 	}
+}
 
-	/*if (GEngine)
+void ABattlemageTheEndlessCharacter::RedirectVelocityToLookDirection(bool wallrunEnded)
+{
+	UCharacterMovementComponent* movement = GetCharacterMovement();
+	if (!movement || movement->MovementMode != EMovementMode::MOVE_Falling)
+		return;
+
+	// jumping past apex will have the different gravity scale, reset it to the base
+	if (movement->GravityScale != CharacterBaseGravityScale)
+		movement->GravityScale = CharacterBaseGravityScale;
+	
+	UCameraComponent* activeCamera = FirstPersonCamera->IsActive() ? FirstPersonCamera : ThirdPersonCamera;
+	// use the already normalized rotation vector as the base
+	// NOTE: we are using the camera's rotation instead of the character's rotation to support wall running, which disables camera based character yaw control
+	FVector targetDirectionVector = activeCamera->GetComponentRotation().Vector();
+	//movement->GetLastUpdateRotation().Vector();
+
+	// we only want to apply the movement input if it hasn't already been consumed
+	if (ApplyMovementInputToJump && LastControlInputVector != FVector::ZeroVector && !wallrunEnded)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, FString::Printf(TEXT("InputRotator: %s"), *LastControlInputVector.ToString()));
-	}*/
+		FVector movementImpact = LastControlInputVector;
+		targetDirectionVector += movementImpact;
+	}
+
+	// normalize both rotators to positive rotation so we can safely use them to calculate the yaw difference
+	FRotator targetRotator = targetDirectionVector.Rotation();
+	FRotator movementRotator = movement->Velocity.Rotation();
+	VectorMath::NormalizeRotator0To360(targetRotator);
+	VectorMath::NormalizeRotator0To360(movementRotator);
+
+	// calculate the yaw difference
+	float yawDifference = targetRotator.Yaw - movementRotator.Yaw;
+
+	// rotate the movement vector to the target direction
+	movement->Velocity = movement->Velocity.RotateAngleAxis(yawDifference, FVector::ZAxisVector);	
 }
 
 void ABattlemageTheEndlessCharacter::SetLeftHandWeapon(UTP_WeaponComponent* weapon)
@@ -602,34 +612,47 @@ void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMov
 {
 	if (PrevMovementMode == EMovementMode::MOVE_Falling && GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Walking)
 	{
-		launchesPerformed = 0;
-		bLaunchRequested = false;
-		UGameplayStatics::PlaySoundAtLocation(this,
-			JumpLandingSound,
-			GetActorLocation(), 1.0f);
-
-		GetCharacterMovement()->GravityScale = CharacterBaseGravityScale;
+		OnJumpLanded();
 
 	} else if (PrevMovementMode == EMovementMode::MOVE_Walking && GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
 	{
-		// check if there are any eligible wallrun objects
-		TArray<AActor*> overlappingActors;
-		GetOverlappingActors(overlappingActors, nullptr);
-		for(AActor* actor: overlappingActors)
-		{
-			if (ObjectIsWallRunnable(actor))
-			{
-				WallRunObject = actor;
-				// WallRunHit is set in ObjectIsWallRunnable
-				WallRun();
-				break;
-			}
-		}
+		TryBeginWallrun();
 	}
 
 	ACharacter::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
 }
 
+void ABattlemageTheEndlessCharacter::TryBeginWallrun()
+{
+	// check if there are any eligible wallrun objects
+	TArray<AActor*> overlappingActors;
+	GetOverlappingActors(overlappingActors, nullptr);
+	for (AActor* actor : overlappingActors)
+	{
+		if (ObjectIsWallRunnable(actor))
+		{
+			WallRunObject = actor;
+			// WallRunHit is set in ObjectIsWallRunnable
+			WallRun();
+			break;
+		}
+	}
+}
+
+void ABattlemageTheEndlessCharacter::OnJumpLanded()
+{
+	// TODO: Should I be setting current jump count to 0 or does the super handle that?
+
+	launchesPerformed = 0;
+	bLaunchRequested = false;
+	UGameplayStatics::PlaySoundAtLocation(this,
+		JumpLandingSound,
+		GetActorLocation(), 1.0f);
+
+	GetCharacterMovement()->GravityScale = CharacterBaseGravityScale;
+}
+
+// TODO: Can I migrate this to the player controller?
 void ABattlemageTheEndlessCharacter::SwitchCamera() 
 {
 	milliseconds now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
@@ -710,20 +733,15 @@ void ABattlemageTheEndlessCharacter::Dodge(FVector Impulse)
 	// Currently only allow dodging if on ground
 	UCharacterMovementComponent* movement = GetCharacterMovement();
 	if (movement->MovementMode == EMovementMode::MOVE_Falling)
-	{
 		return;
-	}
+
 	// If we're sliding, end it before dodging
 	if (IsSliding)
-	{
 		EndSlide(movement);
-	}
 
 	// If we're crouched, uncrouch before dodging
 	if (bIsCrouched)
-	{
 		RequestUnCrouch();
-	}
 
 	// Launch the character
 	PreviousFriction = movement->GroundFriction;
@@ -782,16 +800,15 @@ bool ABattlemageTheEndlessCharacter::TrySetWeapon(UTP_WeaponComponent* Weapon, F
 void ABattlemageTheEndlessCharacter::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	// We aren't checking for wallrun state since a vault should be able to override a wallrun
-	if (CanVault() && ObjectIsVaultable(OtherActor))
-	{
-		VaultTarget = OtherActor;
-		VaultHit = Hit;
-		Vault();
-		if(IsWallRunning)
-		{
-			EndWallRun();
-		}
-	}
+	if (!CanVault() || !ObjectIsVaultable(OtherActor))
+		return;
+
+	VaultTarget = OtherActor;
+	VaultHit = Hit;
+	Vault();
+
+	if(IsWallRunning)
+		EndWallRun();
 }
 
 bool ABattlemageTheEndlessCharacter::CanVault()
@@ -800,38 +817,24 @@ bool ABattlemageTheEndlessCharacter::CanVault()
 	return bCanVault && GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling;
 }
 
-// TODO: use LineTraceMovementVector
 bool ABattlemageTheEndlessCharacter::ObjectIsVaultable(AActor* Object)
 {
 	// if the object is a pawn, was cannot vault it
 	if (Object->IsA(APawn::StaticClass()))
 		return false;
 
-	// Raycast from cameraSocket straight forward to see if Object is in the way
-	FVector start = GetMesh()->GetSocketLocation(FName("cameraSocket"));
-	// Cast a ray out in look direction 10 units long
-	FVector castVector = (FVector::XAxisVector * 50).RotateAngleAxis(GetCharacterMovement()->GetLastUpdateRotation().Yaw, FVector::ZAxisVector);
-	FVector end = start + castVector;
+	bool drawTrace = false;
 
-	// Perform the raycast
-	FHitResult hit;
-	FCollisionQueryParams params;
-	FCollisionObjectQueryParams objectParams;
-	params.AddIgnoredActor(this);
-	GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
-
-	//DrawDebugLine(GetWorld(), start, end, FColor::Red, false, 1.0f, 0, 1.0f);
+	// Raycast from cameraSocket straight forward to see if Object is in the way	
+	// TODO: Why is this requiring me to pass in optional params?
+	FHitResult hit = LineTraceMovementVector(FName("cameraSocket"), 50, drawTrace, FColor::Green, 0.f);
 
 	// If the camera raycast hit the object, we are too low to vault
 	if (hit.GetActor() == Object)
 		return false;
 
 	// Repeat the same process but use socket vaultRaycastSocket
-	start = GetMesh()->GetSocketLocation(FName("vaultRaycastSocket"));
-	end = start + castVector;
-	GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
-
-	//DrawDebugLine(GetWorld(), start, end, FColor::Green, false, 1.0f, 0, 1.0f);
+	hit = LineTraceMovementVector(FName("vaultRaycastSocket"), 50, drawTrace, FColor::Green, 0.f);
 
 	// If the vault raycast hit the object, we can vault
 	return hit.GetActor() == Object;
@@ -1000,7 +1003,7 @@ bool ABattlemageTheEndlessCharacter::ObjectIsWallRunnable(AActor* Object)
 void ABattlemageTheEndlessCharacter::WallRun()
 {
 	IsWallRunning = true;
-	GetCharacterMovement()->GravityScale = WallRunInitialGravitScale;
+	GetCharacterMovement()->GravityScale = WallRunInitialGravityScale;
 
 	// Wall running refunds a jump charge
 	if (JumpCurrentCount > 0)
@@ -1044,12 +1047,12 @@ void ABattlemageTheEndlessCharacter::WallRun()
 	FRotator targetRotation = FRotator(0.f, closestDir, 0.f);
 	Controller->SetControlRotation(targetRotation);
 
-	if (GEngine)
+	/*if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, 
 			FString::Printf(TEXT("Wallrun Start Direction: %s, Is Wall Left? %s"), 
 				*targetRotation.ToString(), WallIsToLeft ? TEXT("true") : TEXT("false")));
-	}
+	}*/
 	
 	// redirect character's velocity to be parallel to the wall, ignore input
 	movement->Velocity = targetRotation.Vector() * movement->Velocity.Size();
