@@ -3,3 +3,8 @@
 
 #include "BMageCharacterMovementComponent.h"
 
+UBMageCharacterMovementComponent::UBMageCharacterMovementComponent()
+{
+	// use AMovementAbilityFactory to create abilities
+	// MovementAbilities = AMovementAbilityFactory::CreateMovementAbilities();
+}

@@ -38,6 +38,8 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 
 	JumpMaxCount = 2;
 
+	MovementAbilities[MovementAbilityType::Launch] = Cast<ULaunchAbility>(ULaunchAbility());
+
 	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
 	if (movement)
 	{

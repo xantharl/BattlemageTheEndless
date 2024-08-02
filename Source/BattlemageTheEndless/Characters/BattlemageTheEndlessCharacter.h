@@ -10,9 +10,17 @@
 #include "../Pickups/TP_WeaponComponent.h"
 #include "cmath"
 #include <chrono>
+#include <map>
 #include "../Helpers/VectorMath.h"
 #include "../GameMode/BattlemageTheEndlessGameMode.h"
 #include "../GameMode/CheckPoint.h"
+#include "../Abilities/MovementAbility.h"
+
+#include "../Abilities/Instances/WallRunAbility.h"
+#include "../Abilities/Instances/VaultAbility.h"
+#include "../Abilities/Instances/SlideAbility.h"
+#include "../Abilities/Instances/LaunchAbility.h"
+
 #include "BattlemageTheEndlessCharacter.generated.h"
 
 class UInputComponent;
@@ -99,6 +107,8 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 
 	UPROPERTY(EditAnywhere, Category = Inventory)
 	UTP_WeaponComponent* RightHandWeapon;
+
+	std::map<MovementAbilityType, UMovementAbility*> MovementAbilities;
 
 private:
 	milliseconds _lastCameraSwap;
