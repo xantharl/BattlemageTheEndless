@@ -3,14 +3,11 @@
 
 #include "MovementAbility.h"
 
-UMovementAbility::UMovementAbility(const FObjectInitializer& X) : UObject(X)
+UMovementAbility::UMovementAbility(const FObjectInitializer& X, UCharacterMovementComponent* Movement) : UObject(X)
 {
+	this->Movement = Movement;
 }
 
 UMovementAbility::~UMovementAbility()
-{
-}
-
-void UMovementAbility::Tick(float DeltaTime)
 {
 }

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "MovementAbilityInstance.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "MovementAbility.generated.h"
 
 UENUM()
@@ -24,8 +25,8 @@ class BATTLEMAGETHEENDLESS_API UMovementAbility : public UObject
 {
 	GENERATED_BODY()
 public:
-	UMovementAbility(const FObjectInitializer& X);
-	UMovementAbility() {}
+	UMovementAbility(const FObjectInitializer& X, UCharacterMovementComponent* Movement);
+	//UMovementAbility() {}
 	~UMovementAbility();
 
 	bool IsEnabled = true;
@@ -37,8 +38,9 @@ public:
 
 	bool IsActive = false;
 
+	UCharacterMovementComponent* Movement;
+
 	virtual void Begin() { IsActive = true; }
 	virtual void End() { IsActive = false; }
-
-	virtual void Tick(float DeltaTime);
+	virtual void Tick(float DeltaTime) {}
 };

@@ -5,6 +5,13 @@
 
 UBMageCharacterMovementComponent::UBMageCharacterMovementComponent()
 {
-	// use AMovementAbilityFactory to create abilities
-	// MovementAbilities = AMovementAbilityFactory::CreateMovementAbilities();
+	MovementAbilities = map<MovementAbilityType, UMovementAbility*>();
+
+	MovementAbilities[MovementAbilityType::WallRun] = CreateDefaultSubobject<UWallRunAbility>(TEXT("WallRun"));
+	MovementAbilities[MovementAbilityType::Launch] = CreateDefaultSubobject<UWallRunAbility>(TEXT("Launch"));
+	MovementAbilities[MovementAbilityType::Slide] = CreateDefaultSubobject<UWallRunAbility>(TEXT("Slide"));
+	MovementAbilities[MovementAbilityType::Vault] = CreateDefaultSubobject<UWallRunAbility>(TEXT("Vault"));
+
+	AirControl = BaseAirControl;
+	GetNavAgentPropertiesRef().bCanCrouch = true;
 }

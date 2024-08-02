@@ -6,7 +6,13 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include <map>
 #include <string>
-//#include "../Abilities/MovementAbility.h"
+
+#include "../Abilities/MovementAbility.h"
+#include "../Abilities/Instances/WallRunAbility.h"
+#include "../Abilities/Instances/VaultAbility.h"
+#include "../Abilities/Instances/SlideAbility.h"
+#include "../Abilities/Instances/LaunchAbility.h"
+
 #include "BMageCharacterMovementComponent.generated.h"
 
 using namespace std;
@@ -20,6 +26,8 @@ class BATTLEMAGETHEENDLESS_API UBMageCharacterMovementComponent : public UCharac
 
 public:
 	UBMageCharacterMovementComponent();
-	//map<string, UMovementAbility> MovementAbilities;
+	map<MovementAbilityType, UMovementAbility*> MovementAbilities;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float BaseAirControl = 0.8f;
 };

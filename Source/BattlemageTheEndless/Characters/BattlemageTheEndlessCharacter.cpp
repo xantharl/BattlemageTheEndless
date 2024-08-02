@@ -19,8 +19,8 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 //////////////////////////////////////////////////////////////////////////
 // ABattlemageTheEndlessCharacter
 
-
-ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
+ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<UBMageCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
 	// Character doesnt have a rifle at start
 	bIsSprinting = false;
@@ -37,8 +37,6 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter()
 	JumpLandingSound = Sound.Object;
 
 	JumpMaxCount = 2;
-
-	MovementAbilities[MovementAbilityType::Launch] = Cast<ULaunchAbility>(ULaunchAbility());
 
 	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
 	if (movement)
@@ -356,27 +354,6 @@ void ABattlemageTheEndlessCharacter::TickSlide(float DeltaTime, UCharacterMoveme
 		float newSpeed = SlideSpeed * powf(2.7182818284f, -1.39f * slideElapsedSeconds);
 		movement->MaxWalkSpeedCrouched = newSpeed;
 	}	
-}
-
-bool ABattlemageTheEndlessCharacter::WallRunContinuationRayCast()
-{
-	// Raycast from vaultRaycastSocket straight forward to see if Object is in the way
-	FVector start = GetMesh()->GetSocketLocation(FName("feetRaycastSocket"));
-	// Cast a ray out in hit normal direction 100 units long
-	FVector castVector = (FVector::XAxisVector * 100).RotateAngleAxis(WallRunHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector).Rotation().Yaw, FVector::ZAxisVector);
-	FVector end = start + castVector;
-
-	// Perform the raycast
-	FHitResult hit;
-	FCollisionQueryParams params;
-	FCollisionObjectQueryParams objectParams;
-	params.AddIgnoredActor(this);
-	GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
-
-	DrawDebugLine(GetWorld(), start, end, FColor::Red, false, 1.0f, 0, 1.0f);
-
-	// If the camera raycast did not hit the object, we are too high to wall run
-	return hit.GetActor() == WallRunObject;
 }
 
 void ABattlemageTheEndlessCharacter::EndSlide(UCharacterMovementComponent* movement)
@@ -1081,35 +1058,5 @@ void ABattlemageTheEndlessCharacter::WallRun()
 
 void ABattlemageTheEndlessCharacter::EndWallRun()
 {
-	// This can be called before the timer goes off, so check if we're actually wall running
-	if (!IsWallRunning && GetCharacterMovement()->GravityScale == CharacterBaseGravityScale && bUseControllerRotationYaw)
-		return;
-
-	/*if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, FString::Printf(TEXT("Start of EndWallRun ForwardVector: %s"), *GetActorForwardVector().ToString()));
-	}*/
-
-	// reset air control to default
-	GetCharacterMovement()->AirControl = BaseAirControl;
-
-	IsWallRunning = false;
-	GetCharacterMovement()->GravityScale = CharacterBaseGravityScale;
-	WallRunObject = NULL;
-
-	// re-enable player rotation from input
-	bUseControllerRotationYaw = true;
-
-	// set max pan angle to 60 degrees
-	if (APlayerCameraManager* cameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0))
-	{
-		float currentYaw = Controller->GetControlRotation().Yaw;
-		cameraManager->ViewYawMax = 359.998993f;
-		cameraManager->ViewYawMin = 0.f;
-	}
-
-	/*if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, FString::Printf(TEXT("End of EndWallRun ForwardVector: %s"), *GetActorForwardVector().ToString()));
-	}*/
+	// TODO: Use the movement ability to end the wall run
 }

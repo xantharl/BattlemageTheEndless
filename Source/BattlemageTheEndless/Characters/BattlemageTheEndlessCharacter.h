@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
 #include "GameFramework/CharacterMovementComponent.h" 
+#include "BMageCharacterMovementComponent.h"
 #include <GameFramework/SpringArmComponent.h>
 #include "../Pickups/TP_WeaponComponent.h"
 #include "cmath"
@@ -14,12 +15,6 @@
 #include "../Helpers/VectorMath.h"
 #include "../GameMode/BattlemageTheEndlessGameMode.h"
 #include "../GameMode/CheckPoint.h"
-#include "../Abilities/MovementAbility.h"
-
-#include "../Abilities/Instances/WallRunAbility.h"
-#include "../Abilities/Instances/VaultAbility.h"
-#include "../Abilities/Instances/SlideAbility.h"
-#include "../Abilities/Instances/LaunchAbility.h"
 
 #include "BattlemageTheEndlessCharacter.generated.h"
 
@@ -51,6 +46,7 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	UCameraComponent* FirstPersonCamera;
 
 	/** Wallrun overlap detection capsule **/
+	// TODO: Figure out if that can be moved to the wallrun ability
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collision, meta = (AllowPrivateAccess = "true"))
 	UCapsuleComponent* WallRunCapsule;
 
@@ -108,14 +104,12 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, Category = Inventory)
 	UTP_WeaponComponent* RightHandWeapon;
 
-	std::map<MovementAbilityType, UMovementAbility*> MovementAbilities;
-
 private:
 	milliseconds _lastCameraSwap;
 	milliseconds _lastJumpTime;
 
 public:
-	ABattlemageTheEndlessCharacter();
+	ABattlemageTheEndlessCharacter(const FObjectInitializer& ObjectInitializer);
 
 	void SetupCapsules();
 
@@ -153,15 +147,6 @@ protected:
 	FHitResult VaultHit;
 	FVector VaultAttachPoint;
 
-	// Object currently being wallrunned
-	AActor* WallRunObject;
-	FHitResult WallRunHit;
-	FVector WallRunAttachPoint;
-	FTimerHandle WallRunTimer;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	bool WallIsToLeft;
-
 	ACheckPoint* LastCheckPoint;
 
 public:
@@ -176,8 +161,11 @@ public:
 	bool IsSliding;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	bool IsVaulting;
+
+	// TODO: Derive from the wallrun ability
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	bool IsWallRunning;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	bool bShouldUnCrouch;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
@@ -249,31 +237,7 @@ public:
 
 	// Value expressed in m/s^2
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float WallRunInitialGravityScale = 0.0f;
-
-	// Value expressed in m/s^2
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float CharacterBaseGravityScale = 1.75f;
-
-	// Value expressed in m/s^2
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float CharacterPastJumpApexGravityScale = 2.f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float WallRunSpeed = 1000.f;
-
-	/** Time before gravity starts to apply again **/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float WallRunGravityDelay = 0.5f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float WallRunMaxDuration = 2.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	int WallRunJumpRefundCount = 1;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float BaseAirControl = 0.8f;
 
 	// TODO: Probably remove this since we can only launch out of crouch now
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
