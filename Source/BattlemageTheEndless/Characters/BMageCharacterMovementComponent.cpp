@@ -133,3 +133,8 @@ void UBMageCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previ
 		TryStartAbility(MovementAbilityType::WallRun);
 	}
 }
+
+void UBMageCharacterMovementComponent::SetVaultFootPlanted(bool value)
+{
+	Cast<UVaultAbility>(MovementAbilities[MovementAbilityType::Vault])->VaultFootPlanted = value;
+}

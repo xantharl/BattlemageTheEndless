@@ -51,7 +51,6 @@ void ABattlemageTheEndlessCharacter::SetupCapsule()
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
-	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnHit);
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap);
 }
 
@@ -219,56 +218,6 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 
 	// call super to apply movement before we evaluate a change in z velocity
 	AActor::TickActor(DeltaTime, TickType, ThisTickFunction);
-}
-
-void ABattlemageTheEndlessCharacter::TickVault(float DeltaTime)
-{
-	FVector socketLocationToUse;
-	FVector relativeLocationToAdd = FVector::Zero();
-	USkeletalMeshComponent* mesh = GetMesh();
-
-	// If a foot is planted, check which one is higher
-	if (VaultFootPlanted)
-	{
-		// check whether a foot is on top of the vaulted object
-		FVector socketLocationLeftFoot = mesh->GetSocketLocation(FName("foot_l_Socket"));
-		FVector socketLocationRightFoot = mesh->GetSocketLocation(FName("foot_r_Socket"));
-
-		if (VaultAttachPoint.Z < socketLocationLeftFoot.Z)
-		{
-			socketLocationToUse = socketLocationLeftFoot;
-		}
-		else
-		{
-			socketLocationToUse = socketLocationRightFoot;
-		}
-
-		// if the foot is planted, move the character forward
-		float timeRemaining = VaultDurationSeconds - VaultElapsedTimeBeforeFootPlanted;
-		FVector forwardMotionToAdd = FVector(VaultEndForwardDistance * (DeltaTime / timeRemaining), 0.f, 0.f);
-		relativeLocationToAdd += forwardMotionToAdd.RotateAngleAxis(GetActorRotation().Yaw, FVector::ZAxisVector);
-	}
-	// otherwise, use the hand that is higher
-	else
-	{
-		VaultElapsedTimeBeforeFootPlanted += DeltaTime;
-
-		FVector socketLocationLeftHand = mesh->GetSocketLocation(FName("GripLeft"));
-		FVector socketLocationRightHand = mesh->GetSocketLocation(FName("GripRight"));
-
-		if (VaultAttachPoint.Z < socketLocationLeftHand.Z)
-		{
-			socketLocationToUse = socketLocationLeftHand;
-		}
-		else
-		{
-			socketLocationToUse = socketLocationRightHand;
-		}
-	}
-
-	// adjust the character's location based on difference between socket location and attach point
-	relativeLocationToAdd.Z = FMath::Max(0.f, (VaultAttachPoint - socketLocationToUse).Z);
-	GetRootComponent()->AddRelativeLocation(relativeLocationToAdd);
 }
 
 void ABattlemageTheEndlessCharacter::DoUnCrouch(UCharacterMovementComponent* movement)
@@ -707,98 +656,6 @@ bool ABattlemageTheEndlessCharacter::TrySetWeapon(UTP_WeaponComponent* Weapon, F
 	}
 
 	return true;
-}
-
-void ABattlemageTheEndlessCharacter::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
-{
-	// We aren't checking for wallrun state since a vault should be able to override a wallrun
-	if (!CanVault() || !ObjectIsVaultable(OtherActor))
-		return;
-
-	VaultTarget = OtherActor;
-	VaultHit = Hit;
-	Vault();
-}
-
-bool ABattlemageTheEndlessCharacter::CanVault()
-{
-	// Vaulting is only possible if enabled and in the air
-	return bCanVault && GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling;
-}
-
-bool ABattlemageTheEndlessCharacter::ObjectIsVaultable(AActor* Object)
-{
-	// if the object is a pawn, was cannot vault it
-	if (Object->IsA(APawn::StaticClass()))
-		return false;
-
-	bool drawTrace = false;
-
-	// Raycast from cameraSocket straight forward to see if Object is in the way	
-	UCharacterMovementComponent* movement = GetCharacterMovement();
-	FHitResult hit = Traces::LineTraceMovementVector(this, movement, GetMesh(), FName("cameraSocket"), 50, drawTrace, FColor::Green, 0.f);
-
-	// If the camera raycast hit the object, we are too low to vault
-	if (hit.GetActor() == Object)
-		return false;
-
-	// Repeat the same process but use socket vaultRaycastSocket
-	hit = Traces::LineTraceMovementVector(this, movement, GetMesh(), FName("vaultRaycastSocket"), 50, drawTrace, FColor::Green, 0.f);
-
-	// If the vault raycast hit the object, we can vault
-	return hit.GetActor() == Object;
-}
-
-void ABattlemageTheEndlessCharacter::Vault()
-{
-	IsVaulting = true;
-	DisableInput(Cast<APlayerController>(Controller));
-	// stop movement and gravity by enabling flying
-	UCharacterMovementComponent* movement = GetCharacterMovement();
-	movement->StopMovementImmediately();
-	movement->SetMovementMode(MOVE_Flying);
-
-	FRotator targetDirection = VaultHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector).Rotation();
-
-	// Rotate the character to directly face the vaulted object
-	Controller->SetControlRotation(targetDirection);
-
-	// determine the highest point on the vaulted face
-	// NOTE: This logic will only work for objects with flat tops
-	VaultAttachPoint = VaultHit.ImpactPoint;
-	// Box extent seems to be distance from origin (so we're not halving it)
-	VaultAttachPoint.Z = VaultHit.Component->Bounds.Origin.Z + VaultHit.Component->Bounds.BoxExtent.Z;
-
-	//DrawDebugSphere(GetWorld(), VaultAttachPoint, 10.0f, 12, FColor::Green, false, 1.0f, 0, 1.0f);
-
-	// check which hand is higher
-	FVector socketLocationLeftHand = GetMesh()->GetSocketLocation(FName("GripLeft"));
-	FVector socketLocationRightHand = GetMesh()->GetSocketLocation(FName("GripRight"));
-	FVector handToUse = socketLocationLeftHand.Z > socketLocationRightHand.Z ? socketLocationLeftHand : socketLocationRightHand;
-
-	GetRootComponent()->AddRelativeLocation(FVector(0.f, 0.f, VaultAttachPoint.Z - handToUse.Z));
-
-	// Disable collision to allow proper movement
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Ignore);
-	GetMesh()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Ignore);
-
-	// anim graph handles the actual movement with a root motion animation to put the character in the right place
-	// register a timer to end the vaulting state
-	GetWorldTimerManager().SetTimer(VaultEndTimer, this, &ABattlemageTheEndlessCharacter::EndVault, VaultDurationSeconds, false);
-}
-
-void ABattlemageTheEndlessCharacter::EndVault()
-{
-	EnableInput(Cast<APlayerController>(Controller));
-	IsVaulting = false;
-	GetCharacterMovement()->SetMovementMode(MOVE_Walking);
-	VaultTarget = NULL;
-	// anim graph handles transition back to normal state
-	VaultFootPlanted = false;
-	VaultElapsedTimeBeforeFootPlanted = 0;
-	// turn collision with worldstatic back on
-	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
-	GetMesh()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 }
 
 void ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

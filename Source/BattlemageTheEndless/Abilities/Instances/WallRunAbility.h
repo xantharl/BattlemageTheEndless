@@ -3,8 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Kismet/GameplayStatics.h"
-#include "Engine/World.h"
 #include "../MovementAbility.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
@@ -55,7 +53,7 @@ public:
 	UWallRunAbility(const FObjectInitializer& X);
 
 	// Overrides
-	virtual void Init(UCharacterMovementComponent* movement, ACharacter* character, USkeletalMeshComponent* mesh);
+	virtual void Init(UCharacterMovementComponent* movement, ACharacter* character, USkeletalMeshComponent* mesh) override;
 	virtual bool ShouldBegin() override;
 	virtual bool ShouldEnd() override;
 	virtual void Tick(float DeltaTime) override;

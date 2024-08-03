@@ -106,4 +106,7 @@ public:
 	virtual void OnMovementAbilityEnd(UMovementAbility* ability);
 
 	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
+
+	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
+	void SetVaultFootPlanted(bool value);
 };

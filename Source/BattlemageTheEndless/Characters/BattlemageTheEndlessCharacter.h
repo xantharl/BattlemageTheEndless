@@ -132,14 +132,7 @@ protected:
 
 	FTimerHandle DodgeEndTimer;
 
-	FTimerHandle VaultEndTimer;
-
 	float PreviousFriction = 8.0f;
-
-	// Object currently being vaulted
-	AActor* VaultTarget;
-	FHitResult VaultHit;
-	FVector VaultAttachPoint;
 
 	ACheckPoint* LastCheckPoint;
 
@@ -193,23 +186,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float DodgeDurationSeconds = 0.35f;
 
-	// Default duration is based on the animation currently in use
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float VaultDurationSeconds = 1.1f;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float DoubleJumpHorizontalWeight = 1.5f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	bool ApplyMovementInputToJump = true;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	bool VaultFootPlanted = false;
-
-	float VaultElapsedTimeBeforeFootPlanted = 0.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float VaultEndForwardDistance = 25.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float CrouchSpeed;
@@ -292,7 +273,6 @@ protected:
 	void LaunchJump();
 	void RequestUnCrouch();
 	void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction);
-	void TickVault(float DeltaTime);
 	void DoUnCrouch(UCharacterMovementComponent* movement);
 	void TickSlide(float DeltaTime, UCharacterMovementComponent* movement);
 	void EndSlide(UCharacterMovementComponent* movement);
@@ -312,22 +292,11 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Character Movement")
 	void RestoreFriction();
 
-	UFUNCTION(BlueprintCallable, Category = "Collision")
-	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
-	bool CanVault();
-	bool ObjectIsVaultable(AActor* Object);
-	void Vault();
-
-	UFUNCTION(BlueprintCallable, Category = "Character Movement")
-	void EndVault();
-
 	UFUNCTION(BlueprintCallable, Category = "CheckPoint")
 	void OnBaseCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	bool CanWallRun();
 
 	UFUNCTION(BlueprintCallable, Category = "Character Movement")
 	void EndWallRun();
-
-	bool bCanVault = true;
 };
 

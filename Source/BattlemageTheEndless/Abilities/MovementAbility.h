@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "MovementAbilityInstance.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "MovementAbility.generated.h"
 
