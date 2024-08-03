@@ -5,17 +5,17 @@
 
 UBMageCharacterMovementComponent::UBMageCharacterMovementComponent()
 {
-	MovementAbilities = map<MovementAbilityType, TObjectPtr<UMovementAbility>>();
+	MovementAbilities = TMap<MovementAbilityType, TObjectPtr<UMovementAbility>>();
 
 	WallRunAbility = CreateDefaultSubobject<UWallRunAbility>(TEXT("WallRun"));
 	LaunchAbility = CreateDefaultSubobject<ULaunchAbility>(TEXT("Launch"));
 	SlideAbility = CreateDefaultSubobject<USlideAbility>(TEXT("Slide"));
 	VaultAbility = CreateDefaultSubobject<UVaultAbility>(TEXT("Vault"));
 
-	MovementAbilities[MovementAbilityType::WallRun] = WallRunAbility;
-	MovementAbilities[MovementAbilityType::Launch] = LaunchAbility;
-	MovementAbilities[MovementAbilityType::Slide] = SlideAbility;
-	MovementAbilities[MovementAbilityType::Vault] = VaultAbility;
+	MovementAbilities.Add(MovementAbilityType::WallRun, WallRunAbility);
+	MovementAbilities.Add(MovementAbilityType::Launch, LaunchAbility);
+	MovementAbilities.Add(MovementAbilityType::Slide, SlideAbility);
+	MovementAbilities.Add(MovementAbilityType::Vault, VaultAbility);
 
 	AirControl = BaseAirControl;
 	GetNavAgentPropertiesRef().bCanCrouch = true;
@@ -25,7 +25,7 @@ void UBMageCharacterMovementComponent::InitAbilities(AActor* Character, USkeleta
 {
 	for (auto& ability : MovementAbilities)
 	{
-		ability.second->Init(this, Character, Mesh);
+		ability.Value->Init(this, Character, Mesh);
 	}
 }
 
@@ -42,13 +42,15 @@ void UBMageCharacterMovementComponent::TickComponent(float DeltaTime, enum ELeve
 		MovementAbilities[MovementAbilityType::WallRun]->Tick(DeltaTime);
 
 	// if we're past the apex, apply the falling gravity scale
-	// ignore this clause if we're wall running
+	// ignore this clause if we're wall runninx
 	if (PreviousVelocity.Z >= 0.0f && Velocity.Z < -0.00001f && !IsAbilityActive(MovementAbilityType::WallRun))
 		// this is undone in OnMovementModeChanged when the character lands
 		GravityScale = CharacterPastJumpApexGravityScale;
 
 	// TODO: check if the system is already tracking this
 	PreviousVelocity = Velocity;
+
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
 bool UBMageCharacterMovementComponent::TryStartAbility(MovementAbilityType abilityType)
@@ -92,8 +94,8 @@ MovementAbilityType UBMageCharacterMovementComponent::MostImportantActiveAbility
 { 
 	for(auto& ability : MovementAbilities)
 	{
-		if (ability.second->IsActive)
-			return ability.first;
+		if (ability.Value->IsActive)
+			return ability.Key;
 	}
 
 	return MovementAbilityType::None;
@@ -103,8 +105,8 @@ UMovementAbility* UBMageCharacterMovementComponent::MostImportantActiveAbility()
 {
 	for (auto& ability : MovementAbilities)
 	{
-		if (ability.second->IsActive)
-			return ability.second;
+		if (ability.Value->IsActive)
+			return ability.Value;
 	}
 	return nullptr;
 }

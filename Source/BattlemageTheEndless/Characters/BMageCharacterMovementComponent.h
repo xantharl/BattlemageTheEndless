@@ -36,7 +36,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivate))
 	UVaultAbility* VaultAbility;
 
-	map<MovementAbilityType, TObjectPtr<UMovementAbility>> MovementAbilities;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivate))
+	TMap<MovementAbilityType, TObjectPtr<UMovementAbility>> MovementAbilities;
 
 	void InitAbilities(AActor* Character, USkeletalMeshComponent* Mesh);
 
