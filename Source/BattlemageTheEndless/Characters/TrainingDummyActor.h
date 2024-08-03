@@ -13,8 +13,7 @@ class BATTLEMAGETHEENDLESS_API ATrainingDummyActor : public ABattlemageTheEndles
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
-	ATrainingDummyActor();
+	ATrainingDummyActor(const FObjectInitializer& ObjectInitializer);
 
 protected:
 	// Called when the game starts or when spawned

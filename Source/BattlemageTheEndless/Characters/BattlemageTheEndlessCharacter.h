@@ -126,7 +126,7 @@ protected:
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0);
 
 	// Starts a wallrun if any walls are applicable
-	void TryBeginWallrun();
+	void TryBeginWallRun();
 	void OnJumpLanded();
 	void SetupCameras();
 
@@ -235,10 +235,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	FVector DodgeImpulseBackward;
 
-	// Value expressed in m/s^2
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float CharacterPastJumpApexGravityScale = 2.f;
-
 	// TODO: Probably remove this since we can only launch out of crouch now
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	int MaxLaunches = 1;
@@ -302,11 +298,9 @@ protected:
 	void LaunchJump();
 	void RequestUnCrouch();
 	void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction);
-	void TickWallRun(UCharacterMovementComponent* movement, float DeltaTime);
 	void TickVault(float DeltaTime);
 	void DoUnCrouch(UCharacterMovementComponent* movement);
 	void TickSlide(float DeltaTime, UCharacterMovementComponent* movement);
-	bool WallRunContinuationRayCast();
 	void EndSlide(UCharacterMovementComponent* movement);
 	void SwitchCamera();
 	// Executes a launch jump 
@@ -335,6 +329,7 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "Character Movement")
 	void OnWallRunCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
 	UFUNCTION(BlueprintCallable, Category = "Character Movement")
 	void OnWallRunCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 	UFUNCTION(BlueprintCallable, Category = "CheckPoint")
@@ -342,10 +337,6 @@ protected:
 	bool CanWallRun();
 	FHitResult LineTraceMovementVector(FName socketName, float magnitude, bool drawTrace, FColor drawColor, float rotateYawByDegrees);
 	FHitResult LineTraceGeneric(FVector start, FVector end);
-	bool ObjectIsWallRunnable(AActor* Object);
-	void WallRun();
-
-	FVector PreviousVelocity;
 
 	UFUNCTION(BlueprintCallable, Category = "Character Movement")
 	void EndWallRun();

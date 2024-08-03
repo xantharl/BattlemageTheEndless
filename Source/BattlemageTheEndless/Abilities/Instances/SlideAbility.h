@@ -13,5 +13,7 @@ UCLASS()
 class BATTLEMAGETHEENDLESS_API USlideAbility : public UMovementAbility
 {
 	GENERATED_BODY()
+
+	USlideAbility(const FObjectInitializer& X) : Super(X) { Type = MovementAbilityType::Slide; }
 	
 };

@@ -13,5 +13,7 @@ UCLASS()
 class BATTLEMAGETHEENDLESS_API ULaunchAbility : public UMovementAbility
 {
 	GENERATED_BODY()
+
+	ULaunchAbility(const FObjectInitializer& X) : Super(X) { Type = MovementAbilityType::Launch; }
 	
 };

@@ -3,11 +3,17 @@
 
 #include "MovementAbility.h"
 
-UMovementAbility::UMovementAbility(const FObjectInitializer& X, UCharacterMovementComponent* Movement) : UObject(X)
+UMovementAbility::UMovementAbility(const FObjectInitializer& X) : UObject(X)
 {
-	this->Movement = Movement;
 }
 
 UMovementAbility::~UMovementAbility()
 {
+}
+
+void UMovementAbility::Init(UCharacterMovementComponent* movement, AActor* character, USkeletalMeshComponent* mesh)
+{
+	Movement = movement; 
+	Character = character; 
+	Mesh = mesh;
 }
