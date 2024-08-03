@@ -45,11 +45,6 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCamera;
 
-	/** Wallrun overlap detection capsule **/
-	// TODO: Figure out if that can be moved to the wallrun ability
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collision, meta = (AllowPrivateAccess = "true"))
-	UCapsuleComponent* WallRunCapsule;
-
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	UInputMappingContext* DefaultMappingContext;
@@ -111,7 +106,7 @@ private:
 public:
 	ABattlemageTheEndlessCharacter(const FObjectInitializer& ObjectInitializer);
 
-	void SetupCapsules();
+	void SetupCapsule();
 
 	//Called when our Actor is destroyed during Gameplay.
 	virtual void Destroyed();
@@ -125,8 +120,6 @@ protected:
 	virtual void BeginPlay();
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0);
 
-	// Starts a wallrun if any walls are applicable
-	void TryBeginWallRun();
 	void OnJumpLanded();
 	void SetupCameras();
 
@@ -327,11 +320,6 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Character Movement")
 	void EndVault();
 
-	UFUNCTION(BlueprintCallable, Category = "Character Movement")
-	void OnWallRunCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	UFUNCTION(BlueprintCallable, Category = "Character Movement")
-	void OnWallRunCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 	UFUNCTION(BlueprintCallable, Category = "CheckPoint")
 	void OnBaseCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	bool CanWallRun();

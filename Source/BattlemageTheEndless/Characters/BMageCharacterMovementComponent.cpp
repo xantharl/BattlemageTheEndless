@@ -5,23 +5,16 @@
 
 UBMageCharacterMovementComponent::UBMageCharacterMovementComponent()
 {
-	MovementAbilities = TMap<MovementAbilityType, TObjectPtr<UMovementAbility>>();
-
-	WallRunAbility = CreateDefaultSubobject<UWallRunAbility>(TEXT("WallRun"));
-	LaunchAbility = CreateDefaultSubobject<ULaunchAbility>(TEXT("Launch"));
-	SlideAbility = CreateDefaultSubobject<USlideAbility>(TEXT("Slide"));
-	VaultAbility = CreateDefaultSubobject<UVaultAbility>(TEXT("Vault"));
-
-	MovementAbilities.Add(MovementAbilityType::WallRun, WallRunAbility);
-	MovementAbilities.Add(MovementAbilityType::Launch, LaunchAbility);
-	MovementAbilities.Add(MovementAbilityType::Slide, SlideAbility);
-	MovementAbilities.Add(MovementAbilityType::Vault, VaultAbility);
+	MovementAbilities.Add(MovementAbilityType::WallRun, CreateDefaultSubobject<UWallRunAbility>(TEXT("WallRun")));
+	MovementAbilities.Add(MovementAbilityType::Launch, CreateDefaultSubobject<ULaunchAbility>(TEXT("Launch")));
+	MovementAbilities.Add(MovementAbilityType::Slide, CreateDefaultSubobject<USlideAbility>(TEXT("Slide")));
+	MovementAbilities.Add(MovementAbilityType::Vault, CreateDefaultSubobject<UVaultAbility>(TEXT("Vault")));
 
 	AirControl = BaseAirControl;
 	GetNavAgentPropertiesRef().bCanCrouch = true;
 }
 
-void UBMageCharacterMovementComponent::InitAbilities(AActor* Character, USkeletalMeshComponent* Mesh)
+void UBMageCharacterMovementComponent::InitAbilities(ACharacter* Character, USkeletalMeshComponent* Mesh)
 {
 	for (auto& ability : MovementAbilities)
 	{
@@ -34,6 +27,9 @@ void UBMageCharacterMovementComponent::TickComponent(float DeltaTime, enum ELeve
 	// TODO: determine these based on priority
 	if (IsAbilityActive(MovementAbilityType::Slide))
 		MovementAbilities[MovementAbilityType::Slide]->Tick(DeltaTime);
+
+	if (IsAbilityActive(MovementAbilityType::Launch))
+		MovementAbilities[MovementAbilityType::Launch]->Tick(DeltaTime);
 
 	if (IsAbilityActive(MovementAbilityType::Vault))
 		MovementAbilities[MovementAbilityType::Vault]->Tick(DeltaTime);
@@ -89,7 +85,7 @@ void UBMageCharacterMovementComponent::ForceEndAbility(MovementAbilityType abili
 	MovementAbilities[abilityType]->End();
 }
 
-// TODO: Make this use priority
+// TODO: Update this with begin/end calls instead of having to iterate every tick
 MovementAbilityType UBMageCharacterMovementComponent::MostImportantActiveAbilityType()
 { 
 	for(auto& ability : MovementAbilities)
@@ -115,4 +111,14 @@ bool UBMageCharacterMovementComponent::IsWallRunToLeft()
 {
 	// this cast is technically unsafe but we know it is alright as this is explicitly init'd in the constructor
 	return Cast<UWallRunAbility>(MovementAbilities[MovementAbilityType::WallRun])->WallIsToLeft;
+}
+
+void UBMageCharacterMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)
+{
+	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
+
+	if (PreviousMovementMode == EMovementMode::MOVE_Walking && MovementMode == EMovementMode::MOVE_Falling)
+	{
+		TryStartAbility(MovementAbilityType::WallRun);
+	}
 }

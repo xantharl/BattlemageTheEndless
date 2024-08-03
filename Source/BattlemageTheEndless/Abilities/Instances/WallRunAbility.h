@@ -6,6 +6,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 #include "../MovementAbility.h"
+#include "Components/CapsuleComponent.h"
+#include "GameFramework/Character.h"
 #include "WallRunAbility.generated.h"
 
 /**
@@ -24,6 +26,10 @@ public:
 	FTimerHandle WallRunTimer;
 	FRotator TargetRotation;
 	float CharacterBaseGravityScale;
+
+	/** Wallrun overlap detection capsule **/
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Collision, meta = (AllowPrivateAccess = "true"))
+	UCapsuleComponent* WallRunCapsule;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	bool WallIsToLeft;
@@ -45,9 +51,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	int WallRunJumpRefundCount = 2;
 
-	UWallRunAbility(const FObjectInitializer& X): Super(X) {Type = MovementAbilityType::WallRun;}
+	UWallRunAbility(const FObjectInitializer& X);
 
 	// Overrides
+	virtual void Init(UCharacterMovementComponent* movement, ACharacter* character, USkeletalMeshComponent* mesh);
 	virtual bool ShouldBegin() override;
 	virtual bool ShouldEnd() override;
 	virtual void Tick(float DeltaTime) override;
@@ -59,6 +66,19 @@ public:
 	// Custom functions for just this ability
 	// TODO: Move line traces to a generic helper class
 	FHitResult LineTraceMovementVector(AActor* actor, USkeletalMeshComponent* mesh, FName socketName, float magnitude, bool drawTrace = false, FColor drawColor = FColor::Green, float rotateYawByDegrees = 0.f);
-	FHitResult LineTraceGeneric(AActor* actor, FVector start, FVector end);
+	
+	/// <summary>
+	/// Performs a generic line trace from start to end and ignores sourceActor
+	/// </summary>
+	/// <param name="actor"></param>
+	/// <param name="start"></param>
+	/// <param name="end"></param>
+	/// <returns></returns>
+	FHitResult LineTraceGeneric(AActor* sourceActor, FVector start, FVector end);
 	bool ObjectIsWallRunnable(AActor* Object, USkeletalMeshComponent* mesh);
+
+	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
+	virtual void OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
+	virtual void OnCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 };

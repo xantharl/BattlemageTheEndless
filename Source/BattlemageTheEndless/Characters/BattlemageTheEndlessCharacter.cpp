@@ -30,7 +30,7 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 	launchesPerformed = 0;
 
 	SetupCameras();
-	SetupCapsules();
+	SetupCapsule();
 
 	// Init Audio Resource
 	static ConstructorHelpers::FObjectFinder<USoundWave> Sound(TEXT("/Game/Sounds/Jump_Landing"));
@@ -47,20 +47,12 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 
 }
 
-void ABattlemageTheEndlessCharacter::SetupCapsules()
+void ABattlemageTheEndlessCharacter::SetupCapsule()
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnHit);
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap);
-
-	WallRunCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("WallRunCapsule"));
-	WallRunCapsule->InitCapsuleSize(55.f, 96.0f);
-	WallRunCapsule->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
-	WallRunCapsule->SetupAttachment(GetCapsuleComponent());
-	WallRunCapsule->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
-	WallRunCapsule->OnComponentBeginOverlap.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnWallRunCapsuleBeginOverlap);
-	WallRunCapsule->OnComponentEndOverlap.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnWallRunCapsuleEndOverlap);
 }
 
 void ABattlemageTheEndlessCharacter::Destroyed()
@@ -552,9 +544,6 @@ void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMov
 	{
 		OnJumpLanded();
 
-	} else if (PrevMovementMode == EMovementMode::MOVE_Walking && GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
-	{
-		TryBeginWallRun();
 	}
 
 	ACharacter::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
@@ -810,58 +799,6 @@ void ABattlemageTheEndlessCharacter::EndVault()
 	// turn collision with worldstatic back on
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 	GetMesh()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
-}
-
-void ABattlemageTheEndlessCharacter::OnWallRunCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	// TODO: Migrate this check to the movement ability
-	if (!CanWallRun())
-		return;
-
-	TryBeginWallRun();
-}
-
-void ABattlemageTheEndlessCharacter::TryBeginWallRun()
-{
-	UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
-	if (!movement)
-		return;
-
-	bool success = movement->TryStartAbility(MovementAbilityType::WallRun);
-	if (!success)
-		return;
-
-	UWallRunAbility* wallRunAbility = Cast<UWallRunAbility>(movement->MovementAbilities[MovementAbilityType::WallRun]);
-	if (JumpCurrentCount > 0)
-	{
-		JumpCurrentCount = FMath::Max(0, JumpCurrentCount - wallRunAbility->WallRunJumpRefundCount);
-	}
-
-	Controller->SetControlRotation(wallRunAbility->TargetRotation);
-
-	// disable player rotation from input and clamp rotation
-	bUseControllerRotationYaw = false;
-}
-
-void ABattlemageTheEndlessCharacter::OnWallRunCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
-	if (!movement)
-		return;
-
-	UWallRunAbility* wallRunAbility = Cast<UWallRunAbility>(movement->MovementAbilities[MovementAbilityType::WallRun]);
-	if (!wallRunAbility)
-		return;
-
-	if (wallRunAbility->WallRunObject == OtherActor)
-	{
-		bool success = movement->TryEndAbility(MovementAbilityType::WallRun);
-		if (!success)
-			return;
-
-		// re-enable player rotation from input
-		bUseControllerRotationYaw = true;
-	}
 }
 
 void ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

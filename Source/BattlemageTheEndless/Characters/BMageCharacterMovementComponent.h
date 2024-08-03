@@ -28,18 +28,9 @@ public:
 	UBMageCharacterMovementComponent();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivate))
-	UWallRunAbility* WallRunAbility;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivate))
-	ULaunchAbility* LaunchAbility;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivate))
-	USlideAbility* SlideAbility;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivate))
-	UVaultAbility* VaultAbility;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivate))
 	TMap<MovementAbilityType, TObjectPtr<UMovementAbility>> MovementAbilities;
 
-	void InitAbilities(AActor* Character, USkeletalMeshComponent* Mesh);
+	void InitAbilities(ACharacter* Character, USkeletalMeshComponent* Mesh);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float BaseAirControl = 0.8f;
@@ -88,6 +79,8 @@ public:
 	/// <returns></returns>
 	bool IsAbilityActive(MovementAbilityType abilityType) { return MovementAbilities[abilityType]->IsActive; }
 
+	UMovementAbility* MostImportantActiveAbility;
+
 	/// <summary>
 	/// This is used for anim graph transitions
 	/// </summary>
@@ -111,4 +104,6 @@ public:
 	/// <returns></returns>
 	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
 	bool IsWallRunToLeft();
+
+	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
 };

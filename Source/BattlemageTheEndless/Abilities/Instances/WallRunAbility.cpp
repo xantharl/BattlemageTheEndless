@@ -12,29 +12,49 @@ FHitResult UWallRunAbility::LineTraceMovementVector(AActor* actor, USkeletalMesh
 	FVector end = start + castVector;
 
 	// Perform the raycast
-	FHitResult hit = LineTraceGeneric(actor, start, end);
+	FHitResult hit = LineTraceGeneric(Character, start, end);
 
 	if (drawTrace)
 		DrawDebugLine(GetWorld(), start, end, drawColor, false, 3.0f, 0, 1.0f);
 	return hit;
 }
 
-FHitResult UWallRunAbility::LineTraceGeneric(AActor* actor, FVector start, FVector end)
+FHitResult UWallRunAbility::LineTraceGeneric(AActor* sourceActor, FVector start, FVector end)
 {
 	// Perform the raycast
 	FHitResult hit;
 	FCollisionQueryParams params;
 	FCollisionObjectQueryParams objectParams;
-	params.AddIgnoredActor(actor);
+	params.AddIgnoredActor(sourceActor);
 	GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
 	return hit;
+}
+
+UWallRunAbility::UWallRunAbility(const FObjectInitializer& X): Super(X)
+{
+	Type = MovementAbilityType::WallRun;
+	WallRunCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("WallRunCapsule"));
+}
+
+void UWallRunAbility::Init(UCharacterMovementComponent* movement, ACharacter* character, USkeletalMeshComponent* mesh)
+{
+	// call this first to set shared members
+	UMovementAbility::Init(movement, character, mesh);
+
+	// set up the wall run capsule
+	WallRunCapsule->InitCapsuleSize(55.f, 96.0f);
+	WallRunCapsule->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
+	WallRunCapsule->SetupAttachment(Character->GetCapsuleComponent());
+	WallRunCapsule->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
+	WallRunCapsule->OnComponentBeginOverlap.AddDynamic(this, &UWallRunAbility::OnCapsuleBeginOverlap);
+	WallRunCapsule->OnComponentEndOverlap.AddDynamic(this, &UWallRunAbility::OnCapsuleEndOverlap);
 }
 
 bool UWallRunAbility::ShouldBegin()
 {
 	// check if there are any eligible wallrun objects
 	TArray<AActor*> overlappingActors;
-	Character->GetOverlappingActors(overlappingActors, nullptr);
+	WallRunCapsule->GetOverlappingActors(overlappingActors, nullptr);
 	for (AActor* actor : overlappingActors)
 	{
 		if (ObjectIsWallRunnable(actor, Mesh))
@@ -45,7 +65,7 @@ bool UWallRunAbility::ShouldBegin()
 			// This is used by the anim graph to determine which way to mirror the wallrun animation
 			FVector start = Mesh->GetSocketLocation(FName("feetRaycastSocket"));
 			// add 30 degrees to the left of the forward vector to account for wall runs starting near the start of the wall
-			FVector end = start + FVector::LeftVector.RotateAngleAxis(Character->GetRootComponent()->GetComponentRotation().Yaw + 30.f, FVector::ZAxisVector) * 200;
+			FVector end = start + FVector::LeftVector.RotateAngleAxis(WallRunCapsule->GetComponentRotation().Yaw + 30.f, FVector::ZAxisVector) * 200;
 			WallIsToLeft = LineTraceGeneric(Character, start, end).GetActor() == WallRunObject;
 
 			return true;
@@ -58,7 +78,6 @@ bool UWallRunAbility::ShouldBegin()
 bool UWallRunAbility::ShouldEnd()
 {
 	// Raycast from vaultRaycastSocket straight forward to see if Object is in the way
-	// TODO: Figure out if mesh can be found from actor
 	FVector start = Mesh->GetSocketLocation(FName("feetRaycastSocket"));
 	// Cast a ray out in hit normal direction 100 units long
 	FVector castVector = (FVector::XAxisVector * 100).RotateAngleAxis(WallRunHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector).Rotation().Yaw, FVector::ZAxisVector);
@@ -143,6 +162,7 @@ void UWallRunAbility::Begin()
 	// kill any vertical movement
 	Movement->Velocity.Z = 0.f;
 
+	Character->bUseControllerRotationYaw = false;
 	// set max pan angle to 60 degrees
 	if (APlayerCameraManager* cameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0))
 	{
@@ -164,27 +184,17 @@ void UWallRunAbility::End()
 		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, FString::Printf(TEXT("Start of EndWallRun ForwardVector: %s"), *GetActorForwardVector().ToString()));
 	}*/
 
-	// reset air control to default
-	// 
-	// TODO: We need a generic on movement ability ended custom event
-	//Movement->AirControl = Movement->BaseAirControl;
-	//IsWallRunning = false;
-	// re-enable player rotation from input
-	//bUseControllerRotationYaw = true;
+	Character->bUseControllerRotationYaw = true;
 
 	Movement->GravityScale = CharacterBaseGravityScale;
 	WallRunObject = NULL;
 
-	// TODO: use movement ability ended custom event to do this
-	// set max pan angle to 60 degrees
-	/*
+	// reset to full rotation
 	if (APlayerCameraManager* cameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0))
 	{
-		float currentYaw = Controller->GetControlRotation().Yaw;
 		cameraManager->ViewYawMax = 359.998993f;
 		cameraManager->ViewYawMin = 0.f;
-	}
-	*/
+	}	
 
 	/*if (GEngine)
 	{
@@ -240,4 +250,18 @@ bool UWallRunAbility::ObjectIsWallRunnable(AActor* actor, USkeletalMeshComponent
 		return true;
 	}
 	return false;
+}
+
+void UWallRunAbility::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	// TODO: Factor in sprinting check
+	if(Movement->MovementMode == EMovementMode::MOVE_Falling && ShouldBegin())
+		Begin();
+}
+
+// TODO: Notify the character that the wall run has ended
+void UWallRunAbility::OnCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (IsActive && WallRunObject == OtherActor)
+		End();
 }

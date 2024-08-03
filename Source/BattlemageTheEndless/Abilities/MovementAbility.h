@@ -26,7 +26,7 @@ class BATTLEMAGETHEENDLESS_API UMovementAbility : public UObject
 {
 	GENERATED_BODY()
 protected:
-	AActor* Character;
+	ACharacter* Character;
 	USkeletalMeshComponent* Mesh;
 	UCharacterMovementComponent* Movement;
 
@@ -48,10 +48,10 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	MovementAbilityType Type;
 
-	void Init(UCharacterMovementComponent* movement, AActor* character, USkeletalMeshComponent* mesh);
+	virtual void Init(UCharacterMovementComponent* movement, ACharacter* character, USkeletalMeshComponent* mesh);
 	virtual bool ShouldBegin() { return false; }
 	virtual bool ShouldEnd() { return false; }
-	virtual void Begin() { IsActive = true; }
-	virtual void End() { IsActive = false; }
+	virtual void Begin();
+	virtual void End();
 	virtual void Tick(float DeltaTime) {}
 };

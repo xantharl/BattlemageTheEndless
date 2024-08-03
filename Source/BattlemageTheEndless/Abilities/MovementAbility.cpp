@@ -11,9 +11,23 @@ UMovementAbility::~UMovementAbility()
 {
 }
 
-void UMovementAbility::Init(UCharacterMovementComponent* movement, AActor* character, USkeletalMeshComponent* mesh)
+void UMovementAbility::Init(UCharacterMovementComponent* movement, ACharacter* character, USkeletalMeshComponent* mesh)
 {
 	Movement = movement; 
 	Character = character; 
 	Mesh = mesh;
+}
+
+void UMovementAbility::Begin()
+{
+	IsActive = true;
+	if (!Movement)
+		return;
+	
+	Movement->MostImpo
+}
+
+void UMovementAbility::End()
+{
+	IsActive = false;
 }
