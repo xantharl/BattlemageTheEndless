@@ -4,6 +4,26 @@
 #include "WallRunAbility.h"
 #include <BattlemageTheEndless/Helpers/VectorMath.h>
 
+UWallRunAbility::UWallRunAbility(const FObjectInitializer& X) : Super(X)
+{
+	Type = MovementAbilityType::WallRun;
+	WallRunCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("WallRunCapsule"));
+}
+
+void UWallRunAbility::Init(UCharacterMovementComponent* movement, ACharacter* character, USkeletalMeshComponent* mesh)
+{
+	// call this first to set shared members
+	UMovementAbility::Init(movement, character, mesh);
+
+	// set up the wall run capsule
+	WallRunCapsule->InitCapsuleSize(55.f, 96.0f);
+	WallRunCapsule->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
+	WallRunCapsule->SetupAttachment(Character->GetCapsuleComponent());
+	WallRunCapsule->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
+	WallRunCapsule->OnComponentBeginOverlap.AddDynamic(this, &UWallRunAbility::OnCapsuleBeginOverlap);
+	WallRunCapsule->OnComponentEndOverlap.AddDynamic(this, &UWallRunAbility::OnCapsuleEndOverlap);
+}
+
 FHitResult UWallRunAbility::LineTraceMovementVector(AActor* actor, USkeletalMeshComponent* mesh, FName socketName, float magnitude, bool drawTrace, FColor drawColor, float rotateYawByDegrees)
 {
 	FVector start = mesh->GetSocketLocation(socketName);
@@ -28,26 +48,6 @@ FHitResult UWallRunAbility::LineTraceGeneric(AActor* sourceActor, FVector start,
 	params.AddIgnoredActor(sourceActor);
 	GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
 	return hit;
-}
-
-UWallRunAbility::UWallRunAbility(const FObjectInitializer& X): Super(X)
-{
-	Type = MovementAbilityType::WallRun;
-	WallRunCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("WallRunCapsule"));
-}
-
-void UWallRunAbility::Init(UCharacterMovementComponent* movement, ACharacter* character, USkeletalMeshComponent* mesh)
-{
-	// call this first to set shared members
-	UMovementAbility::Init(movement, character, mesh);
-
-	// set up the wall run capsule
-	WallRunCapsule->InitCapsuleSize(55.f, 96.0f);
-	WallRunCapsule->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
-	WallRunCapsule->SetupAttachment(Character->GetCapsuleComponent());
-	WallRunCapsule->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
-	WallRunCapsule->OnComponentBeginOverlap.AddDynamic(this, &UWallRunAbility::OnCapsuleBeginOverlap);
-	WallRunCapsule->OnComponentEndOverlap.AddDynamic(this, &UWallRunAbility::OnCapsuleEndOverlap);
 }
 
 bool UWallRunAbility::ShouldBegin()
@@ -179,11 +179,6 @@ void UWallRunAbility::Begin()
 }
 void UWallRunAbility::End()
 {
-	/*if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, FString::Printf(TEXT("Start of EndWallRun ForwardVector: %s"), *GetActorForwardVector().ToString()));
-	}*/
-
 	Character->bUseControllerRotationYaw = true;
 
 	Movement->GravityScale = CharacterBaseGravityScale;
@@ -196,10 +191,13 @@ void UWallRunAbility::End()
 		cameraManager->ViewYawMin = 0.f;
 	}	
 
-	/*if (GEngine)
+	// Wall running refunds a jump charge
+	if (Character->JumpCurrentCount > 0)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, FString::Printf(TEXT("End of EndWallRun ForwardVector: %s"), *GetActorForwardVector().ToString()));
-	}*/
+		Character->JumpCurrentCount = FMath::Max(0, Character->JumpCurrentCount - WallRunJumpRefundCount);
+	}
+
+	UMovementAbility::End();
 }
 
 bool UWallRunAbility::ObjectIsWallRunnable(AActor* actor, USkeletalMeshComponent* mesh)

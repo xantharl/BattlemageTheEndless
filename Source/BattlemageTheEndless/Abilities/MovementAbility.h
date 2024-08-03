@@ -19,8 +19,9 @@ enum class MovementAbilityType: uint8
 
 /**
  * This class is intended to be used as a base class for all movement abilities which have a ticking element
- 
  */
+DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_OneParam(FMovementAbilityBeginSignature, UMovementAbility, OnMovementAbilityBegin, UMovementAbility*, MovementAbility);
+DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_OneParam(FMovementAbilityEndSignature, UMovementAbility, OnMovementAbilityEnd, UMovementAbility*, MovementAbility);
 UCLASS(Abstract)
 class BATTLEMAGETHEENDLESS_API UMovementAbility : public UObject
 {
@@ -54,4 +55,8 @@ public:
 	virtual void Begin();
 	virtual void End();
 	virtual void Tick(float DeltaTime) {}
+
+
+	FMovementAbilityBeginSignature OnMovementAbilityBegin;
+	FMovementAbilityEndSignature OnMovementAbilityEnd;
 };

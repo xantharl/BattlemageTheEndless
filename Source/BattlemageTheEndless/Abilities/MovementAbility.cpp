@@ -21,13 +21,11 @@ void UMovementAbility::Init(UCharacterMovementComponent* movement, ACharacter* c
 void UMovementAbility::Begin()
 {
 	IsActive = true;
-	if (!Movement)
-		return;
-	
-	Movement->MostImpo
+	OnMovementAbilityBegin.Broadcast(this);
 }
 
 void UMovementAbility::End()
 {
 	IsActive = false;
+	OnMovementAbilityEnd.Broadcast(this);
 }

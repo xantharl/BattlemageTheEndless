@@ -19,6 +19,8 @@ void UBMageCharacterMovementComponent::InitAbilities(ACharacter* Character, USke
 	for (auto& ability : MovementAbilities)
 	{
 		ability.Value->Init(this, Character, Mesh);
+		ability.Value->OnMovementAbilityBegin.AddDynamic(this, &UBMageCharacterMovementComponent::OnMovementAbilityBegin);
+		ability.Value->OnMovementAbilityEnd.AddDynamic(this, &UBMageCharacterMovementComponent::OnMovementAbilityEnd);
 	}
 }
 
@@ -88,29 +90,38 @@ void UBMageCharacterMovementComponent::ForceEndAbility(MovementAbilityType abili
 // TODO: Update this with begin/end calls instead of having to iterate every tick
 MovementAbilityType UBMageCharacterMovementComponent::MostImportantActiveAbilityType()
 { 
-	for(auto& ability : MovementAbilities)
-	{
-		if (ability.Value->IsActive)
-			return ability.Key;
-	}
-
-	return MovementAbilityType::None;
-}
-
-UMovementAbility* UBMageCharacterMovementComponent::MostImportantActiveAbility()
-{
-	for (auto& ability : MovementAbilities)
-	{
-		if (ability.Value->IsActive)
-			return ability.Value;
-	}
-	return nullptr;
+	return MostImportantActiveAbility != nullptr ? MostImportantActiveAbility->Type : MovementAbilityType::None;
 }
 
 bool UBMageCharacterMovementComponent::IsWallRunToLeft()
 {
 	// this cast is technically unsafe but we know it is alright as this is explicitly init'd in the constructor
 	return Cast<UWallRunAbility>(MovementAbilities[MovementAbilityType::WallRun])->WallIsToLeft;
+}
+
+void UBMageCharacterMovementComponent::OnMovementAbilityBegin(UMovementAbility* MovementAbility)
+{
+	// if there's a more imporant active ability do nothing
+	if (MostImportantActiveAbility != nullptr && MostImportantActiveAbility->Priority <= MovementAbility->Priority)
+		return;
+
+	// otherwise set this ability as the most important
+	MostImportantActiveAbility = MovementAbility;
+}
+
+void UBMageCharacterMovementComponent::OnMovementAbilityEnd(UMovementAbility* ability)
+{
+	// if the ability that just ended is not the most important, do nothing
+	if (MostImportantActiveAbility != ability)
+		return;
+
+	// otherwise, find the next most important ability
+	MostImportantActiveAbility = nullptr;
+	for (auto& a : MovementAbilities)
+	{
+		if (a.Value->IsActive && (MostImportantActiveAbility == nullptr || a.Value->Priority > MostImportantActiveAbility->Priority))
+			MostImportantActiveAbility = a.Value;
+	}
 }
 
 void UBMageCharacterMovementComponent::OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode)

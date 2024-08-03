@@ -27,7 +27,7 @@ class BATTLEMAGETHEENDLESS_API UBMageCharacterMovementComponent : public UCharac
 public:
 	UBMageCharacterMovementComponent();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivate))
+	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivate))
 	TMap<MovementAbilityType, TObjectPtr<UMovementAbility>> MovementAbilities;
 
 	void InitAbilities(ACharacter* Character, USkeletalMeshComponent* Mesh);
@@ -90,20 +90,18 @@ public:
 	MovementAbilityType MostImportantActiveAbilityType();
 
 	/// <summary>
-	/// This is used for anim graph transitions
-	/// </summary>
-	/// <param name="abilityType"></param>
-	/// <returns></returns>
-	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
-	UMovementAbility* MostImportantActiveAbility();
-
-	/// <summary>
 	/// This is a hack to look through to wallrunability since i can't
 	/// get the class UWallRunAbility to play nice in blueprint
 	/// </summary>
 	/// <returns></returns>
 	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
 	bool IsWallRunToLeft();
+
+	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
+	virtual void OnMovementAbilityBegin(UMovementAbility* MovementAbility);
+
+	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
+	virtual void OnMovementAbilityEnd(UMovementAbility* ability);
 
 	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
 };
