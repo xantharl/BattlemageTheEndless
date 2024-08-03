@@ -735,15 +735,15 @@ bool ABattlemageTheEndlessCharacter::ObjectIsVaultable(AActor* Object)
 	bool drawTrace = false;
 
 	// Raycast from cameraSocket straight forward to see if Object is in the way	
-	// TODO: Why is this requiring me to pass in optional params?
-	FHitResult hit = LineTraceMovementVector(FName("cameraSocket"), 50, drawTrace, FColor::Green, 0.f);
+	UCharacterMovementComponent* movement = GetCharacterMovement();
+	FHitResult hit = Traces::LineTraceMovementVector(this, movement, GetMesh(), FName("cameraSocket"), 50, drawTrace, FColor::Green, 0.f);
 
 	// If the camera raycast hit the object, we are too low to vault
 	if (hit.GetActor() == Object)
 		return false;
 
 	// Repeat the same process but use socket vaultRaycastSocket
-	hit = LineTraceMovementVector(FName("vaultRaycastSocket"), 50, drawTrace, FColor::Green, 0.f);
+	hit = Traces::LineTraceMovementVector(this, movement, GetMesh(), FName("vaultRaycastSocket"), 50, drawTrace, FColor::Green, 0.f);
 
 	// If the vault raycast hit the object, we can vault
 	return hit.GetActor() == Object;
@@ -814,32 +814,6 @@ void ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap(UPrimitiveCompone
 bool ABattlemageTheEndlessCharacter::CanWallRun()
 {	
 	return bIsSprinting && GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling;
-}
-
-FHitResult ABattlemageTheEndlessCharacter::LineTraceMovementVector(FName socketName, float magnitude, bool drawTrace = false, FColor drawColor = FColor::Green, float rotateYawByDegrees = 0.f)
-{
-	FVector start = GetMesh()->GetSocketLocation(socketName);
-	// Cast a ray out in look direction magnitude units long
-	FVector castVector = (FVector::XAxisVector * magnitude).RotateAngleAxis(GetCharacterMovement()->GetLastUpdateRotation().Yaw+rotateYawByDegrees, FVector::ZAxisVector);
-	FVector end = start + castVector;
-
-	// Perform the raycast
-	FHitResult hit = LineTraceGeneric(start, end);
-
-	if (drawTrace)
-		DrawDebugLine(GetWorld(), start, end, drawColor, false, 3.0f, 0, 1.0f);
-	return hit;
-}
-
-FHitResult ABattlemageTheEndlessCharacter::LineTraceGeneric(FVector start, FVector end)
-{
-	// Perform the raycast
-	FHitResult hit;
-	FCollisionQueryParams params;
-	FCollisionObjectQueryParams objectParams;
-	params.AddIgnoredActor(this);
-	GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
-	return hit;
 }
 
 void ABattlemageTheEndlessCharacter::EndWallRun()

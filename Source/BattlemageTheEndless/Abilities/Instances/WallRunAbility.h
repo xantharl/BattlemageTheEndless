@@ -8,6 +8,7 @@
 #include "../MovementAbility.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
+#include "../../Helpers/Traces.h"
 #include "WallRunAbility.generated.h"
 
 /**
@@ -43,10 +44,10 @@ public:
 
 	/** Time before gravity starts to apply again **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float WallRunGravityDelay = 0.5f;
+	float WallRunGravityDelay = 1.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float WallRunMaxDuration = 2.0f;
+	float WallRunMaxDuration = 3.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	int WallRunJumpRefundCount = 2;
@@ -62,19 +63,6 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
 	virtual void End() override;
-
-	// Custom functions for just this ability
-	// TODO: Move line traces to a generic helper class
-	FHitResult LineTraceMovementVector(AActor* actor, USkeletalMeshComponent* mesh, FName socketName, float magnitude, bool drawTrace = false, FColor drawColor = FColor::Green, float rotateYawByDegrees = 0.f);
-	
-	/// <summary>
-	/// Performs a generic line trace from start to end and ignores sourceActor
-	/// </summary>
-	/// <param name="actor"></param>
-	/// <param name="start"></param>
-	/// <param name="end"></param>
-	/// <returns></returns>
-	FHitResult LineTraceGeneric(AActor* sourceActor, FVector start, FVector end);
 	bool ObjectIsWallRunnable(AActor* Object, USkeletalMeshComponent* mesh);
 
 	UFUNCTION(BlueprintCallable, Category = CharacterMovement)

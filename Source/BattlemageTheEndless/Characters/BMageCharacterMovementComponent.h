@@ -13,6 +13,8 @@
 #include "../Abilities/Instances/SlideAbility.h"
 #include "../Abilities/Instances/LaunchAbility.h"
 
+#include "../Helpers/Traces.h"
+
 #include "BMageCharacterMovementComponent.generated.h"
 
 using namespace std;

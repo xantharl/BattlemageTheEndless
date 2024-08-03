@@ -24,32 +24,6 @@ void UWallRunAbility::Init(UCharacterMovementComponent* movement, ACharacter* ch
 	WallRunCapsule->OnComponentEndOverlap.AddDynamic(this, &UWallRunAbility::OnCapsuleEndOverlap);
 }
 
-FHitResult UWallRunAbility::LineTraceMovementVector(AActor* actor, USkeletalMeshComponent* mesh, FName socketName, float magnitude, bool drawTrace, FColor drawColor, float rotateYawByDegrees)
-{
-	FVector start = mesh->GetSocketLocation(socketName);
-	// Cast a ray out in look direction magnitude units long
-	FVector castVector = (FVector::XAxisVector * magnitude).RotateAngleAxis(Movement->GetLastUpdateRotation().Yaw + rotateYawByDegrees, FVector::ZAxisVector);
-	FVector end = start + castVector;
-
-	// Perform the raycast
-	FHitResult hit = LineTraceGeneric(Character, start, end);
-
-	if (drawTrace)
-		DrawDebugLine(GetWorld(), start, end, drawColor, false, 3.0f, 0, 1.0f);
-	return hit;
-}
-
-FHitResult UWallRunAbility::LineTraceGeneric(AActor* sourceActor, FVector start, FVector end)
-{
-	// Perform the raycast
-	FHitResult hit;
-	FCollisionQueryParams params;
-	FCollisionObjectQueryParams objectParams;
-	params.AddIgnoredActor(sourceActor);
-	GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
-	return hit;
-}
-
 bool UWallRunAbility::ShouldBegin()
 {
 	// check if there are any eligible wallrun objects
@@ -66,7 +40,7 @@ bool UWallRunAbility::ShouldBegin()
 			FVector start = Mesh->GetSocketLocation(FName("feetRaycastSocket"));
 			// add 30 degrees to the left of the forward vector to account for wall runs starting near the start of the wall
 			FVector end = start + FVector::LeftVector.RotateAngleAxis(WallRunCapsule->GetComponentRotation().Yaw + 30.f, FVector::ZAxisVector) * 200;
-			WallIsToLeft = LineTraceGeneric(Character, start, end).GetActor() == WallRunObject;
+			WallIsToLeft = Traces::LineTraceGeneric(Character, start, end).GetActor() == WallRunObject;
 
 			return true;
 		}
@@ -209,20 +183,20 @@ bool UWallRunAbility::ObjectIsWallRunnable(AActor* actor, USkeletalMeshComponent
 	bool drawTrace = true;
 
 	// Repeat the same process but use socket feetRaycastSocket
-	FHitResult hit = LineTraceMovementVector(actor, mesh, FName("feetRaycastSocket"), 500, drawTrace);
+	FHitResult hit = Traces::LineTraceMovementVector(Character, Movement, mesh, FName("feetRaycastSocket"), 500, drawTrace);
 
 	bool hitLeft = false;
 	bool hitRight = false;
 	// If we didn't hit the object, try again with a vector 45 degress left
 	if (hit.GetActor() != actor)
 	{
-		hit = LineTraceMovementVector(actor, mesh, FName("feetRaycastSocket"), 500, drawTrace, FColor::Blue, -45.f);
+		hit = Traces::LineTraceMovementVector(Character, Movement, mesh, FName("feetRaycastSocket"), 500, drawTrace, FColor::Blue, -45.f);
 
 		hitLeft = hit.GetActor() == actor;
 		// if we still didn't hit, try 45 right
 		if (!hitLeft)
 		{
-			hit = LineTraceMovementVector(actor, mesh, FName("feetRaycastSocket"), 500, drawTrace, FColor::Emerald, 45.f);
+			hit = Traces::LineTraceMovementVector(Character, Movement, mesh, FName("feetRaycastSocket"), 500, drawTrace, FColor::Emerald, 45.f);
 			hitRight = hit.GetActor() == actor;
 		}
 
