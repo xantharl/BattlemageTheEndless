@@ -37,14 +37,6 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 	JumpLandingSound = Sound.Object;
 
 	JumpMaxCount = 2;
-
-	TObjectPtr<UBMageCharacterMovementComponent> movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
-	if (movement)
-	{
-		movement->InitAbilities(this, GetMesh());
-	}
-
-
 }
 
 void ABattlemageTheEndlessCharacter::SetupCapsule()
@@ -117,6 +109,12 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
+
+	TObjectPtr<UBMageCharacterMovementComponent> movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
+	if (movement)
+	{
+		movement->InitAbilities(this, GetMesh());
+	}
 
 	// Add Input Mapping Context
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))

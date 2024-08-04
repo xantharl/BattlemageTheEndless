@@ -6,7 +6,7 @@
 void UVaultAbility::Init(UCharacterMovementComponent* movement, ACharacter* character, USkeletalMeshComponent* mesh)
 {
 	UMovementAbility::Init(movement, character, mesh);
-	character->GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &UVaultAbility::OnHit);
+	Character->GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &UVaultAbility::OnHit);
 }
 
 void UVaultAbility::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)

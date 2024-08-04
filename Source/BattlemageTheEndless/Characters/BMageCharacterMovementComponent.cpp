@@ -54,7 +54,7 @@ void UBMageCharacterMovementComponent::TickComponent(float DeltaTime, enum ELeve
 bool UBMageCharacterMovementComponent::TryStartAbility(MovementAbilityType abilityType)
 {
 	UMovementAbility* ability = MovementAbilities[abilityType];
-	if (!ability->IsEnabled || !ability->ShouldBegin())
+	if (!ability->IsEnabled || ability->IsActive || !ability->ShouldBegin())
 		return false;
 
 	ability->Begin();
@@ -128,6 +128,7 @@ void UBMageCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previ
 {
 	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
 
+	// this is in case of falling off an object while already overlapping a wallrunable object
 	if (PreviousMovementMode == EMovementMode::MOVE_Walking && MovementMode == EMovementMode::MOVE_Falling)
 	{
 		TryStartAbility(MovementAbilityType::WallRun);

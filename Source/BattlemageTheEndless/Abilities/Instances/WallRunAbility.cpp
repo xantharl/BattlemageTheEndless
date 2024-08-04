@@ -16,10 +16,10 @@ void UWallRunAbility::Init(UCharacterMovementComponent* movement, ACharacter* ch
 	UMovementAbility::Init(movement, character, mesh);
 
 	// set up the wall run capsule
-	WallRunCapsule->InitCapsuleSize(55.f, 96.0f);
+	WallRunCapsule->InitCapsuleSize(55.f,55.0f);
 	WallRunCapsule->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
-	WallRunCapsule->SetupAttachment(Character->GetCapsuleComponent());
-	WallRunCapsule->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
+	WallRunCapsule->AttachToComponent(Character->GetCapsuleComponent(), FAttachmentTransformRules::KeepWorldTransform);
+	WallRunCapsule->SetRelativeLocation(FVector(0.f, 0.f, -35.f));
 	WallRunCapsule->OnComponentBeginOverlap.AddDynamic(this, &UWallRunAbility::OnCapsuleBeginOverlap);
 	WallRunCapsule->OnComponentEndOverlap.AddDynamic(this, &UWallRunAbility::OnCapsuleEndOverlap);
 }
