@@ -148,6 +148,12 @@ void UWallRunAbility::Begin()
 	// set air control to 100% to allow for continued movement parallel to the wall
 	Movement->AirControl = 1.0f;
 
+	// Wall running refunds some jump charges
+	if (Character->JumpCurrentCount > 0)
+	{
+		Character->JumpCurrentCount = FMath::Max(0, Character->JumpCurrentCount - WallRunJumpRefundCount);
+	}
+
 	// set a timer to end the wall run
 	Character->GetWorldTimerManager().SetTimer(WallRunTimer, this, &UWallRunAbility::End, WallRunMaxDuration, false);
 }
@@ -163,12 +169,6 @@ void UWallRunAbility::End()
 	{
 		cameraManager->ViewYawMax = 359.998993f;
 		cameraManager->ViewYawMin = 0.f;
-	}	
-
-	// Wall running refunds a jump charge
-	if (Character->JumpCurrentCount > 0)
-	{
-		Character->JumpCurrentCount = FMath::Max(0, Character->JumpCurrentCount - WallRunJumpRefundCount);
 	}
 
 	UMovementAbility::End();
