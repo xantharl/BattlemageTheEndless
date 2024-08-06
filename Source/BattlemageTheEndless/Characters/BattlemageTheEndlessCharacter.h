@@ -188,12 +188,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float CrouchSpeed;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float LaunchSpeedHorizontal;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float LaunchSpeedVertical;
-
 	// TODO: Probably remove this since we can only launch out of crouch now
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	int MaxLaunches = 1;
@@ -261,8 +255,6 @@ protected:
 	void TickSlide(float DeltaTime, UCharacterMovementComponent* movement);
 	void EndSlide(UCharacterMovementComponent* movement);
 	void SwitchCamera();
-	// Executes a launch jump 
-	void DoLaunchJump();
 	void DodgeInput();
 
 	bool IsDodging();

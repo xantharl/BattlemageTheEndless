@@ -58,6 +58,15 @@ bool UBMageCharacterMovementComponent::TryStartAbility(MovementAbilityType abili
 	if (!ability->IsEnabled || ability->IsActive || !ability->ShouldBegin())
 		return false;
 
+	// handle ability interactions
+	// TODO: Make this more generic
+	if (abilityType == MovementAbilityType::Launch && LaunchesPerformed >= MaxLaunches)
+	{
+		// If we can't launch anymore, redirect to jump logic (which checks jump count and handles appropriately)
+		CharacterOwner->Jump();
+		return false;
+	}
+
 	ability->Begin();
 	return true;
 }
@@ -67,6 +76,7 @@ bool UBMageCharacterMovementComponent::TryEndAbility(MovementAbilityType ability
 	if (!IsAbilityActive(abilityType) || MovementAbilities[abilityType]->ShouldEnd())
 		return false;
 
+	// handle abiltiy interactions
 	// This can be called before the timer goes off, so check if we're actually wall running
 	if (abilityType == MovementAbilityType::WallRun)
 	{
@@ -119,6 +129,10 @@ void UBMageCharacterMovementComponent::OnMovementAbilityBegin(UMovementAbility* 
 		if (CharacterOwner->bIsCrouched)
 			CharacterOwner->UnCrouch();
 	}
+	else if (ULaunchAbility* launchAbility = Cast<ULaunchAbility>(MovementAbility))
+	{
+		LaunchesPerformed += 1;
+	}
 }
 
 void UBMageCharacterMovementComponent::OnMovementAbilityEnd(UMovementAbility* ability)
@@ -144,6 +158,10 @@ void UBMageCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previ
 	if (PreviousMovementMode == EMovementMode::MOVE_Walking && MovementMode == EMovementMode::MOVE_Falling)
 	{
 		TryStartAbility(MovementAbilityType::WallRun);
+	}
+	else if (PreviousMovementMode == EMovementMode::MOVE_Falling && MovementMode == EMovementMode::MOVE_Walking)
+	{
+		LaunchesPerformed = 0;
 	}
 }
 

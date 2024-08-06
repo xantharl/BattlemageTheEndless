@@ -27,7 +27,6 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 	IsSliding = false;
 	bShouldUnCrouch = false;
 	slideElapsedSeconds = 0.0f;
-	launchesPerformed = 0;
 
 	SetupCameras();
 	SetupCapsule();
@@ -229,7 +228,11 @@ void ABattlemageTheEndlessCharacter::DoUnCrouch(UCharacterMovementComponent* mov
 	}
 	if (bLaunchRequested)
 	{
-		DoLaunchJump();
+		// get movement component as BMageCharacterMovementComponent
+		UBMageCharacterMovementComponent* mageMovement = Cast<UBMageCharacterMovementComponent>(movement);
+		if (mageMovement)
+			mageMovement->TryStartAbility(MovementAbilityType::Launch);
+
 		bLaunchRequested = false;
 	}
 }
@@ -296,16 +299,7 @@ void ABattlemageTheEndlessCharacter::EndSprint()
 
 void ABattlemageTheEndlessCharacter::LaunchJump()
 {
-	// TODO: Remove maxLaunches property, don't think I want more than 1 ever
-	if (launchesPerformed >= MaxLaunches)
-	{
-		// If we can't launch anymore, redirect to jump logic (which checks jump count and handles appropriately)
-		Jump();
-		return;
-	}
-
 	bLaunchRequested = true;
-	RequestUnCrouch();
 }
 
 void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)
@@ -371,12 +365,16 @@ void ABattlemageTheEndlessCharacter::Jump()
 	if (now - _lastJumpTime < (JumpCooldown*1000ms))
 		return;
 
+	// get movement component as BMageCharacterMovementComponent
+	UBMageCharacterMovementComponent* mageMovement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
+
 	_lastJumpTime = now;
 
 	if (IsSliding)
 	{
 		EndSlide(GetCharacterMovement());
-		LaunchJump();
+		if (mageMovement)
+			mageMovement->TryStartAbility(MovementAbilityType::Launch);
 	}
 
 	if (bIsCrouched)
@@ -498,10 +496,6 @@ void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMov
 
 void ABattlemageTheEndlessCharacter::OnJumpLanded()
 {
-	// TODO: Should I be setting current jump count to 0 or does the super handle that?
-
-	launchesPerformed = 0;
-	bLaunchRequested = false;
 	UGameplayStatics::PlaySoundAtLocation(this,
 		JumpLandingSound,
 		GetActorLocation(), 1.0f);
@@ -531,22 +525,6 @@ void ABattlemageTheEndlessCharacter::SwitchCamera()
 	}
 
 	Cast<APlayerController>(GetController())->SetViewTargetWithBlend((AActor*)this);
-}
-
-void ABattlemageTheEndlessCharacter::DoLaunchJump()
-{
-	launchesPerformed += 1;
-
-	// Create the launch vector
-	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
-	FRotator rotator = GetActorRotation();
-	rotator.Pitch = 0;
-	FVector vector = *new FVector(LaunchSpeedHorizontal, 0.0f, LaunchSpeedVertical);
-	vector = vector.RotateAngleAxis(rotator.Yaw, FVector::ZAxisVector);
-
-	// Launch the character
-	//EndSlide(movement);
-	LaunchCharacter(vector, false, true);
 }
 
 void ABattlemageTheEndlessCharacter::DodgeInput()
