@@ -171,6 +171,9 @@ void UWallRunAbility::End()
 		cameraManager->ViewYawMin = 0.f;
 	}
 
+	// this is to work around double jump logic in ACharacter which auto increments the jump count if we're falling
+	Character->JumpCurrentCount -= 1;
+
 	UMovementAbility::End();
 }
 
