@@ -16,7 +16,8 @@ enum class MovementAbilityType: uint8
 	Slide UMETA(DisplayName = "Slide"),
 	Launch UMETA(DisplayName = "Launch"),
 	WallRun UMETA(DisplayName = "WallRun"),
-	Vault UMETA(DisplayName = "Vault")
+	Vault UMETA(DisplayName = "Vault"),
+	Dodge UMETA(DisplayName = "Dodge")
 };
 
 /**

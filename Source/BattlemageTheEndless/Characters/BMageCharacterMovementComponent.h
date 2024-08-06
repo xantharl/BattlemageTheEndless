@@ -12,6 +12,10 @@
 #include "../Abilities/Instances/VaultAbility.h"
 #include "../Abilities/Instances/SlideAbility.h"
 #include "../Abilities/Instances/LaunchAbility.h"
+#include "../Abilities/Instances/DodgeAbility.h"
+//#include "../Abilities/Instances/DoubleJumpAbility.h"
+#include "../Abilities/Instances/SprintAbility.h"
+#include "../Abilities/Instances/SlideAbility.h"
 
 #include "../Helpers/Traces.h"
 

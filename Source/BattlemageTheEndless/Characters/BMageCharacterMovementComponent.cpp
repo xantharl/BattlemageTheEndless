@@ -9,6 +9,7 @@ UBMageCharacterMovementComponent::UBMageCharacterMovementComponent()
 	MovementAbilities.Add(MovementAbilityType::Launch, CreateDefaultSubobject<ULaunchAbility>(TEXT("Launch")));
 	MovementAbilities.Add(MovementAbilityType::Slide, CreateDefaultSubobject<USlideAbility>(TEXT("Slide")));
 	MovementAbilities.Add(MovementAbilityType::Vault, CreateDefaultSubobject<UVaultAbility>(TEXT("Vault")));
+	MovementAbilities.Add(MovementAbilityType::Dodge, CreateDefaultSubobject<UDodgeAbility>(TEXT("Dodge")));
 
 	AirControl = BaseAirControl;
 	GetNavAgentPropertiesRef().bCanCrouch = true;
@@ -107,6 +108,17 @@ void UBMageCharacterMovementComponent::OnMovementAbilityBegin(UMovementAbility* 
 
 	// otherwise set this ability as the most important
 	MostImportantActiveAbility = MovementAbility;
+
+	// handle interactions between abilities
+	if (UDodgeAbility* dodgeAbility = Cast<UDodgeAbility>(MovementAbility)) 
+	{
+		// If we're sliding, end it before dodging
+		TryEndAbility(MovementAbilityType::Slide);
+
+		// If we're crouched, uncrouch before dodging
+		if (CharacterOwner->bIsCrouched)
+			CharacterOwner->UnCrouch();
+	}
 }
 
 void UBMageCharacterMovementComponent::OnMovementAbilityEnd(UMovementAbility* ability)

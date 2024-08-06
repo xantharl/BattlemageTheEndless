@@ -551,74 +551,22 @@ void ABattlemageTheEndlessCharacter::DoLaunchJump()
 
 void ABattlemageTheEndlessCharacter::DodgeInput()
 {
-	FVector inputVector = GetLastMovementInputVector();
-	// account for camera rotation
-	inputVector = inputVector.RotateAngleAxis(GetCharacterMovement()->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector);
-
-	// use the strongest input direction to decide which way to dodge
-	bool isLateral = FMath::Abs(inputVector.X) < FMath::Abs(inputVector.Y);
-	// if the movement is not lateral, dodge forward or backward
-	if (!isLateral)
-	{
-		// If the input is forward, dodge forward
-		if (inputVector.X > 0.0f)
-		{
-			Dodge(DodgeImpulseForward);
-		}
-		// If the input is backward, dodge backward
-		else if (inputVector.X < -0.0f)
-		{
-			Dodge(DodgeImpulseBackward);
-		}
-
-		return;
-	}
-	
-	// if the input is left dodge left, if right dodge right
-	if (inputVector.Y < 0.0f)
-	{
-		Dodge(DodgeImpulseLateral);
-	}
-	else if (inputVector.Y > 0.0f)
-	{
-		Dodge(DodgeImpulseLateral * -1);
-	}
-}
-
-void ABattlemageTheEndlessCharacter::Dodge(FVector Impulse)
-{
-	// TODO: Implement a dodge cooldown
-	// TODO: Figure out what I want to do with dodging in air
-	// Currently only allow dodging if on ground
-	UCharacterMovementComponent* movement = GetCharacterMovement();
-	if (movement->MovementMode == EMovementMode::MOVE_Falling)
+	// get the movement component as a BMageCharacterMovementComponent
+	UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
+	if (!movement)
 		return;
 
-	// If we're sliding, end it before dodging
-	if (IsSliding)
-		EndSlide(movement);
-
-	// If we're crouched, uncrouch before dodging
-	if (bIsCrouched)
-		RequestUnCrouch();
-
-	// Launch the character
-	PreviousFriction = movement->GroundFriction;
-	movement->GroundFriction = 0.0f;
-	FVector dodgeVector = FVector(Impulse.RotateAngleAxis(movement->GetLastUpdateRotation().Yaw, FVector::ZAxisVector));
-	LaunchCharacter(dodgeVector, true, true);
-	GetWorldTimerManager().SetTimer(DodgeEndTimer, this, &ABattlemageTheEndlessCharacter::RestoreFriction, DodgeDurationSeconds, false);
+	movement->TryStartAbility(MovementAbilityType::Dodge);
 }
 
+// TODO: Deprecate this
 bool ABattlemageTheEndlessCharacter::IsDodging()
 {
-	return GetWorldTimerManager().IsTimerActive(DodgeEndTimer);
-}
+	UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
+	if (!movement)
+		return false;
 
-void ABattlemageTheEndlessCharacter::RestoreFriction()
-{
-	UCharacterMovementComponent* movement = GetCharacterMovement();
-	movement->GroundFriction = PreviousFriction;
+	return movement->IsAbilityActive(MovementAbilityType::Dodge);
 }
 
 void ABattlemageTheEndlessCharacter::ApplyDamage(float damage)

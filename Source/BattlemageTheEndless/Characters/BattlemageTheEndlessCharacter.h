@@ -130,10 +130,6 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
 	float MaxHealth = 100;
 
-	FTimerHandle DodgeEndTimer;
-
-	float PreviousFriction = 8.0f;
-
 	ACheckPoint* LastCheckPoint;
 
 public:
@@ -184,9 +180,6 @@ public:
 	float SlideDurationSeconds = 1.67f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float DodgeDurationSeconds = 0.35f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float DoubleJumpHorizontalWeight = 1.5f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
@@ -200,15 +193,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float LaunchSpeedVertical;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	FVector DodgeImpulseLateral;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	FVector DodgeImpulseForward;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	FVector DodgeImpulseBackward;
 
 	// TODO: Probably remove this since we can only launch out of crouch now
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
@@ -281,16 +265,7 @@ protected:
 	void DoLaunchJump();
 	void DodgeInput();
 
-	/// <summary>
-	/// Executes a dodge in the given direction
-	/// </summary>
-	/// <param name="Impulse">The force with which to dodge (launch) the character, inclusive of direction</param>
-	void Dodge(FVector Impulse);
-
 	bool IsDodging();
-
-	UFUNCTION(BlueprintCallable, Category = "Character Movement")
-	void RestoreFriction();
 
 	UFUNCTION(BlueprintCallable, Category = "CheckPoint")
 	void OnBaseCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
