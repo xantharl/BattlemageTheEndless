@@ -7,6 +7,7 @@ UBMageCharacterMovementComponent::UBMageCharacterMovementComponent()
 {
 	MovementAbilities.Add(MovementAbilityType::WallRun, CreateDefaultSubobject<UWallRunAbility>(TEXT("WallRun")));
 	MovementAbilities.Add(MovementAbilityType::Launch, CreateDefaultSubobject<ULaunchAbility>(TEXT("Launch")));
+	MovementAbilities.Add(MovementAbilityType::Sprint, CreateDefaultSubobject<USprintAbility>(TEXT("Sprint")));
 	MovementAbilities.Add(MovementAbilityType::Slide, CreateDefaultSubobject<USlideAbility>(TEXT("Slide")));
 	MovementAbilities.Add(MovementAbilityType::Vault, CreateDefaultSubobject<UVaultAbility>(TEXT("Vault")));
 	MovementAbilities.Add(MovementAbilityType::Dodge, CreateDefaultSubobject<UDodgeAbility>(TEXT("Dodge")));
@@ -22,6 +23,23 @@ void UBMageCharacterMovementComponent::InitAbilities(ACharacter* Character, USke
 		ability.Value->Init(this, Character, Mesh);
 		ability.Value->OnMovementAbilityBegin.AddDynamic(this, &UBMageCharacterMovementComponent::OnMovementAbilityBegin);
 		ability.Value->OnMovementAbilityEnd.AddDynamic(this, &UBMageCharacterMovementComponent::OnMovementAbilityEnd);
+	}
+}
+
+void UBMageCharacterMovementComponent::ApplyInput()
+{
+	FVector forwardVector = Velocity;
+	forwardVector = FVector(forwardVector.RotateAngleAxis(GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector));
+
+	// if we've started moving backwards, set the speed to ReverseSpeed
+	if (forwardVector.X < 0 && MaxWalkSpeed != ReverseSpeed)
+	{
+		MaxWalkSpeed = ReverseSpeed;
+	}
+	// otherwise set it to WalkSpeed
+	else if (forwardVector.X >= 0 && MaxWalkSpeed == ReverseSpeed)
+	{
+		MaxWalkSpeed = IsAbilityActive(MovementAbilityType::Sprint) ? SprintSpeed() : WalkSpeed;
 	}
 }
 
@@ -62,10 +80,16 @@ bool UBMageCharacterMovementComponent::TryStartAbility(MovementAbilityType abili
 	// TODO: Make this more generic
 	if (abilityType == MovementAbilityType::Launch && LaunchesPerformed >= MaxLaunches)
 	{
+		// end slide if we're in one (method checks IsActive)
+		TryEndAbility(MovementAbilityType::Slide);
+
 		// If we can't launch anymore, redirect to jump logic (which checks jump count and handles appropriately)
 		CharacterOwner->Jump();
 		return false;
 	}
+	// can only wallrun if sprinting, and we can't check this from the ability itself
+	else if (abilityType == MovementAbilityType::WallRun && !IsAbilityActive(MovementAbilityType::Sprint))
+		return false;
 
 	ability->Begin();
 	return true;
@@ -84,6 +108,9 @@ bool UBMageCharacterMovementComponent::TryEndAbility(MovementAbilityType ability
 			return false;
 
 		AirControl = BaseAirControl;
+	}
+	else if (abilityType == MovementAbilityType::Sprint) {
+		MaxWalkSpeed = WalkSpeed;
 	}
 
 	MovementAbilities[abilityType]->End();
@@ -133,6 +160,15 @@ void UBMageCharacterMovementComponent::OnMovementAbilityBegin(UMovementAbility* 
 	{
 		LaunchesPerformed += 1;
 	}
+	else if (USlideAbility* slideAbility = Cast<USlideAbility>(MovementAbility))
+	{
+		// default walk is 1200, crouch is 300
+		MaxWalkSpeedCrouched = SprintSpeed();
+	}
+	else if (USprintAbility* sprintAbility = Cast<USprintAbility>(MovementAbility))
+	{
+		ForceEndAbility(MovementAbilityType::Slide);
+	}
 }
 
 void UBMageCharacterMovementComponent::OnMovementAbilityEnd(UMovementAbility* ability)
@@ -147,6 +183,12 @@ void UBMageCharacterMovementComponent::OnMovementAbilityEnd(UMovementAbility* ab
 	{
 		if (a.Value->IsActive && (MostImportantActiveAbility == nullptr || a.Value->Priority > MostImportantActiveAbility->Priority))
 			MostImportantActiveAbility = a.Value;
+	}
+
+	if (USlideAbility* slideAbility = Cast<USlideAbility>(ability))
+	{
+		MaxWalkSpeedCrouched = IsCrouching() ? CrouchSpeed : WalkSpeed;
+		SetCrouchedHalfHeight(DefaultCrouchedHalfHeight);
 	}
 }
 
@@ -168,4 +210,9 @@ void UBMageCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previ
 void UBMageCharacterMovementComponent::SetVaultFootPlanted(bool value)
 {
 	Cast<UVaultAbility>(MovementAbilities[MovementAbilityType::Vault])->VaultFootPlanted = value;
+}
+
+float UBMageCharacterMovementComponent::SprintSpeed() const
+{
+	return Cast<USprintAbility>(MovementAbilities[MovementAbilityType::Sprint])->SprintSpeed;
 }

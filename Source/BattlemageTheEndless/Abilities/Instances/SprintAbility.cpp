@@ -3,3 +3,8 @@
 
 #include "SprintAbility.h"
 
+void USprintAbility::Begin()
+{
+	Super::Begin();
+	Movement->MaxWalkSpeed = SprintSpeed;
+}

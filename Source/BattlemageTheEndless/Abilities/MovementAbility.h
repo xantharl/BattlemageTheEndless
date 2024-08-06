@@ -13,6 +13,7 @@ UENUM(BlueprintType)
 enum class MovementAbilityType: uint8
 {
 	None UMETA(DisplayName = "None"),
+	Sprint UMETA(DisplayName = "Sprint"),
 	Slide UMETA(DisplayName = "Slide"),
 	Launch UMETA(DisplayName = "Launch"),
 	WallRun UMETA(DisplayName = "WallRun"),
@@ -53,8 +54,8 @@ public:
 	MovementAbilityType Type;
 
 	virtual void Init(UCharacterMovementComponent* movement, ACharacter* character, USkeletalMeshComponent* mesh);
-	virtual bool ShouldBegin() { return false; }
-	virtual bool ShouldEnd() { return false; }
+	virtual bool ShouldBegin() { return true; }
+	virtual bool ShouldEnd() { return true; }
 	virtual void Begin();
 	virtual void End();
 	virtual void Tick(float DeltaTime) {}

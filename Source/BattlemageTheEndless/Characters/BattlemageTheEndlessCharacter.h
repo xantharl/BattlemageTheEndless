@@ -139,58 +139,16 @@ public:
 	class UInputAction* LookAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	bool bIsSprinting;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	bool IsSliding;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	bool IsVaulting;
-
-	// TODO: Derive from the wallrun ability
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	bool IsWallRunning;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	bool bShouldUnCrouch;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	bool bLaunchRequested;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float SprintSpeed;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float SlideSpeed;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float WalkSpeed;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float ReverseSpeed = 300.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float BaseHalfHeight = 90.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float CrouchedHalfHeight = 65.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float SlideHalfHeight = 35.0f;
-
-	// The default value is based on the slide animation length
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float SlideDurationSeconds = 1.67f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float DoubleJumpHorizontalWeight = 1.5f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	bool ApplyMovementInputToJump = true;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float CrouchSpeed;
-
-	// TODO: Probably remove this since we can only launch out of crouch now
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	int MaxLaunches = 1;
 
 	/** Jump Cooldown expressed in seconds**/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
@@ -239,10 +197,6 @@ protected:
 
 	void RedirectVelocityToLookDirection(bool wallrunEnded);
 
-	float slideElapsedSeconds;
-	int launchesPerformed;
-
-
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	void Crouch();
@@ -252,7 +206,6 @@ protected:
 	void RequestUnCrouch();
 	void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction);
 	void DoUnCrouch(UCharacterMovementComponent* movement);
-	void TickSlide(float DeltaTime, UCharacterMovementComponent* movement);
 	void EndSlide(UCharacterMovementComponent* movement);
 	void SwitchCamera();
 	void DodgeInput();
@@ -262,8 +215,5 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "CheckPoint")
 	void OnBaseCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 	bool CanWallRun();
-
-	UFUNCTION(BlueprintCallable, Category = "Character Movement")
-	void EndWallRun();
 };
 

@@ -38,6 +38,8 @@ public:
 
 	void InitAbilities(ACharacter* Character, USkeletalMeshComponent* Mesh);
 
+	void ApplyInput();
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float BaseAirControl = 0.8f;
 
@@ -55,9 +57,20 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	int MaxLaunches = 1;
 
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	int LaunchesPerformed = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float WalkSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float CrouchSpeed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float ReverseSpeed = 300.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float DefaultCrouchedHalfHeight = 65.0f;
 
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
@@ -118,6 +131,16 @@ public:
 
 	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
 
+	/// <summary>
+	/// Exposes UVaultAbility::FootPlanted to blueprint for animnotify purposes
+	/// </summary>
+	/// <param name="value"></param>
 	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
 	void SetVaultFootPlanted(bool value);
+
+	/// <summary>
+	/// Returns the sprint speed from the sprint ability
+	/// </summary>
+	/// <returns></returns>
+	float SprintSpeed() const;
 };

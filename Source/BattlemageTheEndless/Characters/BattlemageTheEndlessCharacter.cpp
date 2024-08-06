@@ -22,11 +22,7 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UBMageCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
-	// Character doesnt have a rifle at start
-	bIsSprinting = false;
-	IsSliding = false;
 	bShouldUnCrouch = false;
-	slideElapsedSeconds = 0.0f;
 
 	SetupCameras();
 	SetupCapsule();
@@ -171,7 +167,7 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 
 void ABattlemageTheEndlessCharacter::Crouch() 
 {
-	UCharacterMovementComponent* movement = GetCharacterMovement();
+	UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
 	if (!movement)
 	{
 		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find a Movement Component!"), *GetNameSafe(this));
@@ -184,16 +180,13 @@ void ABattlemageTheEndlessCharacter::Crouch()
 
 	ACharacter::Crouch(false);
 
-	if (!bIsSprinting && !IsDodging())
+	if (!movement->IsAbilityActive(MovementAbilityType::Sprint) && !movement->IsAbilityActive(MovementAbilityType::Dodge))
 	{
 		return;
 	}
 
 	// Start a slide if we've made it this far
-	IsSliding = true;
-	movement->SetCrouchedHalfHeight(SlideHalfHeight);
-	// default walk is 1200, crouch is 300
-	movement->MaxWalkSpeedCrouched = SprintSpeed;
+	movement->TryStartAbility(MovementAbilityType::Slide);
 }
 
 void ABattlemageTheEndlessCharacter::RequestUnCrouch()
@@ -222,84 +215,43 @@ void ABattlemageTheEndlessCharacter::DoUnCrouch(UCharacterMovementComponent* mov
 	UnCrouch(false);
 	bShouldUnCrouch = false;
 
-	if (IsSliding)
-	{
-		EndSlide(movement);
-	}
-	if (bLaunchRequested)
-	{
-		// get movement component as BMageCharacterMovementComponent
-		UBMageCharacterMovementComponent* mageMovement = Cast<UBMageCharacterMovementComponent>(movement);
-		if (mageMovement)
-			mageMovement->TryStartAbility(MovementAbilityType::Launch);
-
-		bLaunchRequested = false;
-	}
-}
-
-void ABattlemageTheEndlessCharacter::TickSlide(float DeltaTime, UCharacterMovementComponent* movement)
-{
-	slideElapsedSeconds += DeltaTime;
-
-	if (!movement)
-		return;
-	
-	// If we've reached the slide's full duration, reset speed and slide data
-	if (slideElapsedSeconds >= SlideDurationSeconds)
-	{
-		EndSlide(movement);
-	}
-	else // Otherwise decrement the slide speed
-	{
-		float newSpeed = SlideSpeed * powf(2.7182818284f, -1.39f * slideElapsedSeconds);
-		movement->MaxWalkSpeedCrouched = newSpeed;
-	}	
+	// get movement component as BMageCharacterMovementComponent
+	UBMageCharacterMovementComponent* mageMovement = Cast<UBMageCharacterMovementComponent>(movement);
+	// end slide if we're sliding
+	mageMovement->TryEndAbility(MovementAbilityType::Slide);
 }
 
 void ABattlemageTheEndlessCharacter::EndSlide(UCharacterMovementComponent* movement)
 {
-	movement->MaxWalkSpeedCrouched = bIsCrouched ? CrouchSpeed : WalkSpeed;
-	IsSliding = false;
-	slideElapsedSeconds = 0.0f;
-	movement->SetCrouchedHalfHeight(CrouchedHalfHeight);
+	if(UBMageCharacterMovementComponent* mageMovement = Cast<UBMageCharacterMovementComponent>(movement))
+		mageMovement->TryEndAbility(MovementAbilityType::Slide);
 }
 
 void ABattlemageTheEndlessCharacter::StartSprint()
 {
-	if (bIsSprinting)
-		return;
-
-	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
+	TObjectPtr<UBMageCharacterMovementComponent> movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
 	if (!movement)
 		return;
 
-	// if sliding, end it before sprinting
-	if (IsSliding)
-	{
-		EndSlide(movement);
-		UnCrouch();
-	}
+	movement->TryStartAbility(MovementAbilityType::Sprint);
 
-	movement->MaxWalkSpeed = SprintSpeed;
-	bIsSprinting = true;
+	if (bIsCrouched)
+		UnCrouch();
 }
 
 void ABattlemageTheEndlessCharacter::EndSprint()
 {
-	if (!bIsSprinting)
-		return;
-
-	TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
-	if (!movement)
-		return;
-
-	movement->MaxWalkSpeed = WalkSpeed;
-	bIsSprinting = false;
+	if (TObjectPtr<UBMageCharacterMovementComponent> movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement()))
+	{
+		movement->TryEndAbility(MovementAbilityType::Sprint);
+	}
 }
 
 void ABattlemageTheEndlessCharacter::LaunchJump()
 {
-	bLaunchRequested = true;
+	// get movement component as BMageCharacterMovementComponent
+	if (UBMageCharacterMovementComponent* mageMovement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement()))
+		mageMovement->TryStartAbility(MovementAbilityType::Launch);
 }
 
 void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)
@@ -309,8 +261,9 @@ void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)
 
 	if (Controller != nullptr)
 	{
+		TObjectPtr<UBMageCharacterMovementComponent> movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
 		// add movement
-		if (!IsWallRunning)
+		if (!movement->IsAbilityActive(MovementAbilityType::WallRun))
 		{
 			AddMovementInput(GetActorForwardVector(), MovementVector.Y);
 			AddMovementInput(GetActorRightVector(), MovementVector.X);
@@ -324,23 +277,7 @@ void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)
 			// Don't apply lateral movement, only jumping or dodging can break a wallrun			
 		}
 
-		TObjectPtr<UCharacterMovementComponent> movement = GetCharacterMovement();
-		if (!movement)
-			return;
-
-		FVector forwardVector = movement->Velocity;
-		forwardVector = FVector(forwardVector.RotateAngleAxis(movement->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector));
-
-		// if we've started moving backwards, set the speed to ReverseSpeed
- 		if (forwardVector.X < 0 && movement->MaxWalkSpeed != ReverseSpeed)
-		{
-			movement->MaxWalkSpeed = ReverseSpeed;
-		}
-		// otherwise set it to WalkSpeed
-		else if (forwardVector.X >= 0 && movement->MaxWalkSpeed == ReverseSpeed)
-		{
-			movement->MaxWalkSpeed = bIsSprinting ? SprintSpeed: WalkSpeed;
-		}
+		movement->ApplyInput();
 	}
 }
 
@@ -370,38 +307,28 @@ void ABattlemageTheEndlessCharacter::Jump()
 
 	_lastJumpTime = now;
 
-	if (IsSliding)
-	{
-		EndSlide(GetCharacterMovement());
-		if (mageMovement)
-			mageMovement->TryStartAbility(MovementAbilityType::Launch);
-	}
+	if (mageMovement->IsAbilityActive(MovementAbilityType::Slide))
+		mageMovement->TryStartAbility(MovementAbilityType::Launch);
 
 	if (bIsCrouched)
-	{
 		UnCrouch();
-	}
 
 	bool wallrunEnded = false;
-	if (IsWallRunning)
+	if (mageMovement->IsAbilityActive(MovementAbilityType::WallRun))
 	{
-		EndWallRun();
+		mageMovement->TryEndAbility(MovementAbilityType::WallRun);
 		wallrunEnded = true;
 	}
 
 	// movement redirection logic
 	if (JumpCurrentCount < JumpMaxCount)
-	{
 		RedirectVelocityToLookDirection(wallrunEnded);
 
-	}
-
 	Super::Jump();
+
 	// this is to get around the double jump check in CheckJumpInput
 	if (wallrunEnded)
-	{
 		JumpCurrentCount--;
-	}
 }
 
 void ABattlemageTheEndlessCharacter::RedirectVelocityToLookDirection(bool wallrunEnded)
@@ -487,22 +414,13 @@ void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMov
 {
 	if (PrevMovementMode == EMovementMode::MOVE_Falling && GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Walking)
 	{
-		OnJumpLanded();
-
+		// TODO: Use anim notify instead
+		UGameplayStatics::PlaySoundAtLocation(this,
+			JumpLandingSound,
+			GetActorLocation(), 1.0f);
 	}
 
 	ACharacter::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);
-}
-
-void ABattlemageTheEndlessCharacter::OnJumpLanded()
-{
-	UGameplayStatics::PlaySoundAtLocation(this,
-		JumpLandingSound,
-		GetActorLocation(), 1.0f);
-
-	UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
-	if (movement)
-		movement->GravityScale = movement->CharacterBaseGravityScale;
 }
 
 // TODO: Can I migrate this to the player controller?
@@ -530,21 +448,15 @@ void ABattlemageTheEndlessCharacter::SwitchCamera()
 void ABattlemageTheEndlessCharacter::DodgeInput()
 {
 	// get the movement component as a BMageCharacterMovementComponent
-	UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
-	if (!movement)
-		return;
-
-	movement->TryStartAbility(MovementAbilityType::Dodge);
+	if (UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement()))
+		movement->TryStartAbility(MovementAbilityType::Dodge);
 }
 
 // TODO: Deprecate this
 bool ABattlemageTheEndlessCharacter::IsDodging()
 {
 	UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
-	if (!movement)
-		return false;
-
-	return movement->IsAbilityActive(MovementAbilityType::Dodge);
+	return movement && movement->IsAbilityActive(MovementAbilityType::Dodge);
 }
 
 void ABattlemageTheEndlessCharacter::ApplyDamage(float damage)
@@ -555,29 +467,19 @@ void ABattlemageTheEndlessCharacter::ApplyDamage(float damage)
 FName ABattlemageTheEndlessCharacter::GetTargetSocketName(EquipSlot SlotType)
 {
 	if (SlotType == EquipSlot::Primary)
-	{
 		return FName(LeftHanded ? "GripLeft" : "GripRight");
-	}
 	else
-	{
 		return FName(LeftHanded ? "GripRight" : "GripLeft");
-	}
 }
 
 bool ABattlemageTheEndlessCharacter::TrySetWeapon(UTP_WeaponComponent* Weapon, FName SocketName)
 {
 	if (SocketName == FName("GripRight") && RightHandWeapon == NULL)
-	{
 		RightHandWeapon = Weapon;
-	}
 	else if (SocketName == FName("GripLeft") && LeftHandWeapon == NULL)
-	{
 		LeftHandWeapon = Weapon;
-	}
 	else
-	{
 		return false;
-	}
 
 	return true;
 }
@@ -586,20 +488,5 @@ void ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap(UPrimitiveCompone
 {
 	// if the other actor is not a CheckPoint, return
 	if (ACheckPoint* checkpoint = Cast<ACheckPoint>(OtherActor))
-	{
 		LastCheckPoint = checkpoint;
-	}
-}
-
-// TODO: migrate this
-bool ABattlemageTheEndlessCharacter::CanWallRun()
-{	
-	return bIsSprinting && GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling;
-}
-
-void ABattlemageTheEndlessCharacter::EndWallRun()
-{
-	UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
-	if (movement)
-		movement->TryEndAbility(MovementAbilityType::WallRun);
 }

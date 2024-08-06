@@ -18,6 +18,8 @@ class BATTLEMAGETHEENDLESS_API UDodgeAbility : public UMovementAbility
 	FTimerHandle DodgeEndTimer;
 	float PreviousFriction = 8.0f;
 
+	UDodgeAbility(const FObjectInitializer& X) : Super(X) { Type = MovementAbilityType::Dodge; }
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float DodgeDurationSeconds = 0.35f;
 

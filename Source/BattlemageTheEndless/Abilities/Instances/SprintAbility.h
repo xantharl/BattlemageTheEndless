@@ -14,4 +14,9 @@ class BATTLEMAGETHEENDLESS_API USprintAbility : public UMovementAbility
 {
 	GENERATED_BODY()
 	
+	void Begin() override;
+
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float SprintSpeed = 1200.f;
 };
