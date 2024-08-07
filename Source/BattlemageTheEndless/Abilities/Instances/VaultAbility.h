@@ -17,8 +17,7 @@ class BATTLEMAGETHEENDLESS_API UVaultAbility : public UMovementAbility
 {
 	GENERATED_BODY()
 
-	UVaultAbility(const FObjectInitializer& X) : Super(X) { Type = MovementAbilityType::Vault; }
-
+	UVaultAbility(const FObjectInitializer& X);
 	// Object currently being vaulted
 	AActor* VaultTarget;
 	FHitResult VaultHit;

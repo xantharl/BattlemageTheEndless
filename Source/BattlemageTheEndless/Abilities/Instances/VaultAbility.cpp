@@ -3,6 +3,12 @@
 
 #include "VaultAbility.h"
 
+UVaultAbility::UVaultAbility(const FObjectInitializer& X) : Super(X)
+{
+	Type = MovementAbilityType::Vault;
+	VaultTarget = nullptr;
+}
+
 void UVaultAbility::Init(UCharacterMovementComponent* movement, ACharacter* character, USkeletalMeshComponent* mesh)
 {
 	UMovementAbility::Init(movement, character, mesh);
@@ -22,7 +28,7 @@ void UVaultAbility::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPri
 
 void UVaultAbility::Begin()
 {
-	UMovementAbility::Begin();
+	Super::Begin();
 
 	Character->DisableInput(Cast<APlayerController>(Character->Controller));
 	// stop movement and gravity by enabling flying
@@ -71,7 +77,7 @@ void UVaultAbility::End()
 	Character->GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 	Mesh->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 
-	UMovementAbility::End();
+	Super::End();
 }
 
 bool UVaultAbility::ShouldBegin()

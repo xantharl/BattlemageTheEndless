@@ -2,17 +2,23 @@
 
 
 #include "SlideAbility.h"
+USlideAbility::USlideAbility(const FObjectInitializer& X) : Super(X)
+{
+	Type = MovementAbilityType::Slide;
+	// Make this ability override sprint
+	Priority = 2;
+}
 
 void USlideAbility::Begin()
 {
-	UMovementAbility::Begin();
+	Super::Begin();
 	Movement->SetCrouchedHalfHeight(SlideHalfHeight);
 }
 
 void USlideAbility::End()
 {
-	UMovementAbility::End();
 	SlideElapsedSeconds = 0.0f;
+	Super::End();
 }
 
 void USlideAbility::Tick(float DeltaTime)

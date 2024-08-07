@@ -61,10 +61,10 @@ public:
 	int LaunchesPerformed = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float WalkSpeed;
+	float WalkSpeed = 500.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	float CrouchSpeed;
+	float CrouchSpeed = 300.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float ReverseSpeed = 300.0f;
@@ -82,6 +82,8 @@ public:
 	/// <param name="mesh"></param>
 	/// <returns></returns>
 	bool TryStartAbility(MovementAbilityType abilityType);
+
+	bool ShouldAbilityBegin(MovementAbilityType abilityType);
 
 	/// <summary>
 	/// Tries to end an ability and returns whether it was successful

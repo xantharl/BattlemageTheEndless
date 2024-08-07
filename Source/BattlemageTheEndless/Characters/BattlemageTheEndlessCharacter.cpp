@@ -234,9 +234,6 @@ void ABattlemageTheEndlessCharacter::StartSprint()
 		return;
 
 	movement->TryStartAbility(MovementAbilityType::Sprint);
-
-	if (bIsCrouched)
-		UnCrouch();
 }
 
 void ABattlemageTheEndlessCharacter::EndSprint()
@@ -309,16 +306,10 @@ void ABattlemageTheEndlessCharacter::Jump()
 
 	if (mageMovement->IsAbilityActive(MovementAbilityType::Slide))
 		mageMovement->TryStartAbility(MovementAbilityType::Launch);
-
-	if (bIsCrouched)
+	else if (bIsCrouched)
 		UnCrouch();
 
-	bool wallrunEnded = false;
-	if (mageMovement->IsAbilityActive(MovementAbilityType::WallRun))
-	{
-		mageMovement->TryEndAbility(MovementAbilityType::WallRun);
-		wallrunEnded = true;
-	}
+	bool wallrunEnded = mageMovement->TryEndAbility(MovementAbilityType::WallRun);
 
 	// movement redirection logic
 	if (JumpCurrentCount < JumpMaxCount)

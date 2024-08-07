@@ -48,7 +48,7 @@ public:
 	bool IsActive = false;
 
 	// Lower values are executed first
-	int Priority = 0;
+	int Priority = 10;
 
 	UPROPERTY(BlueprintReadOnly)
 	MovementAbilityType Type;

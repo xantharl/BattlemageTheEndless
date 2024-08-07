@@ -73,31 +73,46 @@ void UBMageCharacterMovementComponent::TickComponent(float DeltaTime, enum ELeve
 bool UBMageCharacterMovementComponent::TryStartAbility(MovementAbilityType abilityType)
 {
 	UMovementAbility* ability = MovementAbilities[abilityType];
-	if (!ability->IsEnabled || ability->IsActive || !ability->ShouldBegin())
+	if (!ability->IsEnabled || ability->IsActive || !ShouldAbilityBegin(abilityType))
 		return false;
 
 	// handle ability interactions
 	// TODO: Make this more generic
-	if (abilityType == MovementAbilityType::Launch && LaunchesPerformed >= MaxLaunches)
+	if (abilityType == MovementAbilityType::Sprint && IsCrouching())
+		CharacterOwner->UnCrouch();
+	else if (abilityType == MovementAbilityType::Launch)
 	{
-		// end slide if we're in one (method checks IsActive)
+		CharacterOwner->UnCrouch();		
 		TryEndAbility(MovementAbilityType::Slide);
 
 		// If we can't launch anymore, redirect to jump logic (which checks jump count and handles appropriately)
-		CharacterOwner->Jump();
-		return false;
+		if (LaunchesPerformed >= MaxLaunches)
+		{
+			CharacterOwner->Jump();
+			return false;
+		}
 	}
-	// can only wallrun if sprinting, and we can't check this from the ability itself
-	else if (abilityType == MovementAbilityType::WallRun && !IsAbilityActive(MovementAbilityType::Sprint))
-		return false;
 
 	ability->Begin();
 	return true;
 }
 
+bool UBMageCharacterMovementComponent::ShouldAbilityBegin(MovementAbilityType abilityType)
+{
+	// we check what we can at the ability level
+	if (!MovementAbilities[abilityType]->ShouldBegin())
+		return false;
+
+	// handle ability interactions at this level
+	if (!IsAbilityActive(MovementAbilityType::Sprint) && (abilityType == MovementAbilityType::WallRun || abilityType == MovementAbilityType::Launch))
+		return false;
+
+	return true;
+}
+
 bool UBMageCharacterMovementComponent::TryEndAbility(MovementAbilityType abilityType)
 {
-	if (!IsAbilityActive(abilityType) || MovementAbilities[abilityType]->ShouldEnd())
+	if (!IsAbilityActive(abilityType) || !MovementAbilities[abilityType]->ShouldEnd())
 		return false;
 
 	// handle abiltiy interactions
@@ -139,12 +154,9 @@ bool UBMageCharacterMovementComponent::IsWallRunToLeft()
 
 void UBMageCharacterMovementComponent::OnMovementAbilityBegin(UMovementAbility* MovementAbility)
 {
-	// if there's a more imporant active ability do nothing
-	if (MostImportantActiveAbility != nullptr && MostImportantActiveAbility->Priority <= MovementAbility->Priority)
-		return;
-
-	// otherwise set this ability as the most important
-	MostImportantActiveAbility = MovementAbility;
+	// check if this ability should be the new most important, lower numerical value means higher priority
+	if (MostImportantActiveAbility == nullptr || MostImportantActiveAbility->Priority > MovementAbility->Priority)
+		MostImportantActiveAbility = MovementAbility;
 
 	// handle interactions between abilities
 	if (UDodgeAbility* dodgeAbility = Cast<UDodgeAbility>(MovementAbility)) 
@@ -168,6 +180,19 @@ void UBMageCharacterMovementComponent::OnMovementAbilityBegin(UMovementAbility* 
 	else if (USprintAbility* sprintAbility = Cast<USprintAbility>(MovementAbility))
 	{
 		ForceEndAbility(MovementAbilityType::Slide);
+	}
+	else if (UWallRunAbility* wallRunAbility = Cast<UWallRunAbility>(MovementAbility))
+	{
+		TryEndAbility(MovementAbilityType::Launch);
+	}
+	else if (UVaultAbility* vaultAbility = Cast<UVaultAbility>(MovementAbility))
+	{
+		// end every other ability, vault is greedy
+		for (auto& a : MovementAbilities)
+		{
+			if (a.Value->IsActive && a.Value != MovementAbility)
+				TryEndAbility(a.Key);
+		}
 	}
 }
 
@@ -203,6 +228,7 @@ void UBMageCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previ
 	}
 	else if (PreviousMovementMode == EMovementMode::MOVE_Falling && MovementMode == EMovementMode::MOVE_Walking)
 	{
+		TryEndAbility(MovementAbilityType::Launch);
 		LaunchesPerformed = 0;
 	}
 }

@@ -7,6 +7,8 @@
 UWallRunAbility::UWallRunAbility(const FObjectInitializer& X) : Super(X)
 {
 	Type = MovementAbilityType::WallRun;
+	// Make this ability override sprint
+	Priority = 2;
 	WallRunCapsule = CreateDefaultSubobject<UCapsuleComponent>(TEXT("WallRunCapsule"));
 }
 
@@ -92,13 +94,11 @@ void UWallRunAbility::Tick(float DeltaTime)
 			End();
 		}
 	}
-
-	UMovementAbility::Tick(DeltaTime);
 }
 void UWallRunAbility::Begin()
 {
 	// the super should always be called first as it sets isactive
-	UMovementAbility::Begin();
+	Super::Begin();
 
 	CharacterBaseGravityScale = Movement->GravityScale;
 	Movement->GravityScale = WallRunInitialGravityScale;
@@ -174,7 +174,7 @@ void UWallRunAbility::End()
 	// this is to work around double jump logic in ACharacter which auto increments the jump count if we're falling
 	Character->JumpCurrentCount -= 1;
 
-	UMovementAbility::End();
+	Super::End();
 }
 
 bool UWallRunAbility::ObjectIsWallRunnable(AActor* actor, USkeletalMeshComponent* mesh)

@@ -3,6 +3,13 @@
 
 #include "DodgeAbility.h"
 
+UDodgeAbility::UDodgeAbility(const FObjectInitializer& X) : Super(X)
+{
+	Type = MovementAbilityType::Dodge;
+	// Make this ability override sprint
+	Priority = 2;
+}
+
 void UDodgeAbility::Begin()
 {
 	// TODO: Implement a dodge cooldown
@@ -10,8 +17,6 @@ void UDodgeAbility::Begin()
 	// Currently only allow dodging if on ground
 	if (Movement->MovementMode == EMovementMode::MOVE_Falling)
 		return;
-
-	OnMovementAbilityBegin.Broadcast(this);
 
 	FVector inputVector = Character->GetLastMovementInputVector();
 	// account for camera rotation
@@ -34,9 +39,12 @@ void UDodgeAbility::Begin()
 	FVector dodgeVector = FVector(ImpulseToUse.RotateAngleAxis(Movement->GetLastUpdateRotation().Yaw, FVector::ZAxisVector));
 	Character->LaunchCharacter(dodgeVector, true, true);
 	Character->GetWorldTimerManager().SetTimer(DodgeEndTimer, this, &UDodgeAbility::End, DodgeDurationSeconds, false);
+
+	Super::Begin();
 }
 
 void UDodgeAbility::End()
 {
+	Super::End();
 	Movement->GroundFriction = PreviousFriction;
 }

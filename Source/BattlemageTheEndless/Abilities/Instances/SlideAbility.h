@@ -14,7 +14,7 @@ class BATTLEMAGETHEENDLESS_API USlideAbility : public UMovementAbility
 {
 	GENERATED_BODY()
 
-	USlideAbility(const FObjectInitializer& X) : Super(X) { Type = MovementAbilityType::Slide; }
+	USlideAbility(const FObjectInitializer& X);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float SlideSpeed = 1200.f;
