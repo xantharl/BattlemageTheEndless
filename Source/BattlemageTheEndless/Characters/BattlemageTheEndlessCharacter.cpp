@@ -126,6 +126,7 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 
 void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
+	TObjectPtr<UBMageCharacterMovementComponent> movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
@@ -316,10 +317,6 @@ void ABattlemageTheEndlessCharacter::Jump()
 		RedirectVelocityToLookDirection(wallrunEnded);
 
 	Super::Jump();
-
-	// this is to get around the double jump check in CheckJumpInput
-	if (wallrunEnded)
-		JumpCurrentCount--;
 }
 
 void ABattlemageTheEndlessCharacter::RedirectVelocityToLookDirection(bool wallrunEnded)
