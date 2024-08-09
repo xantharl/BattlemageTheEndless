@@ -77,7 +77,6 @@ bool UBMageCharacterMovementComponent::TryStartAbility(MovementAbilityType abili
 		return false;
 
 	// handle ability interactions
-	// TODO: Make this more generic
 	if (abilityType == MovementAbilityType::Sprint && IsCrouching())
 		CharacterOwner->UnCrouch();
 	else if (abilityType == MovementAbilityType::Launch)

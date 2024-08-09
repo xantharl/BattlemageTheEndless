@@ -79,7 +79,6 @@ void ABattlemageTheEndlessCharacter::SetupCameras()
 {
 	// Create FirstPersonCamera
 	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	// TODO: This throws an exception on startup, doesn't actually break anything but annoying
 	FirstPersonCamera->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, FName("cameraSocket"));
 	FirstPersonCamera->SetRelativeRotation(FRotator(0.f, 90.f, 0.f)); // Position the camera
 	FirstPersonCamera->bUsePawnControlRotation = true;
@@ -319,6 +318,7 @@ void ABattlemageTheEndlessCharacter::Jump()
 	Super::Jump();
 }
 
+// TODO: Refactor this to movement component
 void ABattlemageTheEndlessCharacter::RedirectVelocityToLookDirection(bool wallrunEnded)
 {
 	UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
