@@ -484,8 +484,18 @@ void ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap(UPrimitiveCompone
 void ABattlemageTheEndlessCharacter::ToggleMenu()
 {
 	// get the viewport
-	/*if (UGameViewportClient* Viewport = GetWorld()->GetGameViewport())
+	UGameViewportClient* Viewport = GetWorld()->GetGameViewport();
+	if (!Viewport)
+		return;
+
+	// Get Content
+	TSharedPtr<SWidget> content = Viewport->GetGameViewportWidget()->GetContent();
+	if (!content)
+		return;
+
+	FChildren* children = content->GetAllChildren();
+	if (children->Num() > 0 && children->GetChildAt(0)->GetType() == FName("UCommonActivatableWidget"))
 	{
-		if (UCommonActivatableWidgetTSharedPtr<SWidget> content = Viewport->GetGameViewportWidget()->GetContent();
-	}*/
+		return;
+	}
 }

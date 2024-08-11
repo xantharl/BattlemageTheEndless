@@ -17,7 +17,8 @@
 #include "../GameMode/BattlemageTheEndlessGameMode.h"
 #include "../GameMode/CheckPoint.h"
 #include "Widgets/SViewport.h"
-//#include ""
+#include "CommonActivatableWidget.h"
+#include "Widgets/SWidget.h"
 
 #include "BattlemageTheEndlessCharacter.generated.h"
 

@@ -3,3 +3,6 @@
 2. Delete your solution, yep, just delete it.
 3. Launch the uproject, from the editor select tools->refresh visual studio project
 4. Open the regenerated sln
+
+# Fixing CommonUI failures to load
+set loading phase to PreDefault in CommonUI.uplugin for all modules
