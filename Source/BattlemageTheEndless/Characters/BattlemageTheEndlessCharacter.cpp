@@ -129,6 +129,8 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
+		EnhancedInputComponent->BindAction(MenuAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::ToggleMenu);
+
 		// Jumping
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
@@ -477,4 +479,13 @@ void ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap(UPrimitiveCompone
 	// if the other actor is not a CheckPoint, return
 	if (ACheckPoint* checkpoint = Cast<ACheckPoint>(OtherActor))
 		LastCheckPoint = checkpoint;
+}
+
+void ABattlemageTheEndlessCharacter::ToggleMenu()
+{
+	// get the viewport
+	/*if (UGameViewportClient* Viewport = GetWorld()->GetGameViewport())
+	{
+		if (UCommonActivatableWidgetTSharedPtr<SWidget> content = Viewport->GetGameViewportWidget()->GetContent();
+	}*/
 }

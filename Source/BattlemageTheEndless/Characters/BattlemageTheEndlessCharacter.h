@@ -16,6 +16,8 @@
 #include "../Helpers/VectorMath.h"
 #include "../GameMode/BattlemageTheEndlessGameMode.h"
 #include "../GameMode/CheckPoint.h"
+#include "Widgets/SViewport.h"
+//#include ""
 
 #include "BattlemageTheEndlessCharacter.generated.h"
 
@@ -84,6 +86,9 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* RespawnAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* MenuAction;
 
 	UPROPERTY(EditAnywhere, Category = Sound)
 	class USoundWave* JumpLandingSound;
@@ -214,6 +219,7 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "CheckPoint")
 	void OnBaseCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-	bool CanWallRun();
+
+	void ToggleMenu();
 };
 
