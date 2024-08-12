@@ -499,13 +499,17 @@ void ABattlemageTheEndlessCharacter::ToggleMenu()
 	//	UCommonActivatableWidget widget = static_cast<UCommonActivatableWidget>(children->GetChildAt(0).Get());
 	//	widget.IsActivated() ? widget.DeactivateWidget(): widget.ActivateWidget();
 	//}
+	if (!ContainerWidget)
+		return;
 
-	if (ContainerWidget && ContainerWidget->MainMenuStack)
+	if (ContainerWidget->IsActivated())
 	{
-		UCommonActivatableWidget* activeWidget = ContainerWidget->MainMenuStack->GetActiveWidget();
-		if (activeWidget)
-			activeWidget->DeactivateWidget();
-		else if (ContainerWidget->MainMenuStack->GetWidgetList().Num() > 0)
-			ContainerWidget->MainMenuStack->GetWidgetList()[0]->ActivateWidget();
+		ContainerWidget->RemoveFromViewport();
+		ContainerWidget->DeactivateWidget();
+	}
+	else
+	{
+		ContainerWidget->AddToViewport();
+		ContainerWidget->ActivateWidget();
 	}
 }

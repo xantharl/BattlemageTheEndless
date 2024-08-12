@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "CommonActivatableWidget.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
+#include "MainMenuActivatableWidget.h"
 #include "MenuContainerActivatableWidget.generated.h"
 
 /**
@@ -18,4 +19,9 @@ class BATTLEMAGETHEENDLESS_API UMenuContainerActivatableWidget : public UCommonA
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Menu", meta = (BindWidget))
 	class UCommonActivatableWidgetStack* MainMenuStack = nullptr;	
+
+	virtual void NativeOnActivated();
+
+private:
+	UMainMenuActivatableWidget* MainMenuWidget = nullptr;
 };

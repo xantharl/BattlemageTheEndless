@@ -20,7 +20,7 @@
 #include "CommonActivatableWidget.h"
 #include "Widgets/CommonActivatableWidgetContainer.h"
 #include "Widgets/SWidget.h"
-#include <BattlemageTheEndless/MenuContainerActivatableWidget.h>
+#include "BattlemageTheEndless/Widgets/MenuContainerActivatableWidget.h"
 
 #include "BattlemageTheEndlessCharacter.generated.h"
 
