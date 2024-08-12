@@ -483,19 +483,29 @@ void ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap(UPrimitiveCompone
 
 void ABattlemageTheEndlessCharacter::ToggleMenu()
 {
-	// get the viewport
-	UGameViewportClient* Viewport = GetWorld()->GetGameViewport();
-	if (!Viewport)
-		return;
+	//// get the viewport
+	//UGameViewportClient* Viewport = GetWorld()->GetGameViewport();
+	//if (!Viewport)
+	//	return;
 
-	// Get Content
-	TSharedPtr<SWidget> content = Viewport->GetGameViewportWidget()->GetContent();
-	if (!content)
-		return;
+	//// Get Content
+	//TSharedPtr<SWidget> content = Viewport->GetGameViewportWidget()->GetContent();
+	//if (!content)
+	//	return;
 
-	FChildren* children = content->GetAllChildren();
-	if (children->Num() > 0 && children->GetChildAt(0)->GetType() == FName("UCommonActivatableWidget"))
+	//FChildren* children = content->GetAllChildren();
+	//if (children->Num() > 0 && children->GetChildAt(0)->GetType() == FName("UCommonActivatableWidget"))
+	//{
+	//	UCommonActivatableWidget widget = static_cast<UCommonActivatableWidget>(children->GetChildAt(0).Get());
+	//	widget.IsActivated() ? widget.DeactivateWidget(): widget.ActivateWidget();
+	//}
+
+	if (ContainerWidget && ContainerWidget->MainMenuStack)
 	{
-		return;
+		UCommonActivatableWidget* activeWidget = ContainerWidget->MainMenuStack->GetActiveWidget();
+		if (activeWidget)
+			activeWidget->DeactivateWidget();
+		else if (ContainerWidget->MainMenuStack->GetWidgetList().Num() > 0)
+			ContainerWidget->MainMenuStack->GetWidgetList()[0]->ActivateWidget();
 	}
 }

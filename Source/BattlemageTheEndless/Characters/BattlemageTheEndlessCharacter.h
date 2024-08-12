@@ -18,7 +18,9 @@
 #include "../GameMode/CheckPoint.h"
 #include "Widgets/SViewport.h"
 #include "CommonActivatableWidget.h"
+#include "Widgets/CommonActivatableWidgetContainer.h"
 #include "Widgets/SWidget.h"
+#include <BattlemageTheEndless/MenuContainerActivatableWidget.h>
 
 #include "BattlemageTheEndlessCharacter.generated.h"
 
@@ -105,6 +107,9 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 
 	UPROPERTY(EditAnywhere, Category = Inventory)
 	UTP_WeaponComponent* RightHandWeapon;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UserInterface, meta = (AllowPrivateAccess = "true"))
+	UMenuContainerActivatableWidget* ContainerWidget;
 
 private:
 	milliseconds _lastCameraSwap;
