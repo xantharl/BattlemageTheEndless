@@ -11,4 +11,12 @@ void UMenuContainerActivatableWidget::NativeOnActivated()
 		// set the main menu widget to the root content
 		MainMenuWidget = Cast<UMainMenuActivatableWidget>(MainMenuStack->GetRootContent());
 	}
+	else if (MainMenuWidget && MainMenuStack && !MainMenuStack->GetWidgetList().Contains(MainMenuWidget))
+	{
+		MainMenuStack->AddWidgetInstance(*MainMenuWidget);
+	}
+	else if (MainMenuWidget && MainMenuStack && MainMenuStack->GetWidgetList().Contains(MainMenuWidget))
+	{
+		MainMenuWidget->ActivateWidget();
+	}
 }
