@@ -21,6 +21,7 @@ public:
 	class UCommonActivatableWidgetStack* MainMenuStack = nullptr;	
 
 	virtual void NativeOnActivated();
+	virtual void NativeConstruct() override;
 
 private:
 	UMainMenuActivatableWidget* MainMenuWidget = nullptr;

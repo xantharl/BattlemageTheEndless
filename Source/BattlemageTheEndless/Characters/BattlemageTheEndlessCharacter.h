@@ -21,6 +21,8 @@
 #include "Widgets/CommonActivatableWidgetContainer.h"
 #include "Widgets/SWidget.h"
 #include "BattlemageTheEndless/Widgets/MenuContainerActivatableWidget.h"
+#include "BattlemageTheEndless/Characters/BattlemageTheEndlessPlayerController.h"
+#include "Blueprint/WidgetTree.h"
 
 #include "BattlemageTheEndlessCharacter.generated.h"
 

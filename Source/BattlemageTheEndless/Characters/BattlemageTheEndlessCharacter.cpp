@@ -129,7 +129,7 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		EnhancedInputComponent->BindAction(MenuAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::ToggleMenu);
+		//EnhancedInputComponent->BindAction(MenuAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::ToggleMenu);
 
 		// Jumping
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::Jump);
@@ -483,7 +483,22 @@ void ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap(UPrimitiveCompone
 
 void ABattlemageTheEndlessCharacter::ToggleMenu()
 {
-	//// get the viewport
+	//if (ContainerWidget) 
+	//{
+	//	ContainerWidget->RemoveFromParent();
+	//	delete(ContainerWidget);
+	//	ContainerWidget = nullptr;
+	//}
+	//else
+	//{
+	//	ContainerWidget = CreateWidget<UMenuContainerActivatableWidget>(this, UMenuContainerActivatableWidget::StaticClass());
+	//	FInputModeGameAndUI Mode;
+	//	Mode.SetLockMouseToViewportBehavior(EMouseLockMode::LockInFullscreen);
+	//	Mode.SetHideCursorDuringCapture(false);
+	//	Cast<ABattlemageTheEndlessPlayerController>(Controller)->SetInputMode(Mode);
+	//	ContainerWidget->AddToViewport(9999); // Z-order, this just makes it render on the very top.
+	//}
+	// get the viewport
 	//UGameViewportClient* Viewport = GetWorld()->GetGameViewport();
 	//if (!Viewport)
 	//	return;
@@ -494,22 +509,34 @@ void ABattlemageTheEndlessCharacter::ToggleMenu()
 	//	return;
 
 	//FChildren* children = content->GetAllChildren();
+	//children->ForEachWidget([](SWidget& widget) {
+	//	if (widget.GetType() == FName("UMenuContainerActivatableWidget"))
+	//	{
+	//		UCommonActivatableWidget* ActivatableWidget = Cast<UMenuContainerActivatableWidget>(StaticCastSharedPtr<SObjectWidget>(widget.AsWeak().Pin())->GetWidgetObject());
+	//		ActivatableWidget->IsActivated() ? ActivatableWidget->DeactivateWidget() : ActivatableWidget->ActivateWidget();
+	//	}
+	//});
 	//if (children->Num() > 0 && children->GetChildAt(0)->GetType() == FName("UCommonActivatableWidget"))
 	//{
-	//	UCommonActivatableWidget widget = static_cast<UCommonActivatableWidget>(children->GetChildAt(0).Get());
-	//	widget.IsActivated() ? widget.DeactivateWidget(): widget.ActivateWidget();
+	//	auto attempt = children->GetChildAt(0).Get().AsWeak().Pin();
+	//	UCommonActivatableWidget* ActivatableWidget = Cast<UCommonActivatableWidget>(StaticCastSharedPtr<SObjectWidget>(attempt)->GetWidgetObject());
+	//	ActivatableWidget->IsActivated() ? ActivatableWidget->DeactivateWidget() : ActivatableWidget->ActivateWidget();
 	//}
-	if (!ContainerWidget)
-		return;
+	//if (!ContainerWidget)
+	//	return;
 
-	if (ContainerWidget->IsActivated())
-	{
-		ContainerWidget->RemoveFromViewport();
-		ContainerWidget->DeactivateWidget();
-	}
-	else
-	{
-		ContainerWidget->AddToViewport();
-		ContainerWidget->ActivateWidget();
-	}
+	//if (ContainerWidget->IsActivated())
+	//{
+	//	ContainerWidget->RemoveFromViewport();
+	//	ContainerWidget->DeactivateWidget();
+	//}
+	//else
+	//{
+	//	// try constructing with the widget's class
+	//	UMenuContainerActivatableWidget::StaticClass();
+	//	ContainerWidget = CreateWidget<UMenuContainerActivatableWidget>(GetWorld(), TSubclassOf<UMenuContainerActivatableWidget>());
+	//	ContainerWidget->AddToViewport();
+	//	ContainerWidget->ActivateWidget();
+	//	ContainerWidget->MainMenuStack->GetWidgetList()[0]->ActivateWidget();
+	//}
 }
