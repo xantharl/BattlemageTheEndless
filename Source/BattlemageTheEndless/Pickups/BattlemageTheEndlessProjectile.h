@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Components/SphereComponent.h"
 #include "BattlemageTheEndlessProjectile.generated.h"
 
 class USphereComponent;

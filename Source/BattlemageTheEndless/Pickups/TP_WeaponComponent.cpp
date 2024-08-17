@@ -19,34 +19,41 @@ UTP_WeaponComponent::UTP_WeaponComponent()
 
 void UTP_WeaponComponent::Fire()
 {
-	if (Character == nullptr || Character->GetController() == nullptr)
+	if (!Character || !Character->GetController())
 	{
 		return;
 	}
 
 	// Try and fire a projectile, limit by rate of fire
-	time_t secondsBetweenShots = 60.f / ShotsPerMinute;
-	if (ProjectileClass != nullptr && LastFireTime < time(0) - secondsBetweenShots)
-	{
-		UWorld* const World = GetWorld();
-		if (World != nullptr)
-		{
-			APlayerController* PlayerController = Cast<APlayerController>(Character->GetController());
-			const FRotator SpawnRotation = PlayerController->PlayerCameraManager->GetCameraRotation();
-			// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-			FName socketName = Character->GetLeftHandWeapon() == this ? FName("GripLeft") : FName("GripRight");
-			// Spawn the projectile at the attachment point of the weapon with respect for offsets
-			const FVector SpawnLocation = Character->GetMesh()->GetSocketLocation(socketName) + SpawnRotation.RotateVector(MuzzleOffset) + SpawnRotation.RotateVector(AttachmentOffset);
-	
-			//Set Spawn Collision Handling Override
-			FActorSpawnParameters ActorSpawnParams;
-			ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
-	
-			// Spawn the projectile at the muzzle
-			World->SpawnActor<ABattlemageTheEndlessProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+	milliseconds now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+	milliseconds cooldownMs { (int)(60.f / ShotsPerMinute * 1000.f) };
+	bool isOnCooldown = LastFireTime + cooldownMs > now;
+	UWorld* const world = GetWorld();
 
-			LastFireTime = time(0);
-		}
+	if (ProjectileClass && !isOnCooldown && world)
+	{
+		APlayerController* PlayerController = Cast<APlayerController>(Character->GetController());
+		const FRotator SpawnRotation = PlayerController->PlayerCameraManager->GetCameraRotation();
+		// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
+		FName socketName = Character->GetLeftHandWeapon() == this ? FName("GripLeft") : FName("GripRight");
+		// Spawn the projectile at the attachment point of the weapon with respect for offsets
+		//const FVector SpawnLocation = Character->GetMesh()->GetSocketLocation(socketName) + SpawnRotation.RotateVector(MuzzleOffset) + SpawnRotation.RotateVector(AttachmentOffset);
+		const FVector SpawnLocation = Character->GetMesh()->GetSocketLocation(socketName) + SpawnRotation.RotateVector(AttachmentOffset);
+	
+		//Set Spawn Collision Handling Override
+		FActorSpawnParameters ActorSpawnParams;
+		ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	
+		// Spawn the projectile at the muzzle
+		auto newActor = world->SpawnActor<ABattlemageTheEndlessProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+		newActor->GetCollisionComp()->IgnoreActorWhenMoving(Character, true);
+		newActor->GetCollisionComp()->IgnoreComponentWhenMoving(this, true);
+
+		LastFireTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+	}
+	// if the attack is on cooldown, exit without playing the animation or sound
+	else if (ProjectileClass) {
+		return;
 	}
 	
 	// Try and play the sound if specified

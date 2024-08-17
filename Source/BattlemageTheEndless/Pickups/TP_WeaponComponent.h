@@ -10,7 +10,10 @@
 #include "PhysicsEngine/PhysicsAsset.h"
 #include "EnhancedInputComponent.h"
 #include "vector"
+#include <chrono>
 #include "TP_WeaponComponent.generated.h"
+
+using namespace std::chrono;
 
 UENUM()
 enum class EquipSlot : uint8
@@ -105,7 +108,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Damage)
 	float ShotsPerMinute = 120;
 
-	time_t LastFireTime = time(0);
+	milliseconds LastFireTime;
 
 protected:
 	/** Ends gameplay for this component. */
