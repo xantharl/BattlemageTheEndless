@@ -95,6 +95,24 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* MenuAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Input, meta = (AllowPrivateAccess = "true"))
+	bool IsInCastingMode = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* CastingModeAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* SpellClassOneAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* SpellClassTwoAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* SpellClassThreeAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* SpellClassFourAction;
+
 	UPROPERTY(EditAnywhere, Category = Sound)
 	class USoundWave* JumpLandingSound;
 
@@ -199,6 +217,9 @@ public:
 
 	bool TrySetWeapon(UTP_WeaponComponent* Weapon, FName SocketName);
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Casting, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* CastingModeMontage;
+
 protected:
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
@@ -222,6 +243,7 @@ protected:
 	void EndSlide(UCharacterMovementComponent* movement);
 	void SwitchCamera();
 	void DodgeInput();
+	void ToggleCastingMode();
 
 	bool IsDodging();
 

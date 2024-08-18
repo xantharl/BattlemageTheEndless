@@ -160,6 +160,9 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 		EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::DodgeInput);
 
 		EnhancedInputComponent->BindAction(RespawnAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::CallRestartPlayer);
+
+		// Casting Related Actions
+		EnhancedInputComponent->BindAction(CastingModeAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::ToggleCastingMode);
 	}
 	else
 	{
@@ -440,6 +443,25 @@ void ABattlemageTheEndlessCharacter::DodgeInput()
 	// get the movement component as a BMageCharacterMovementComponent
 	if (UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement()))
 		movement->TryStartAbility(MovementAbilityType::Dodge);
+}
+
+void ABattlemageTheEndlessCharacter::ToggleCastingMode()
+{
+	IsInCastingMode = !IsInCastingMode;
+	UAnimInstance* anim = GetMesh()->GetAnimInstance();
+	if (!LeftHandWeapon || !anim)
+		return;
+
+	if (IsInCastingMode)
+	{
+		// play the casting mode animation
+		anim->Montage_Play(CastingModeMontage, 1.f);
+	}
+	else
+	{
+		// stop the casting mode animation
+		anim->Montage_Stop(0.2f);
+	}
 }
 
 // TODO: Deprecate this
