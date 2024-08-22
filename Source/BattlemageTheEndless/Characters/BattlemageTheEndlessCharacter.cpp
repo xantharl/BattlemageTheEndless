@@ -264,20 +264,13 @@ void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)
 	if (Controller != nullptr)
 	{
 		TObjectPtr<UBMageCharacterMovementComponent> movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
-		// add movement
+		// add movement, only apply lateral if not wall running
 		if (!movement->IsAbilityActive(MovementAbilityType::WallRun))
 		{
-			AddMovementInput(GetActorForwardVector(), MovementVector.Y);
 			AddMovementInput(GetActorRightVector(), MovementVector.X);
 		}
-		else
-		{
-			// if we're wall running, we want to apply all movement to the direction the character is facing (instead of the camera)
-			// To do that we'll synthesize a world direction vector by rotating the XAxisVector by the character's yaw
-			AddMovementInput(FVector::XAxisVector.RotateAngleAxis(GetRootComponent()->GetComponentRotation().Yaw, FVector::ZAxisVector), MovementVector.X);
 
-			// Don't apply lateral movement, only jumping or dodging can break a wallrun			
-		}
+		AddMovementInput(GetActorForwardVector(), MovementVector.Y);
 
 		movement->ApplyInput();
 	}
