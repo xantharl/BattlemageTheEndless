@@ -10,8 +10,14 @@
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"Engine",
-				"CommonUI"
+				"CommonUI",
+				"GameplayAbilities"
 			]
+		},
+		{
+			"Name": "UMG",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [
@@ -24,6 +30,11 @@
 		},
 		{
 			"Name": "CommonUI",
+			"Enabled": true,
+			"LoadingPhase": "PreDefault"
+		},
+		{
+			"Name": "GameplayAbilities",
 			"Enabled": true
 		}
 	]

@@ -22,7 +22,9 @@
 #include "Widgets/SWidget.h"
 #include "BattlemageTheEndless/Widgets/MenuContainerActivatableWidget.h"
 #include "BattlemageTheEndless/Characters/BattlemageTheEndlessPlayerController.h"
+#include "../BMageAbilitySystemComponent.h"
 #include "Blueprint/WidgetTree.h"
+#include "../BMageJumpAbility.h"
 
 #include "BattlemageTheEndlessCharacter.generated.h"
 
@@ -36,10 +38,24 @@ using namespace std::chrono;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
+UENUM(BlueprintType)
+enum class EGASAbilityInputId : uint8
+{
+	None UMETA(DisplayName = "None"),
+	Confirm UMETA(DisplayName = "Confirm"),
+	Cancel UMETA(DisplayName = "Cancel")
+};
+
 UCLASS(config=Game)
 class ABattlemageTheEndlessCharacter : public ACharacter
 {
 	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
+	class UBMageAbilitySystemComponent* AbilitySystemComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
+	TArray<TSubclassOf<class UGameplayAbility>> DefaultAbilities;
 
 	/** Third person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -251,5 +267,7 @@ protected:
 	void OnBaseCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	void ToggleMenu();
+
+
 };
 

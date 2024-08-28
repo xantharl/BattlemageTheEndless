@@ -32,6 +32,9 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 	JumpLandingSound = Sound.Object;
 
 	JumpMaxCount = 2;
+
+	// init gas
+	AbilitySystemComponent = CreateDefaultSubobject<UBMageAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 }
 
 void ABattlemageTheEndlessCharacter::SetupCapsule()
@@ -119,6 +122,14 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 		}
 	}
 
+	if (AbilitySystemComponent)
+	{
+		for (TSubclassOf<UGameplayAbility>& Ability : DefaultAbilities)
+		{
+			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
+		}
+	}
+
 }
 
 //////////////////////////////////////////////////////////////////////////// Input
@@ -163,6 +174,15 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 
 		// Casting Related Actions
 		EnhancedInputComponent->BindAction(CastingModeAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::ToggleCastingMode);
+
+		if (AbilitySystemComponent) 
+		{
+			AbilitySystemComponent->BindAbilityActivationToInputComponent(
+				EnhancedInputComponent, FGameplayAbilityInputBinds(
+					"Confirm", "Cancel", "EGASAbilityInputID", 
+					static_cast<int32>(EGASAbilityInputId::Confirm), 
+					static_cast<int32>(EGASAbilityInputId::Cancel)));
+		}
 	}
 	else
 	{
