@@ -35,10 +35,6 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 
 	// init gas
 	AbilitySystemComponent = CreateDefaultSubobject<UBMageAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
-
-	// init equipment map
-	Equipment.Add(EquipSlot::Primary, FPickups());
-	Equipment.Add(EquipSlot::Secondary, FPickups());
 }
 
 void ABattlemageTheEndlessCharacter::SetupCapsule()
@@ -135,6 +131,13 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
 	}
 
+	// init equipment map
+	if (Equipment.Num() == 0)
+	{
+		Equipment.Add(EquipSlot::Primary, FPickups());
+		Equipment.Add(EquipSlot::Secondary, FPickups());
+	}
+
 	// add abilities given by Weapons
 	for (const TSubclassOf<class APickupActor> PickupType: DefaultEquipment)
 	{
@@ -142,13 +145,18 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 		if (!pickup || !pickup->Weapon)
 			continue;
 
+		// hide by default
+		pickup->SetHidden(true);
+
 		Equipment[pickup->Weapon->SlotType].Pickups.Add(pickup);
 	}
 
 	// assign abilities and attach the first pickup from each slot
 	auto pickups = TArray<TObjectPtr<APickupActor>>();
-	pickups.Add(Equipment[EquipSlot::Primary].Pickups[0]);
-	pickups.Add(Equipment[EquipSlot::Secondary].Pickups[0]);
+	if (Equipment[EquipSlot::Primary].Pickups.Num() > 0)
+		pickups.Add(Equipment[EquipSlot::Primary].Pickups[0]);
+	if (Equipment[EquipSlot::Secondary].Pickups.Num() > 0)
+		pickups.Add(Equipment[EquipSlot::Secondary].Pickups[0]);
 
 	for (auto pickup : pickups)
 	{
@@ -159,12 +167,6 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 
 		// Assign the weapon to the appropriate slot
 		SetAndAttachPickup(pickup);
-	}
-
-	// hide the rest
-	for (int i = 1; i < Pickups.Value.Pickups.Num(); i++)
-	{
-		Pickups.Value.Pickups[i]->SetHidden(true);
 	}
 }
 
@@ -423,14 +425,17 @@ void ABattlemageTheEndlessCharacter::SetAndAttachPickup(APickupActor* pickup)
 
 	// Detach any weapon in the socket currently
 	APickupActor* currentWeapon = isRightHand ? RightHandWeapon : LeftHandWeapon;
-	currentWeapon->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
-	currentWeapon->SetHidden(true);
+	if (currentWeapon)
+	{
+		currentWeapon->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
+		currentWeapon->SetHidden(true);
+	}
 
 	isRightHand ? RightHandWeapon = pickup : LeftHandWeapon = pickup;
 
 	FName socketName = isRightHand ? FName("GripRight") : FName("GripLeft");
 	FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
-	pickup->AttachToComponent(GetMesh(), AttachmentRules, socketName);
+	pickup->Weapon->AttachToComponent(GetMesh(), AttachmentRules, socketName);
 	if (pickup->Weapon->AttachmentOffset != FVector::ZeroVector)
 		pickup->Weapon->AddLocalOffset(pickup->Weapon->AttachmentOffset);
 }
