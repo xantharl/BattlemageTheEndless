@@ -24,6 +24,8 @@
 #include "BattlemageTheEndless/Characters/BattlemageTheEndlessPlayerController.h"
 #include "../BMageAbilitySystemComponent.h"
 #include "Blueprint/WidgetTree.h"
+#include "../Pickups/PickupActor.h"
+
 #include "../BMageJumpAbility.h"
 
 #include "BattlemageTheEndlessCharacter.generated.h"
@@ -44,6 +46,15 @@ enum class EGASAbilityInputId : uint8
 	None UMETA(DisplayName = "None"),
 	Confirm UMETA(DisplayName = "Confirm"),
 	Cancel UMETA(DisplayName = "Cancel")
+};
+
+USTRUCT(BlueprintType)
+struct FPickups
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivateAccess = "true"))
+	TArray<TObjectPtr<APickupActor>> Pickups;
 };
 
 UCLASS(config=Game)
@@ -139,10 +150,10 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	class USoundWave* SprintingSound;
 
 	UPROPERTY(EditAnywhere, Category = Inventory)
-	UTP_WeaponComponent* LeftHandWeapon;
+	APickupActor* LeftHandWeapon;
 
 	UPROPERTY(EditAnywhere, Category = Inventory)
-	UTP_WeaponComponent* RightHandWeapon;
+	APickupActor* RightHandWeapon;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UserInterface, meta = (AllowPrivateAccess = "true"))
 	UMenuContainerActivatableWidget* ContainerWidget;
@@ -164,6 +175,11 @@ public:
 
 	virtual void ApplyDamage(float damage);
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivate))
+	TMap<EquipSlot, FPickups> Equipment;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivate))
+	TArray<TSubclassOf<class APickupActor>> DefaultEquipment;
 protected:
 	virtual void BeginPlay();
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0);
@@ -201,40 +217,18 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	double JumpCooldown = 0.05;
 
-	/** TODO: Handle this in c++ rather than BP **/
-	UFUNCTION(BlueprintCallable, Category = Weapon)
-	void SetLeftHandWeapon(UTP_WeaponComponent* weapon);
-
-	/** TODO: Handle this in c++ rather than BP **/
-	UFUNCTION(BlueprintCallable, Category = Weapon)
-	void SetRightHandWeapon(UTP_WeaponComponent* weapon);
-
-	UFUNCTION(BlueprintCallable, Category = Weapon)
-	bool GetHasLeftHandWeapon();
-
-	UFUNCTION(BlueprintCallable, Category = Weapon)
-	bool GetHasRightHandWeapon();
-
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 	UTP_WeaponComponent* GetWeapon(EquipSlot SlotType);
-
-	/** TODO: Is this redundant since the property is public? **/
-	UFUNCTION(BlueprintCallable, Category = Weapon)
-	UTP_WeaponComponent* GetLeftHandWeapon();
-
-	/** TODO: Is this redundant since the property is public? **/
-	UFUNCTION(BlueprintCallable, Category = Weapon)
-	UTP_WeaponComponent* GetRightHandWeapon();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Inventory, meta = (AllowPrivateAccess = "true"))
 	bool LeftHanded = false;
 
 	FName GetTargetSocketName(EquipSlot SlotType);
 
-	bool TrySetWeapon(UTP_WeaponComponent* Weapon, FName SocketName);
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Casting, meta = (AllowPrivateAccess = "true"))
 	UAnimMontage* CastingModeMontage;
+
+	FVector CurrentGripOffset(FName SocketName);
 
 protected:
 	/** Called for movement input */
@@ -246,6 +240,8 @@ protected:
 	void Jump();
 
 	void RedirectVelocityToLookDirection(bool wallrunEnded);
+
+	void SetAndAttachPickup(APickupActor* pickup);
 
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;

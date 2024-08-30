@@ -35,6 +35,10 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 
 	// init gas
 	AbilitySystemComponent = CreateDefaultSubobject<UBMageAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+
+	// init equipment map
+	Equipment.Add(EquipSlot::Primary, FPickups());
+	Equipment.Add(EquipSlot::Secondary, FPickups());
 }
 
 void ABattlemageTheEndlessCharacter::SetupCapsule()
@@ -122,14 +126,46 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 		}
 	}
 
-	if (AbilitySystemComponent)
+	if (!AbilitySystemComponent)
+		return;
+	
+	// add default abilities
+	for (TSubclassOf<UGameplayAbility>& Ability : DefaultAbilities)
 	{
-		for (TSubclassOf<UGameplayAbility>& Ability : DefaultAbilities)
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
+	}
+
+	// add abilities given by Weapons
+	for (const TSubclassOf<class APickupActor> PickupType: DefaultEquipment)
+	{
+		APickupActor* pickup = GetWorld()->SpawnActor<APickupActor>(PickupType, GetActorLocation(), GetActorRotation());
+		if (!pickup || !pickup->Weapon)
+			continue;
+
+		Equipment[pickup->Weapon->SlotType].Pickups.Add(pickup);
+	}
+
+	// assign abilities and attach the first pickup from each slot
+	auto pickups = TArray<TObjectPtr<APickupActor>>();
+	pickups.Add(Equipment[EquipSlot::Primary].Pickups[0]);
+	pickups.Add(Equipment[EquipSlot::Secondary].Pickups[0]);
+
+	for (auto pickup : pickups)
+	{
+		for (TSubclassOf<UGameplayAbility>& Ability : pickup->Weapon->GrantedAbilities)
 		{
 			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
 		}
+
+		// Assign the weapon to the appropriate slot
+		SetAndAttachPickup(pickup);
 	}
 
+	// hide the rest
+	for (int i = 1; i < Pickups.Value.Pickups.Num(); i++)
+	{
+		Pickups.Value.Pickups[i]->SetHidden(true);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////// Input
@@ -276,6 +312,11 @@ void ABattlemageTheEndlessCharacter::LaunchJump()
 		mageMovement->TryStartAbility(MovementAbilityType::Launch);
 }
 
+FVector ABattlemageTheEndlessCharacter::CurrentGripOffset(FName SocketName)
+{
+	return GetWeapon(LeftHanded ? EquipSlot::Primary : EquipSlot::Secondary)->MuzzleOffset;
+}
+
 void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
@@ -373,47 +414,38 @@ void ABattlemageTheEndlessCharacter::RedirectVelocityToLookDirection(bool wallru
 	movement->Velocity = movement->Velocity.RotateAngleAxis(yawDifference, FVector::ZAxisVector);	
 }
 
-void ABattlemageTheEndlessCharacter::SetLeftHandWeapon(UTP_WeaponComponent* weapon)
+void ABattlemageTheEndlessCharacter::SetAndAttachPickup(APickupActor* pickup)
 {
-	LeftHandWeapon = weapon;
-}
+	if (!pickup || !pickup->Weapon)
+		return;
 
-void ABattlemageTheEndlessCharacter::SetRightHandWeapon(UTP_WeaponComponent* weapon)
-{
-	RightHandWeapon = weapon;
-}
+	bool isRightHand = pickup->Weapon->SlotType == EquipSlot::Primary != LeftHanded;
 
-bool ABattlemageTheEndlessCharacter::GetHasLeftHandWeapon()
-{
-	return LeftHandWeapon != NULL;
-}
+	// Detach any weapon in the socket currently
+	APickupActor* currentWeapon = isRightHand ? RightHandWeapon : LeftHandWeapon;
+	currentWeapon->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
+	currentWeapon->SetHidden(true);
 
-bool ABattlemageTheEndlessCharacter::GetHasRightHandWeapon()
-{
-	return RightHandWeapon != NULL;
+	isRightHand ? RightHandWeapon = pickup : LeftHandWeapon = pickup;
+
+	FName socketName = isRightHand ? FName("GripRight") : FName("GripLeft");
+	FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
+	pickup->AttachToComponent(GetMesh(), AttachmentRules, socketName);
+	if (pickup->Weapon->AttachmentOffset != FVector::ZeroVector)
+		pickup->Weapon->AddLocalOffset(pickup->Weapon->AttachmentOffset);
 }
 
 UTP_WeaponComponent* ABattlemageTheEndlessCharacter::GetWeapon(EquipSlot SlotType)
 {
 	if (LeftHanded)
 	{
-		return SlotType == EquipSlot::Primary ? LeftHandWeapon : RightHandWeapon;
+		return SlotType == EquipSlot::Primary ? LeftHandWeapon->Weapon : RightHandWeapon->Weapon;
 	}
 	else
 	{
-		return SlotType == EquipSlot::Primary ? RightHandWeapon : LeftHandWeapon;
+		return SlotType == EquipSlot::Primary ? RightHandWeapon->Weapon : LeftHandWeapon->Weapon;
 	}
 	
-}
-
-UTP_WeaponComponent* ABattlemageTheEndlessCharacter::GetLeftHandWeapon()
-{
-	return LeftHandWeapon;
-}
-
-UTP_WeaponComponent* ABattlemageTheEndlessCharacter::GetRightHandWeapon()
-{
-	return RightHandWeapon;
 }
 
 void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
@@ -497,18 +529,6 @@ FName ABattlemageTheEndlessCharacter::GetTargetSocketName(EquipSlot SlotType)
 		return FName(LeftHanded ? "GripRight" : "GripLeft");
 }
 
-bool ABattlemageTheEndlessCharacter::TrySetWeapon(UTP_WeaponComponent* Weapon, FName SocketName)
-{
-	if (SocketName == FName("GripRight") && RightHandWeapon == NULL)
-		RightHandWeapon = Weapon;
-	else if (SocketName == FName("GripLeft") && LeftHandWeapon == NULL)
-		LeftHandWeapon = Weapon;
-	else
-		return false;
-
-	return true;
-}
-
 void ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	// if the other actor is not a CheckPoint, return
@@ -516,6 +536,7 @@ void ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap(UPrimitiveCompone
 		LastCheckPoint = checkpoint;
 }
 
+// This is handled in BP now
 void ABattlemageTheEndlessCharacter::ToggleMenu()
 {
 	//if (ContainerWidget) 

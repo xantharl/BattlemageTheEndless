@@ -6,7 +6,6 @@
 #include <Components/CapsuleComponent.h>
 #include "GameFramework/Actor.h"
 #include "TP_WeaponComponent.h"
-#include "../Characters/BattlemageTheEndlessCharacter.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "PickupActor.generated.h"
@@ -24,11 +23,6 @@ class BATTLEMAGETHEENDLESS_API APickupActor : public AActor
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* DropWeaponAction;
 
-	/** Attaches the actor to a FirstPersonCharacter */
-	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	void AttachWeapon(ABattlemageTheEndlessCharacter* TargetCharacter);
-	void DetachWeapon();
-
 public:	
 	// Sets default values for this actor's properties
 	APickupActor();
@@ -36,9 +30,6 @@ public:
 	/** Delegate to whom anyone can subscribe to receive this event */
 	UPROPERTY(BlueprintAssignable, Category = "Interaction")
 	FOnPickUp OnPickUp;
-
-	UFUNCTION(BlueprintCallable, Category = "Weapon")
-	void OnDropped();
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -46,18 +37,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCapsuleComponent* BaseCapsule;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	UTP_WeaponComponent* Weapon;
-
-	/** Code for when something overlaps this component */
-	UFUNCTION()
-	void OnSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	/** The Character holding this weapon*/
-	ABattlemageTheEndlessCharacter* Character;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	UTP_WeaponComponent* Weapon;
 };
