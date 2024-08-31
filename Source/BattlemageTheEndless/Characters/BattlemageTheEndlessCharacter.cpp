@@ -498,7 +498,7 @@ void ABattlemageTheEndlessCharacter::SetAndAttachPickup(APickupActor* pickup)
 		// clear abilities granted by current weapon
 		for (FGameplayAbilitySpecHandle Ability : EquipmentAbilityHandles[currentItem->Weapon->SlotType].Handles)
 		{
-			AbilitySystemComponent->ClearAbility(FGameplayAbilitySpecHandle());
+			AbilitySystemComponent->ClearAbility(Ability);
 		}
 
 		EquipmentAbilityHandles[currentItem->Weapon->SlotType].Handles.Empty();
@@ -511,16 +511,23 @@ void ABattlemageTheEndlessCharacter::SetAndAttachPickup(APickupActor* pickup)
 	// set it to the appropriate hand
 	isRightHand ? RightHandWeapon = pickup : LeftHandWeapon = pickup;
 
+	// grant abilities for the new weapon
+	// Needs to happen before bindings since bindings look up assigned abilities
+	for (TSubclassOf<UGameplayAbility>& Ability : pickup->Weapon->GrantedAbilities)
+	{
+		EquipmentAbilityHandles[pickup->Weapon->SlotType].Handles.Add(AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this)));
+	}
+
 	// add the mapping context and bindings if applicable
 	if (pickup->Weapon->WeaponMappingContext)
 	{
 		APlayerController* PlayerController = Cast<APlayerController>(Controller);
 		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
-		if (!PlayerController || !Subsystem)
-			return;
-
-		Subsystem->AddMappingContext(pickup->Weapon->WeaponMappingContext, 0);
-		pickup->Weapon->AddBindings(this, AbilitySystemComponent);
+		if (PlayerController && Subsystem)
+		{
+			Subsystem->AddMappingContext(pickup->Weapon->WeaponMappingContext, 0);
+			pickup->Weapon->AddBindings(this, AbilitySystemComponent);
+		}
 	}	
 
 	// todo: make this work
@@ -529,11 +536,6 @@ void ABattlemageTheEndlessCharacter::SetAndAttachPickup(APickupActor* pickup)
 	{
 		return;
 	}*/
-	// grant abilities for the new weapon
-	for (TSubclassOf<UGameplayAbility>& Ability : pickup->Weapon->GrantedAbilities)
-	{
-		EquipmentAbilityHandles[pickup->Weapon->SlotType].Handles.Add(AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this)));
-	}
 }
 
 UTP_WeaponComponent* ABattlemageTheEndlessCharacter::GetWeapon(EquipSlot SlotType)
