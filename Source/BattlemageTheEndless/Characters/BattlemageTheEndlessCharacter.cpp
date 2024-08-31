@@ -35,6 +35,20 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 
 	// init gas
 	AbilitySystemComponent = CreateDefaultSubobject<UBMageAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+	AbilitySystemComponent->SetIsReplicated(true);
+}
+
+void ABattlemageTheEndlessCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	}
+
+	// ASC MixedMode replication requires that the ASC Owner's Owner be the Controller.
+	SetOwner(NewController);
 }
 
 void ABattlemageTheEndlessCharacter::SetupCapsule()
@@ -138,17 +152,48 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 		Equipment.Add(EquipSlot::Secondary, FPickups());
 	}
 
+	// init equipment map
+	if (EquipmentAbilityHandles.Num() == 0)
+	{
+		EquipmentAbilityHandles.Add(EquipSlot::Primary, FAbilityHandles());
+		EquipmentAbilityHandles.Add(EquipSlot::Secondary, FAbilityHandles());
+	}
+
 	// add abilities given by Weapons
 	for (const TSubclassOf<class APickupActor> PickupType: DefaultEquipment)
 	{
 		APickupActor* pickup = GetWorld()->SpawnActor<APickupActor>(PickupType, GetActorLocation(), GetActorRotation());
+
 		if (!pickup || !pickup->Weapon)
 			continue;
 
-		// hide by default
-		pickup->SetHidden(true);
+		pickup->BaseCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		// Unregister from the Overlap Event so it is no longer triggered
+		pickup->BaseCapsule->OnComponentBeginOverlap.RemoveAll(this);
+
+		// Handle attachment
+		bool isRightHand = pickup->Weapon->SlotType == EquipSlot::Primary != LeftHanded;
+
+		// Attach the weapon to the socket
+		FName socketName = isRightHand ? FName("GripRight") : FName("GripLeft");
+		FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
+		pickup->Weapon->AttachToComponent(GetMesh(), AttachmentRules, socketName);
+
+		if (pickup->Weapon->AttachmentOffset != FVector::ZeroVector && pickup->Weapon->GetRelativeLocation() == FVector::ZeroVector)
+			pickup->Weapon->AddLocalOffset(pickup->Weapon->AttachmentOffset);
+
+		// hide if this isn't the first item (since only the first item is attached)
+		if(Equipment[pickup->Weapon->SlotType].Pickups.Num() > 0)
+		{
+			pickup->SetHidden(true);
+			pickup->Weapon->SetHiddenInGame(true);
+		}
 
 		Equipment[pickup->Weapon->SlotType].Pickups.Add(pickup);
+		if (pickup->Weapon->SlotType == EquipSlot::Secondary)
+		{
+			ActiveSpellClass = pickup;
+		}
 	}
 
 	// assign abilities and attach the first pickup from each slot
@@ -160,11 +205,6 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 
 	for (auto pickup : pickups)
 	{
-		for (TSubclassOf<UGameplayAbility>& Ability : pickup->Weapon->GrantedAbilities)
-		{
-			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
-		}
-
 		// Assign the weapon to the appropriate slot
 		SetAndAttachPickup(pickup);
 	}
@@ -209,6 +249,12 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 		EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::DodgeInput);
 
 		EnhancedInputComponent->BindAction(RespawnAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::CallRestartPlayer);
+
+		// Equip spell class actions
+		EnhancedInputComponent->BindAction(SpellClassOneAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::EquipSpellClass, 1);
+		EnhancedInputComponent->BindAction(SpellClassTwoAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::EquipSpellClass, 2);
+		EnhancedInputComponent->BindAction(SpellClassThreeAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::EquipSpellClass, 3);
+		EnhancedInputComponent->BindAction(SpellClassFourAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::EquipSpellClass, 4);
 
 		// Casting Related Actions
 		EnhancedInputComponent->BindAction(CastingModeAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::ToggleCastingMode);
@@ -319,6 +365,19 @@ FVector ABattlemageTheEndlessCharacter::CurrentGripOffset(FName SocketName)
 	return GetWeapon(LeftHanded ? EquipSlot::Primary : EquipSlot::Secondary)->MuzzleOffset;
 }
 
+void ABattlemageTheEndlessCharacter::EquipSpellClass(int slotNumber)
+{
+	// invalid state
+	if (slotNumber > Equipment[EquipSlot::Secondary].Pickups.Num())
+	{
+		UE_LOG(LogExec, Error, TEXT("'%s' Attempted to equip a spell class that doesn't exist!"), *GetNameSafe(this));
+		return;
+	}
+
+	ActiveSpellClass = Equipment[EquipSlot::Secondary].Pickups[slotNumber - 1];
+	SetAndAttachPickup(ActiveSpellClass);
+}
+
 void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
@@ -423,21 +482,58 @@ void ABattlemageTheEndlessCharacter::SetAndAttachPickup(APickupActor* pickup)
 
 	bool isRightHand = pickup->Weapon->SlotType == EquipSlot::Primary != LeftHanded;
 
-	// Detach any weapon in the socket currently
-	APickupActor* currentWeapon = isRightHand ? RightHandWeapon : LeftHandWeapon;
-	if (currentWeapon)
+	APickupActor* currentItem = isRightHand ? RightHandWeapon : LeftHandWeapon;
+	if (currentItem)
 	{
-		currentWeapon->DetachFromActor(FDetachmentTransformRules::KeepRelativeTransform);
-		currentWeapon->SetHidden(true);
+		// Hide the weapon being removed from active status
+		currentItem->SetHidden(true);
+		currentItem->Weapon->SetHiddenInGame(true);
+
+		// remove its mapping context if applicable
+		if (currentItem->Weapon->WeaponMappingContext)
+		{
+			currentItem->Weapon->RemoveContext(this);
+		}
+
+		// clear abilities granted by current weapon
+		for (FGameplayAbilitySpecHandle Ability : EquipmentAbilityHandles[currentItem->Weapon->SlotType].Handles)
+		{
+			AbilitySystemComponent->ClearAbility(FGameplayAbilitySpecHandle());
+		}
+
+		EquipmentAbilityHandles[currentItem->Weapon->SlotType].Handles.Empty();
 	}
 
+	// unhide newly activated weapon
+	pickup->SetHidden(false);
+	pickup->Weapon->SetHiddenInGame(false);
+
+	// set it to the appropriate hand
 	isRightHand ? RightHandWeapon = pickup : LeftHandWeapon = pickup;
 
-	FName socketName = isRightHand ? FName("GripRight") : FName("GripLeft");
-	FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
-	pickup->Weapon->AttachToComponent(GetMesh(), AttachmentRules, socketName);
-	if (pickup->Weapon->AttachmentOffset != FVector::ZeroVector)
-		pickup->Weapon->AddLocalOffset(pickup->Weapon->AttachmentOffset);
+	// add the mapping context and bindings if applicable
+	if (pickup->Weapon->WeaponMappingContext)
+	{
+		APlayerController* PlayerController = Cast<APlayerController>(Controller);
+		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
+		if (!PlayerController || !Subsystem)
+			return;
+
+		Subsystem->AddMappingContext(pickup->Weapon->WeaponMappingContext, 0);
+		pickup->Weapon->AddBindings(this, AbilitySystemComponent);
+	}	
+
+	// todo: make this work
+	// Grant abilities, but only on the server	
+	/*if (Role != ROLE_Authority || !AbilitySystemComponent.IsValid() || AbilitySystemComponent->bCharacterAbilitiesGiven)
+	{
+		return;
+	}*/
+	// grant abilities for the new weapon
+	for (TSubclassOf<UGameplayAbility>& Ability : pickup->Weapon->GrantedAbilities)
+	{
+		EquipmentAbilityHandles[pickup->Weapon->SlotType].Handles.Add(AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this)));
+	}
 }
 
 UTP_WeaponComponent* ABattlemageTheEndlessCharacter::GetWeapon(EquipSlot SlotType)

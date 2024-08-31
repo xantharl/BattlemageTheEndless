@@ -2,6 +2,7 @@
 
 
 #include "BattlemageTheEndlessPlayerController.h"
+#include "BattlemageTheEndlessCharacter.h"
 #include "EnhancedInputSubsystems.h"
 
 void ABattlemageTheEndlessPlayerController::BeginPlay()
@@ -15,5 +16,16 @@ void ABattlemageTheEndlessPlayerController::BeginPlay()
 		Subsystem->AddMappingContext(InputMappingContext, 0);
 
 		UE_LOG(LogTemp, Warning, TEXT("BeginPlay"));
+	}
+}
+
+void ABattlemageTheEndlessPlayerController::AcknowledgePossession(APawn* P)
+{
+	Super::AcknowledgePossession(P);
+
+	ABattlemageTheEndlessCharacter* CharacterBase = Cast<ABattlemageTheEndlessCharacter>(P);
+	if (CharacterBase)
+	{
+		CharacterBase->AbilitySystemComponent->InitAbilityActorInfo(CharacterBase, CharacterBase);
 	}
 }

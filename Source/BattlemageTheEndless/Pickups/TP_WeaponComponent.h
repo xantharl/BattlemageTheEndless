@@ -77,12 +77,11 @@ public:
 
 	FTimerHandle TimeSinceComboPaused;
 
-	/** The Character holding this weapon*/
-	ABattlemageTheEndlessCharacter* Character;
+	void RemoveContext(ACharacter* character);
 
-	void RemoveContext();
+	void AddBindings(ACharacter* character, UAbilitySystemComponent* abilityComponent);
 
-	void AddBindings();
+	void BindAbilityActivate(FGameplayAbilitySpecHandle abilityHandle, UAbilitySystemComponent* abilityComponent);
 
 	/** Drop Weapon Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -102,7 +101,7 @@ protected:
 	bool AttackRequested = false;
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void OnAnimTraceHit(const FHitResult& Hit);
+	void OnAnimTraceHit(ACharacter* character, const FHitResult& Hit);
 
 	int ComboAttackNumber = 0;
 

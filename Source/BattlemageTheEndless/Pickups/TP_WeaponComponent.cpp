@@ -18,17 +18,11 @@ UTP_WeaponComponent::UTP_WeaponComponent()
 
 void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	if (Character == nullptr)
-	{
-		return;
-	}
-
-	RemoveContext();
 }
 
-void UTP_WeaponComponent::RemoveContext()
+void UTP_WeaponComponent::RemoveContext(ACharacter* character)
 {
-	if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))
+	if (APlayerController* PlayerController = Cast<APlayerController>(character->GetController()))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
@@ -37,22 +31,41 @@ void UTP_WeaponComponent::RemoveContext()
 	}
 }
 
-void UTP_WeaponComponent::AddBindings()
+void UTP_WeaponComponent::AddBindings(ACharacter* character, UAbilitySystemComponent* abilityComponent)
 {
-	// TODO: Unbreak this
-	//if (APlayerController* PlayerController = Cast<APlayerController>(Character->GetController()))
-	//{
-	//	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent))
-	//	{
-	//		// TODO: Figure out how to make this dynamic and allow BP set of these params, struct?
-	//		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &UTP_WeaponComponent::Fire);
-	//		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &UTP_WeaponComponent::SuspendAttackSequence);
-	//	}
-	//}
+	if (!character)
+	{
+		return;
+	}
+	APlayerController* PlayerController = Cast<APlayerController>(character->GetController());
+	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent);
+
+	if (!PlayerController || !EnhancedInputComponent)
+	{
+		return;
+	}
+
+	auto quickSpells = TArray<FGameplayAbilitySpecHandle>();
+	abilityComponent->FindAllAbilitiesWithTags(
+		quickSpells, 
+		FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Spells.Types.Quick"))));
+
+	if (quickSpells.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No quick spells found"));
+		return;
+	}
+
+	EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &UTP_WeaponComponent::BindAbilityActivate, quickSpells[0], abilityComponent);
+}
+
+void UTP_WeaponComponent::BindAbilityActivate(FGameplayAbilitySpecHandle abilityHandle, UAbilitySystemComponent* abilityComponent)
+{
+	abilityComponent->TryActivateAbility(abilityHandle, true);
 }
 
 // This is called by the AnimNotify_Collision Blueprint
-void UTP_WeaponComponent::OnAnimTraceHit(const FHitResult& Hit)
+void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult& Hit)
 {
 	// If we hit a Battlemage character, apply damage	
 	if (!Hit.HitObjectHandle.DoesRepresentClass(ABattlemageTheEndlessCharacter::StaticClass()))
@@ -68,7 +81,7 @@ void UTP_WeaponComponent::OnAnimTraceHit(const FHitResult& Hit)
 	}
 
 	// Stop hitting yourself
-	if (otherCharacter == Character)
+	if (otherCharacter == character)
 	{
 		return;
 	}

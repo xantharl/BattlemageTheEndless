@@ -38,6 +38,8 @@ class UInputMappingContext;
 struct FInputActionValue;
 using namespace std::chrono;
 
+DECLARE_DELEGATE_OneParam(FSpellClassSelectDelegate, const int);
+
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 UENUM(BlueprintType)
@@ -57,13 +59,19 @@ struct FPickups
 	TArray<TObjectPtr<APickupActor>> Pickups;
 };
 
+USTRUCT(BlueprintType)
+struct FAbilityHandles
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivateAccess = "true"))
+	TArray<FGameplayAbilitySpecHandle> Handles;
+};
+
 UCLASS(config=Game)
 class ABattlemageTheEndlessCharacter : public ACharacter
 {
 	GENERATED_BODY()
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
-	class UBMageAbilitySystemComponent* AbilitySystemComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
 	TArray<TSubclassOf<class UGameplayAbility>> DefaultAbilities;
@@ -165,6 +173,11 @@ private:
 public:
 	ABattlemageTheEndlessCharacter(const FObjectInitializer& ObjectInitializer);
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
+	class UBMageAbilitySystemComponent* AbilitySystemComponent;
+
+	virtual void PossessedBy(AController* NewController) override;
+
 	void SetupCapsule();
 
 	//Called when our Actor is destroyed during Gameplay.
@@ -179,12 +192,17 @@ public:
 	TMap<EquipSlot, FPickups> Equipment;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivate))
+	TMap<EquipSlot, FAbilityHandles> EquipmentAbilityHandles;
+
+	APickupActor* ActiveSpellClass;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivate))
 	TArray<TSubclassOf<class APickupActor>> DefaultEquipment;
+
 protected:
 	virtual void BeginPlay();
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0);
 
-	void OnJumpLanded();
 	void SetupCameras();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
@@ -195,8 +213,7 @@ protected:
 
 	ACheckPoint* LastCheckPoint;
 
-public:
-		
+public:		
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* LookAction;
@@ -229,6 +246,9 @@ public:
 	UAnimMontage* CastingModeMontage;
 
 	FVector CurrentGripOffset(FName SocketName);
+
+	UFUNCTION(BlueprintCallable, Category = Equipment)
+	void EquipSpellClass(int slotNumber);
 
 protected:
 	/** Called for movement input */
