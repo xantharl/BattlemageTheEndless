@@ -45,18 +45,18 @@ void UTP_WeaponComponent::AddBindings(ACharacter* character, UAbilitySystemCompo
 		return;
 	}
 
-	auto quickSpells = TArray<FGameplayAbilitySpecHandle>();
-	abilityComponent->FindAllAbilitiesWithTags(
-		quickSpells, 
-		FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Spells.Types.Quick"))));
+	auto bindableActions = TArray<FGameplayAbilitySpecHandle>();
+	FName targetTag = SlotType == EquipSlot::Primary ? FName("Weapons.Attack") : FName("Spells.Types.Quick");
+	auto tags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(targetTag));
+	abilityComponent->FindAllAbilitiesWithTags(	bindableActions, tags, false);
 
-	if (quickSpells.Num() == 0)
+	if (bindableActions.Num() == 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No quick spells found"));
 		return;
 	}
 
-	EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &UTP_WeaponComponent::BindAbilityActivate, quickSpells[0], abilityComponent);
+	EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &UTP_WeaponComponent::BindAbilityActivate, bindableActions[0], abilityComponent);
 }
 
 void UTP_WeaponComponent::BindAbilityActivate(FGameplayAbilitySpecHandle abilityHandle, UAbilitySystemComponent* abilityComponent)
