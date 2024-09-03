@@ -34,4 +34,5 @@ public:
 	TObjectPtr<AActor> Owner;
 
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData);
+	void UpdateComboState(ABattlemageTheEndlessCharacter* character);
 };
