@@ -61,10 +61,11 @@ void UAttackBaseGameplayAbility::UpdateComboState(ABattlemageTheEndlessCharacter
 {
 	// if this ability has the State.Combo tag set or update ExplicitTags to include the State.Combo tag
 	FGameplayTagContainer ComboTags;
-	ComboTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Combo.1")));
+	ComboTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Combo")));
+	/*ComboTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Combo.1")));
 	ComboTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Combo.2")));
 	ComboTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Combo.3")));
-	ComboTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Combo.4")));
+	ComboTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Combo.4")));*/
 
 	FGameplayTagContainer ownedComboTags = AbilityTags.Filter(ComboTags);
 	if (ownedComboTags.Num() > 1)
@@ -77,9 +78,8 @@ void UAttackBaseGameplayAbility::UpdateComboState(ABattlemageTheEndlessCharacter
 		int lastAttackNumber = FCString::Atoi(*StateComboTag.GetTagName().ToString().Right(1)) - 1;
 
 		// not checking if it actually exists since the ability system handles that
-		character->AbilitySystemComponent->RemoveLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Combo." + char(lastAttackNumber))));
+		character->AbilitySystemComponent->RemoveReplicatedLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Combo." + char(lastAttackNumber))));
 
-		// TODO: Figure out where the replicated version of this is 
-		character->AbilitySystemComponent->AddLooseGameplayTag(ownedComboTags.GetByIndex(0));
+		character->AbilitySystemComponent->AddReplicatedLooseGameplayTag(StateComboTag);
 	}
 }
