@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Abilities/GameplayAbility.h"
 #include "../Characters/BattlemageTheEndlessCharacter.h"
 
 // Sets default values for this component's properties
@@ -56,12 +57,32 @@ void UTP_WeaponComponent::AddBindings(ACharacter* character, UAbilitySystemCompo
 		return;
 	}
 
-	EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &UTP_WeaponComponent::BindAbilityActivate, bindableActions[0], abilityComponent);
+	// We are binding them all to the same action and relying on proper config of blocking tags to determine which one to use
+	for(auto action : bindableActions)
+	{
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &UTP_WeaponComponent::BindAbilityActivate, action, abilityComponent);
+	}
 }
 
 void UTP_WeaponComponent::BindAbilityActivate(FGameplayAbilitySpecHandle abilityHandle, UAbilitySystemComponent* abilityComponent)
 {
-	abilityComponent->TryActivateAbility(abilityHandle, true);
+	// TODO: make this less horrible
+	// handle the combo state so we only invoke the current attack
+	// get the combo number from the ability
+	auto baseComboTag = FGameplayTag::RequestGameplayTag(FName("State.Combo"));
+	auto comboAttackNumber = abilityComponent->GetTagCount(baseComboTag);
+
+	auto ability = abilityComponent->FindAbilitySpecFromHandle(abilityHandle); 
+	auto abilityComboTags = ability->Ability->AbilityTags.Filter(FGameplayTagContainer(baseComboTag));
+	if (abilityComboTags.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Ability has no State.Combo.# tag"));
+		return;
+	}
+	int abilityComboNumber = FCString::Atoi(*abilityComboTags.First().GetTagName().ToString().Right(1));
+
+	if (comboAttackNumber == abilityComboNumber-1)
+		abilityComponent->TryActivateAbility(abilityHandle, true);
 }
 
 // This is called by the AnimNotify_Collision Blueprint

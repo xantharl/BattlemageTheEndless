@@ -9,6 +9,7 @@
 #include "Engine/DamageEvents.h"
 #include "PhysicsEngine/PhysicsAsset.h"
 #include "EnhancedInputComponent.h"
+#include "AbilitySystemComponent.h"
 #include "vector"
 #include <chrono>
 #include "TP_WeaponComponent.generated.h"

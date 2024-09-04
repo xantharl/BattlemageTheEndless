@@ -12,8 +12,6 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		return;
 	}
 
-	UpdateComboState(character);
-
 	if (ProjectileClass)
 	{
 		const FRotator SpawnRotation = ActorInfo->PlayerController->PlayerCameraManager->GetCameraRotation();
@@ -55,6 +53,10 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 
 	if (CooldownGameplayEffectClass)
 		CommitAbilityCooldown(Handle, ActorInfo, ActivationInfo, false);
+
+	CommitAbility(Handle, ActorInfo, ActivationInfo);
+	UpdateComboState(character);
+	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 }
 
 void UAttackBaseGameplayAbility::UpdateComboState(ABattlemageTheEndlessCharacter* character)
@@ -62,10 +64,6 @@ void UAttackBaseGameplayAbility::UpdateComboState(ABattlemageTheEndlessCharacter
 	// if this ability has the State.Combo tag set or update ExplicitTags to include the State.Combo tag
 	FGameplayTagContainer ComboTags;
 	ComboTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Combo")));
-	/*ComboTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Combo.1")));
-	ComboTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Combo.2")));
-	ComboTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Combo.3")));
-	ComboTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Combo.4")));*/
 
 	FGameplayTagContainer ownedComboTags = AbilityTags.Filter(ComboTags);
 	if (ownedComboTags.Num() > 1)
@@ -75,11 +73,6 @@ void UAttackBaseGameplayAbility::UpdateComboState(ABattlemageTheEndlessCharacter
 	else if (ownedComboTags.Num() == 1)
 	{
 		FGameplayTag StateComboTag = ownedComboTags.GetByIndex(0);
-		int lastAttackNumber = FCString::Atoi(*StateComboTag.GetTagName().ToString().Right(1)) - 1;
-
-		// not checking if it actually exists since the ability system handles that
-		character->AbilitySystemComponent->RemoveReplicatedLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Combo." + char(lastAttackNumber))));
-
-		character->AbilitySystemComponent->AddReplicatedLooseGameplayTag(StateComboTag);
+		character->AbilitySystemComponent->UpdateTagMap(StateComboTag, 1);
 	}
 }

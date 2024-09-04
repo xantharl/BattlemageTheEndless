@@ -213,6 +213,18 @@ protected:
 
 	ACheckPoint* LastCheckPoint;
 
+	virtual void ComboStateChanged(const FGameplayTag CallbackTag, int32 NewCount);
+
+	FTimerHandle ComboTimerHandle;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Combo, meta = (AllowPrivateAccess = "true"))
+	// one second in std::chrono::milliseconds
+	double ComboExpiryTime = 1.0;
+
+	int CurrentComboNumber = 0;
+
+	void ResetComboState(int comboNumber);
+
 public:		
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))

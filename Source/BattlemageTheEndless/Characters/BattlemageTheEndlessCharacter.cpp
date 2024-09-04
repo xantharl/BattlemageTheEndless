@@ -152,7 +152,7 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 		Equipment.Add(EquipSlot::Secondary, FPickups());
 	}
 
-	// init equipment map
+	// init equipment abiltiy handles
 	if (EquipmentAbilityHandles.Num() == 0)
 	{
 		EquipmentAbilityHandles.Add(EquipSlot::Primary, FAbilityHandles());
@@ -208,9 +208,79 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 		// Assign the weapon to the appropriate slot
 		SetAndAttachPickup(pickup);
 	}
+
+	AbilitySystemComponent->RegisterGameplayTagEvent(FGameplayTag::RequestGameplayTag(FName("State.Combo")), EGameplayTagEventType::NewOrRemoved).AddUObject(this, &ABattlemageTheEndlessCharacter::ComboStateChanged);
 }
 
-//////////////////////////////////////////////////////////////////////////// Input
+void ABattlemageTheEndlessCharacter::ComboStateChanged(const FGameplayTag CallbackTag, int32 NewCount)
+{
+	// Only check if it's on a tag add, not removal
+	if (NewCount == 0)
+		return;
+
+	// I don't see a reason for a > single digit combo length but this will break if we implement one
+	auto ownedTags = AbilitySystemComponent->GetOwnedGameplayTags().Filter(FGameplayTagContainer(CallbackTag));
+	// assuming the tags are ordered by added time
+	CurrentComboNumber = FCString::Atoi(*ownedTags.Last().GetTagName().ToString().Right(1));
+
+	// check for subsequent attacks in the combo
+	FGameplayTagContainer nextAttack;
+	FGameplayTagContainer comboStateTag = FGameplayTagContainer();
+	comboStateTag.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Combo")));
+
+	// TODO: Pre-compute all this and store it
+	for(auto pair : EquipmentAbilityHandles)
+	{
+		for(auto handle : pair.Value.Handles)
+		{
+			FGameplayAbilitySpec* ability = AbilitySystemComponent->FindAbilitySpecFromHandle(handle);
+			FGameplayTagContainer tags = ability->Ability->AbilityTags.Filter(comboStateTag);
+			if (tags.Num() > 1)
+			{
+				UE_LOG(LogExec, Error, TEXT("Ability has more than one State.Combo.# tag"));
+				continue;
+			}
+			else if (tags.Num() == 1)
+			{
+				FGameplayTag StateComboTag = tags.GetByIndex(0);
+				// I don't see a reason for a > single digit combo length but this will break if we implement one
+				int attackNumber = FCString::Atoi(*StateComboTag.GetTagName().ToString().Right(1));
+				if (attackNumber == CurrentComboNumber + 1)
+				{
+					nextAttack.AddTag(StateComboTag);
+					break;
+				}
+			}
+		}
+
+		// if there's a next attack, start a timer to reset the combo state and return
+		if (nextAttack.Num() > 0)
+		{
+			// TODO: this is probably not optimal but it works for now
+			int currentComboNumber = CurrentComboNumber;
+			// REFERENCE: Timer with lambda
+			GetWorld()->GetTimerManager().SetTimer(ComboTimerHandle, [&, currentComboNumber] {this->ResetComboState(currentComboNumber); }, ComboExpiryTime, false);
+			return;
+		}
+	}
+
+	// if no next attack exists, remove all Combo.State tags, passing intentionally nonsense value to force reset
+	ResetComboState(-1);
+}
+
+void ABattlemageTheEndlessCharacter::ResetComboState(int comboNumber)
+{
+	// if the combo number has no changed since the timer was set, reset the combo state
+	if (CurrentComboNumber != comboNumber)
+		return;
+	
+	auto ownedTags = AbilitySystemComponent->GetOwnedGameplayTags().Filter(FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("State.Combo"))));
+	for (auto tag : ownedTags)
+	{
+		AbilitySystemComponent->UpdateTagMap(tag, -1);
+	}
+	CurrentComboNumber = 0;
+}
 
 void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
