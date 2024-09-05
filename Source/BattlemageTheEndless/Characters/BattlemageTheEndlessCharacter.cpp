@@ -36,6 +36,8 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 	// init gas
 	AbilitySystemComponent = CreateDefaultSubobject<UBMageAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
+
+	ComboManager = CreateDefaultSubobject<UAbilityComboManager>(TEXT("ComboManager"));
 }
 
 void ABattlemageTheEndlessCharacter::PossessedBy(AController* NewController)
@@ -162,38 +164,38 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 	// add abilities given by Weapons
 	for (const TSubclassOf<class APickupActor> PickupType: DefaultEquipment)
 	{
+		// create the actor
 		APickupActor* pickup = GetWorld()->SpawnActor<APickupActor>(PickupType, GetActorLocation(), GetActorRotation());
 
 		if (!pickup || !pickup->Weapon)
 			continue;
 
+		// disable collision so we won't block the player
 		pickup->BaseCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		// Unregister from the Overlap Event so it is no longer triggered
 		pickup->BaseCapsule->OnComponentBeginOverlap.RemoveAll(this);
 
-		// Handle attachment
+		// Attach the weapon to the appropriate socket
 		bool isRightHand = pickup->Weapon->SlotType == EquipSlot::Primary != LeftHanded;
-
-		// Attach the weapon to the socket
 		FName socketName = isRightHand ? FName("GripRight") : FName("GripLeft");
-		FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
-		pickup->Weapon->AttachToComponent(GetMesh(), AttachmentRules, socketName);
+		pickup->Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), socketName);
 
+		// offset the weapon from the socket if needed
 		if (pickup->Weapon->AttachmentOffset != FVector::ZeroVector && pickup->Weapon->GetRelativeLocation() == FVector::ZeroVector)
 			pickup->Weapon->AddLocalOffset(pickup->Weapon->AttachmentOffset);
 
-		// hide if this isn't the first item (since only the first item is attached)
+		// hide if this isn't the first item (since the first item is equipped by default)
 		if(Equipment[pickup->Weapon->SlotType].Pickups.Num() > 0)
 		{
 			pickup->SetHidden(true);
 			pickup->Weapon->SetHiddenInGame(true);
 		}
 
+		// add the pickup to the appropriate slot in the equipment map
 		Equipment[pickup->Weapon->SlotType].Pickups.Add(pickup);
+
+		// track active spell class if this is a spell, this is used later to switch between spell classes
 		if (pickup->Weapon->SlotType == EquipSlot::Secondary)
-		{
 			ActiveSpellClass = pickup;
-		}
 	}
 
 	// assign abilities and attach the first pickup from each slot
@@ -206,7 +208,7 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 	for (auto pickup : pickups)
 	{
 		// Assign the weapon to the appropriate slot
-		SetAndAttachPickup(pickup);
+		SetActivePickup(pickup);
 	}
 
 	AbilitySystemComponent->RegisterGameplayTagEvent(FGameplayTag::RequestGameplayTag(FName("State.Combo")), EGameplayTagEventType::NewOrRemoved).AddUObject(this, &ABattlemageTheEndlessCharacter::ComboStateChanged);
@@ -445,7 +447,7 @@ void ABattlemageTheEndlessCharacter::EquipSpellClass(int slotNumber)
 	}
 
 	ActiveSpellClass = Equipment[EquipSlot::Secondary].Pickups[slotNumber - 1];
-	SetAndAttachPickup(ActiveSpellClass);
+	SetActivePickup(ActiveSpellClass);
 }
 
 void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)
@@ -545,7 +547,7 @@ void ABattlemageTheEndlessCharacter::RedirectVelocityToLookDirection(bool wallru
 	movement->Velocity = movement->Velocity.RotateAngleAxis(yawDifference, FVector::ZAxisVector);	
 }
 
-void ABattlemageTheEndlessCharacter::SetAndAttachPickup(APickupActor* pickup)
+void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 {
 	if (!pickup || !pickup->Weapon)
 		return;
@@ -586,6 +588,7 @@ void ABattlemageTheEndlessCharacter::SetAndAttachPickup(APickupActor* pickup)
 	for (TSubclassOf<UGameplayAbility>& Ability : pickup->Weapon->GrantedAbilities)
 	{
 		EquipmentAbilityHandles[pickup->Weapon->SlotType].Handles.Add(AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this)));
+		ComboManager->ParseCombos(pickup, AbilitySystemComponent);
 	}
 
 	// add the mapping context and bindings if applicable

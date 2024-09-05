@@ -25,8 +25,8 @@
 #include "../BMageAbilitySystemComponent.h"
 #include "Blueprint/WidgetTree.h"
 #include "../Pickups/PickupActor.h"
-
 #include "../BMageJumpAbility.h"
+#include <BattlemageTheEndless/Abilities/Combos/AbilityComboManager.h>
 
 #include "BattlemageTheEndlessCharacter.generated.h"
 
@@ -225,6 +225,8 @@ protected:
 
 	void ResetComboState(int comboNumber);
 
+	UAbilityComboManager* ComboManager;
+
 public:		
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -273,7 +275,7 @@ protected:
 
 	void RedirectVelocityToLookDirection(bool wallrunEnded);
 
-	void SetAndAttachPickup(APickupActor* pickup);
+	void SetActivePickup(APickupActor* pickup);
 
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
