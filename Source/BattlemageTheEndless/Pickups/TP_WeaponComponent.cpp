@@ -17,6 +17,11 @@ UTP_WeaponComponent::UTP_WeaponComponent()
 	MuzzleOffset = FVector(10.0f, 0.0f, 10.0f);
 }
 
+void UTP_WeaponComponent::ProcessInput(EAttackType AttackType)
+{
+	// TODO: impl this
+}
+
 void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 }

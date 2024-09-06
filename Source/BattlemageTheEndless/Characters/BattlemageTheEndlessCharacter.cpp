@@ -38,6 +38,7 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 	AbilitySystemComponent->SetIsReplicated(true);
 
 	ComboManager = CreateDefaultSubobject<UAbilityComboManager>(TEXT("ComboManager"));
+	ComboManager->AbilitySystemComponent = AbilitySystemComponent;
 }
 
 void ABattlemageTheEndlessCharacter::PossessedBy(AController* NewController)
@@ -212,6 +213,15 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 	}
 
 	AbilitySystemComponent->RegisterGameplayTagEvent(FGameplayTag::RequestGameplayTag(FName("State.Combo")), EGameplayTagEventType::NewOrRemoved).AddUObject(this, &ABattlemageTheEndlessCharacter::ComboStateChanged);
+	
+	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(Controller->InputComponent))
+	{
+		for (auto& pair : ComboManager->Combos)
+		{
+			EnhancedInputComponent->BindAction(pair.Key->Weapon->FireAction, ETriggerEvent::Triggered,
+				ComboManager, &UAbilityComboManager::ProcessInput, pair.Key, EAttackType::Light);
+		}
+	}
 }
 
 void ABattlemageTheEndlessCharacter::ComboStateChanged(const FGameplayTag CallbackTag, int32 NewCount)
@@ -585,10 +595,11 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 
 	// grant abilities for the new weapon
 	// Needs to happen before bindings since bindings look up assigned abilities
-	for (TSubclassOf<UGameplayAbility>& Ability : pickup->Weapon->GrantedAbilities)
+	for (TSubclassOf<UGameplayAbility>& ability : pickup->Weapon->GrantedAbilities)
 	{
-		EquipmentAbilityHandles[pickup->Weapon->SlotType].Handles.Add(AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this)));
-		ComboManager->ParseCombos(pickup, AbilitySystemComponent);
+		FGameplayAbilitySpecHandle handle = AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
+		EquipmentAbilityHandles[pickup->Weapon->SlotType].Handles.Add(handle);
+		ComboManager->AddAbilityToCombo(pickup, ability->GetDefaultObject<UGameplayAbility>(), handle);
 	}
 
 	// add the mapping context and bindings if applicable
@@ -599,7 +610,6 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 		if (PlayerController && Subsystem)
 		{
 			Subsystem->AddMappingContext(pickup->Weapon->WeaponMappingContext, 0);
-			pickup->Weapon->AddBindings(this, AbilitySystemComponent);
 		}
 	}	
 

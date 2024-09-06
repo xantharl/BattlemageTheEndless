@@ -17,7 +17,7 @@ class BATTLEMAGETHEENDLESS_API UAbilityCombo : public UObject
 
 public:
 	// returns the first ability spec in the combo after setting the last attack to 0
-	FGameplayAbilitySpecHandle* StartCombo();
+	FGameplayAbilitySpecHandle* StartCombo(int startAtAttackNumber = 0);
 
 	// returns the next ability spec and increments the combo state counter
 	FGameplayAbilitySpecHandle* AdvanceCombo();
@@ -40,6 +40,5 @@ public:
 		return BaseComboIdentifier == Other.BaseComboIdentifier;
 	}
 
-protected:
 	int LastComboAttackNumber;
 };

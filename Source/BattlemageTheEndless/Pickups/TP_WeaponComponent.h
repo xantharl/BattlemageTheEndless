@@ -16,6 +16,14 @@
 
 using namespace std::chrono;
 
+UENUM(BlueprintType)
+enum class EAttackType : uint8
+{
+	Light UMETA(DisplayName = "Light"),
+	Heavy UMETA(DisplayName = "Heavy"),
+	Custom UMETA(DisplayName = "Custom"),
+};
+
 UENUM()
 enum class EquipSlot : uint8
 {
@@ -93,6 +101,8 @@ public:
 	float ShotsPerMinute = 120;
 
 	milliseconds LastFireTime;
+
+	void ProcessInput(EAttackType AttackType);
 
 protected:
 	/** Ends gameplay for this component. */

@@ -29,10 +29,16 @@ class BATTLEMAGETHEENDLESS_API UAbilityComboManager : public UObject
 	GENERATED_BODY()
 	
 protected:
+
+	FGameplayAbilitySpecHandle* SwitchAndAdvanceCombo(APickupActor* PickupActor, UAbilityCombo* Combo);
+public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivateAccess = "true"))
 	TMap<APickupActor*, FPickupCombos> Combos;
 
-public:
-	// Identifies any combos that the current pickup can perform
-	void ParseCombos(APickupActor* PickupActor, UAbilitySystemComponent* abilitySystemComponent);
+	// Adds a single ability to a combo, or creates a new combo if the ability is the first in a combo
+	void AddAbilityToCombo(APickupActor* PickupActor, UGameplayAbility* Ability, FGameplayAbilitySpecHandle Handle);
+
+	void ProcessInput(APickupActor* PickupActor, EAttackType AttackType);
+
+	UAbilitySystemComponent* AbilitySystemComponent;
 };
