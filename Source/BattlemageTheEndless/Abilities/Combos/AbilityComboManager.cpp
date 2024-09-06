@@ -102,6 +102,8 @@ void UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType A
 	pickupCombos.ActiveCombo = combo;
 	if (toActivate)
 		AbilitySystemComponent->TryActivateAbility(*toActivate, true);
+	else if (combo)
+		Combos[PickupActor].ActiveCombo = nullptr;
 }
 
 FGameplayAbilitySpecHandle* UAbilityComboManager::SwitchAndAdvanceCombo(APickupActor* PickupActor, UAbilityCombo* Combo)
