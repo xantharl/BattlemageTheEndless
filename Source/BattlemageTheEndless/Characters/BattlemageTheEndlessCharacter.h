@@ -68,6 +68,15 @@ struct FAbilityHandles
 	TArray<FGameplayAbilitySpecHandle> Handles;
 };
 
+USTRUCT(BlueprintType)
+struct FBindingHandles
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivateAccess = "true"))
+	TArray<int32> Handles;
+};
+
 UCLASS(config=Game)
 class ABattlemageTheEndlessCharacter : public ACharacter
 {
@@ -194,6 +203,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivate))
 	TMap<EquipSlot, FAbilityHandles> EquipmentAbilityHandles;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivate))
+	TMap<APickupActor*, FBindingHandles> EquipmentBindingHandles;
+
 	APickupActor* ActiveSpellClass;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivate))
@@ -212,18 +224,6 @@ protected:
 	float MaxHealth = 100;
 
 	ACheckPoint* LastCheckPoint;
-
-	virtual void ComboStateChanged(const FGameplayTag CallbackTag, int32 NewCount);
-
-	FTimerHandle ComboTimerHandle;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Combo, meta = (AllowPrivateAccess = "true"))
-	// one second in std::chrono::milliseconds
-	double ComboExpiryTime = 1.0;
-
-	int CurrentComboNumber = 0;
-
-	void ResetComboState(int comboNumber);
 
 	UAbilityComboManager* ComboManager;
 

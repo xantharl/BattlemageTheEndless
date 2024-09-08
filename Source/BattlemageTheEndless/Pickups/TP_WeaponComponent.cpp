@@ -17,9 +17,33 @@ UTP_WeaponComponent::UTP_WeaponComponent()
 	MuzzleOffset = FVector(10.0f, 0.0f, 10.0f);
 }
 
-void UTP_WeaponComponent::ProcessInput(EAttackType AttackType)
+TSubclassOf<UGameplayAbility> UTP_WeaponComponent::GetAbilityByAttackType(EAttackType AttackType)
 {
-	// TODO: impl this
+	// if there's only 1 ability, return it
+	if (GrantedAbilities.Num() == 1)
+	{
+		return GrantedAbilities[0];
+	}
+
+	// otherwise check ability tags for AttackType
+	FString attackTypeName = *UEnum::GetDisplayValueAsText(AttackType).ToString();
+	auto attackTypeTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Weapons.AttackTypes."+ attackTypeName)));
+
+	auto matches = GrantedAbilities.FilterByPredicate(
+		[attackTypeTags](TSubclassOf<UGameplayAbility> ability) {
+			return ability->GetDefaultObject<UGameplayAbility>()->AbilityTags.HasAny(attackTypeTags); });
+
+	if (matches.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No ability found for attack type %s. This is likely invalid configuration."), *attackTypeName);
+		return nullptr;
+	}
+	else if (matches.Num() > 1)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("More than one combo found for attack type %s. Using the first."), *attackTypeName);
+	}
+
+	return matches[0];
 }
 
 void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -37,6 +61,8 @@ void UTP_WeaponComponent::RemoveContext(ACharacter* character)
 	}
 }
 
+// Deprecated in favor of combo manager
+// TODO: remove this once the combo manager is fully implemented
 void UTP_WeaponComponent::AddBindings(ACharacter* character, UAbilitySystemComponent* abilityComponent)
 {
 	if (!character)
@@ -69,6 +95,8 @@ void UTP_WeaponComponent::AddBindings(ACharacter* character, UAbilitySystemCompo
 	}
 }
 
+// Deprecated in favor of combo manager
+// TODO: remove this once the combo manager is fully implemented
 void UTP_WeaponComponent::BindAbilityActivate(FGameplayAbilitySpecHandle abilityHandle, UAbilitySystemComponent* abilityComponent)
 {
 	// TODO: make this less horrible

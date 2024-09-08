@@ -29,6 +29,13 @@ class BATTLEMAGETHEENDLESS_API UAbilityComboManager : public UObject
 	GENERATED_BODY()
 	
 protected:
+	FTimerHandle ComboTimerHandle;
+
+	int CurrentComboNumber = 0;
+
+	void ActivateAbilityAndResetTimer(FPickupCombos ComboData, FGameplayAbilitySpecHandle* Ability);
+
+	void EndComboHandler();
 
 	FGameplayAbilitySpecHandle* SwitchAndAdvanceCombo(APickupActor* PickupActor, UAbilityCombo* Combo);
 public:
@@ -39,6 +46,12 @@ public:
 	void AddAbilityToCombo(APickupActor* PickupActor, UGameplayAbility* Ability, FGameplayAbilitySpecHandle Handle);
 
 	void ProcessInput(APickupActor* PickupActor, EAttackType AttackType);
+
+	void DelegateToWeapon(APickupActor* PickupActor, EAttackType AttackType);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Combo, meta = (AllowPrivateAccess = "true"))
+	// one second in std::chrono::milliseconds
+	double ComboExpiryTime = 1.0;
 
 	UAbilitySystemComponent* AbilitySystemComponent;
 };

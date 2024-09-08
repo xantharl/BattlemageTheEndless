@@ -62,7 +62,7 @@ void UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType A
 	// If we aren't aware of any combos for this pickup, delegate to the weapon's input handler
 	if (!Combos.Contains(PickupActor))
 	{
-		PickupActor->Weapon->ProcessInput(AttackType);
+		DelegateToWeapon(PickupActor, AttackType);
 		return;
 	}
 
@@ -78,7 +78,7 @@ void UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType A
 	// If the current attack isn't part of any combo, delegate to the weapon's input handler
 	if (matches.Num() == 0)
 	{
-		PickupActor->Weapon->ProcessInput(AttackType);
+		DelegateToWeapon(PickupActor, AttackType);
 		return;
 	}
 	else if (matches.Num() > 1) 
@@ -100,10 +100,51 @@ void UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType A
 	}
 
 	pickupCombos.ActiveCombo = combo;
+	// if we found a next ability, activate it
 	if (toActivate)
-		AbilitySystemComponent->TryActivateAbility(*toActivate, true);
+		ActivateAbilityAndResetTimer(pickupCombos, toActivate);
+	// if we didn't but we have a combo, we're at the end of the combo, restart it
 	else if (combo)
-		Combos[PickupActor].ActiveCombo = nullptr;
+	{
+		ActivateAbilityAndResetTimer(pickupCombos, combo->StartCombo());
+	}
+}
+
+void UAbilityComboManager::DelegateToWeapon(APickupActor* PickupActor, EAttackType AttackType)
+{
+	auto abilityClass = PickupActor->Weapon->GetAbilityByAttackType(AttackType);
+	if (!abilityClass)
+		return;
+	AbilitySystemComponent->TryActivateAbility(
+		AbilitySystemComponent->FindAbilitySpecFromClass(abilityClass)->Handle, true);
+}
+
+void UAbilityComboManager::ActivateAbilityAndResetTimer(FPickupCombos ComboData, FGameplayAbilitySpecHandle* Ability)
+{
+	if (GEngine)
+	{
+		FString abilityName = AbilitySystemComponent->FindAbilitySpecFromHandle(*Ability)->Ability->GetName();
+		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("Activating ability %s"), *abilityName));
+	}
+
+	AbilitySystemComponent->TryActivateAbility(*Ability, true);
+	// intentionally overwrite the timer handle each time we advance the combo
+	GetWorld()->GetTimerManager().SetTimer(ComboTimerHandle, [&, ComboData] {EndComboHandler(); }, ComboExpiryTime, false);
+}
+
+void UAbilityComboManager::EndComboHandler() 
+{
+	// taking the lazy approach and ending any and all combos, this may change later
+	if (Combos.Num() == 0)
+		return;
+	for (auto& ComboData : Combos)
+	{
+		if (!ComboData.Value.ActiveCombo)
+			continue;
+
+		ComboData.Value.ActiveCombo->EndCombo();
+		ComboData.Value.ActiveCombo = nullptr;
+	}
 }
 
 FGameplayAbilitySpecHandle* UAbilityComboManager::SwitchAndAdvanceCombo(APickupActor* PickupActor, UAbilityCombo* Combo)

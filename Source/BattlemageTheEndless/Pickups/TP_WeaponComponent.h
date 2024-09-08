@@ -102,7 +102,7 @@ public:
 
 	milliseconds LastFireTime;
 
-	void ProcessInput(EAttackType AttackType);
+	TSubclassOf<UGameplayAbility> GetAbilityByAttackType(EAttackType AttackType);
 
 protected:
 	/** Ends gameplay for this component. */

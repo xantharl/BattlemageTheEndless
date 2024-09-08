@@ -55,10 +55,12 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		CommitAbilityCooldown(Handle, ActorInfo, ActivationInfo, false);
 
 	CommitAbility(Handle, ActorInfo, ActivationInfo);
-	UpdateComboState(character);
+	//UpdateComboState(character);
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 }
 
+// deprecated in favor of combomanager
+// TODO: Remove once we are sure we don't need this
 void UAttackBaseGameplayAbility::UpdateComboState(ABattlemageTheEndlessCharacter* character)
 {
 	// if this ability has the State.Combo tag set or update ExplicitTags to include the State.Combo tag
