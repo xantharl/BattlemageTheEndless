@@ -46,6 +46,12 @@ TSubclassOf<UGameplayAbility> UTP_WeaponComponent::GetAbilityByAttackType(EAttac
 	return matches[0];
 }
 
+void UTP_WeaponComponent::ResetHits()
+{
+	LastHitCharacters.Empty();
+	LastAttackAnimationName = "";
+}
+
 void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 }
@@ -119,8 +125,14 @@ void UTP_WeaponComponent::BindAbilityActivate(FGameplayAbilitySpecHandle ability
 }
 
 // This is called by the AnimNotify_Collision Blueprint
-void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult& Hit)
+void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult& Hit, FString attackAnimationName)
 {
+	if (attackAnimationName != LastAttackAnimationName)
+	{
+		LastHitCharacters.Empty();
+		LastAttackAnimationName = attackAnimationName;
+	}
+
 	// If we hit a Battlemage character, apply damage	
 	if (!Hit.HitObjectHandle.DoesRepresentClass(ABattlemageTheEndlessCharacter::StaticClass()))
 		return;
@@ -128,24 +140,17 @@ void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 	ABattlemageTheEndlessCharacter* otherCharacter = Cast<ABattlemageTheEndlessCharacter>(Hit.HitObjectHandle.FetchActor());
 
 	// If this character has already been hit by this stage of the combo, don't hit them again
-	auto characterIter = LastHitCharacters.find(Cast<ABattlemageTheEndlessCharacter>(otherCharacter));
-	if (characterIter != LastHitCharacters.end() && characterIter->second == ComboAttackNumber)
-	{
-		return;
-	}
-
-	// Stop hitting yourself
-	if (otherCharacter == character)
+	if (LastHitCharacters.Contains(otherCharacter) || otherCharacter == character ) 	// Stop hitting yourself
 	{
 		return;
 	}
 
 	if (GEngine)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("Hit on ComboAttackNumber %i"), ComboAttackNumber));
+		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("Hit by Animation %s"), *LastAttackAnimationName));
 	}
 
-	LastHitCharacters.insert_or_assign(otherCharacter, ComboAttackNumber);
+	LastHitCharacters.Add(otherCharacter);
 	float Damage = LightAttackDamage;
 	otherCharacter->ApplyDamage(Damage);
 }

@@ -104,6 +104,8 @@ public:
 
 	TSubclassOf<UGameplayAbility> GetAbilityByAttackType(EAttackType AttackType);
 
+	void ResetHits();
+
 protected:
 	/** Ends gameplay for this component. */
 	UFUNCTION()
@@ -112,9 +114,10 @@ protected:
 	bool AttackRequested = false;
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	void OnAnimTraceHit(ACharacter* character, const FHitResult& Hit);
+	void OnAnimTraceHit(ACharacter* character, const FHitResult& Hit, FString attackAnimationName);
 
-	int ComboAttackNumber = 0;
+	FString LastAttackAnimationName;
 
-	std::map<ABattlemageTheEndlessCharacter*, int> LastHitCharacters = std::map<ABattlemageTheEndlessCharacter*, int>();
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	TArray<ABattlemageTheEndlessCharacter*> LastHitCharacters;
 };

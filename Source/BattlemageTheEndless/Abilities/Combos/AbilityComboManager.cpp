@@ -142,6 +142,7 @@ void UAbilityComboManager::EndComboHandler()
 		if (!ComboData.Value.ActiveCombo)
 			continue;
 
+		ComboData.Key->Weapon->ResetHits();
 		ComboData.Value.ActiveCombo->EndCombo();
 		ComboData.Value.ActiveCombo = nullptr;
 	}
