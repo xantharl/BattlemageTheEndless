@@ -224,10 +224,10 @@ protected:
 	float MaxHealth = 100;
 
 	ACheckPoint* LastCheckPoint;
-
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UAbilityComboManager* ComboManager;
 
-public:		
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* LookAction;
