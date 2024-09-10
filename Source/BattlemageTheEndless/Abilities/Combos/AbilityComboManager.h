@@ -38,6 +38,9 @@ protected:
 	void EndComboHandler();
 
 	FGameplayAbilitySpecHandle* SwitchAndAdvanceCombo(APickupActor* PickupActor, UAbilityCombo* Combo);
+
+	FGameplayAbilitySpecHandle* LastActivatedAbilityHandle;
+
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivateAccess = "true"))
 	TMap<APickupActor*, FPickupCombos> Combos;

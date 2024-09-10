@@ -2,6 +2,7 @@
 
 #include "AbilityComboManager.h"
 #include "Abilities/GameplayAbility.h"
+#include <BattlemageTheEndless/Abilities/AttackBaseGameplayAbility.h>
 
 void UAbilityComboManager::AddAbilityToCombo(APickupActor* PickupActor, UGameplayAbility* Ability, FGameplayAbilitySpecHandle Handle)
 {
@@ -12,6 +13,7 @@ void UAbilityComboManager::AddAbilityToCombo(APickupActor* PickupActor, UGamepla
 		Combos.Add(PickupActor, FPickupCombos());
 	}
 
+	// populate tags to look for
 	FGameplayTagContainer comboStateTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("State.Combo")));
 	FGameplayTagContainer baseComboIdentifierTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Weapons")));
 	baseComboIdentifierTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Spells")));
@@ -121,6 +123,17 @@ void UAbilityComboManager::DelegateToWeapon(APickupActor* PickupActor, EAttackTy
 
 void UAbilityComboManager::ActivateAbilityAndResetTimer(FPickupCombos ComboData, FGameplayAbilitySpecHandle* Ability)
 {
+	// handle request to kill previous effect
+	auto abilitySpec = Cast<UAttackBaseGameplayAbility>(AbilitySystemComponent->FindAbilitySpecFromHandle(*Ability)->Ability);
+	if (abilitySpec && abilitySpec->AttackEffect.bShouldKillPreviousEffect)
+	{
+		auto lastAbilitySpec = Cast<UAttackBaseGameplayAbility>(AbilitySystemComponent->FindAbilitySpecFromHandle(*LastActivatedAbilityHandle)->Ability);
+		if (lastAbilitySpec->AttackEffect.NiagaraComponentInstance)
+			lastAbilitySpec->AttackEffect.NiagaraComponentInstance->DeactivateImmediate();
+	}
+
+	LastActivatedAbilityHandle = Ability;
+
 	if (GEngine)
 	{
 		FString abilityName = AbilitySystemComponent->FindAbilitySpecFromHandle(*Ability)->Ability->GetName();

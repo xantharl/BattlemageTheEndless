@@ -1,6 +1,5 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "AttackBaseGameplayAbility.h"
 
 void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -14,29 +13,12 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 
 	if (ProjectileClass)
 	{
-		const FRotator SpawnRotation = ActorInfo->PlayerController->PlayerCameraManager->GetCameraRotation();
-		// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-		// Spells are always in the off hand for now, so get the offhand socket
-		FName socketName = character->LeftHanded ? FName("GripRight") : FName("GripLeft");
+		SpawnProjectile(ActorInfo, character, world);
+	}
 
-		// Spawn the projectile at the attachment point of the weapon with respect for offsets
-		const FVector SpawnLocation = character->GetMesh()->GetSocketLocation(socketName) + SpawnRotation.RotateVector(character->CurrentGripOffset(socketName));
-
-		//Set Spawn Collision Handling Override
-		FActorSpawnParameters ActorSpawnParams;
-		ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-		// Spawn the projectile at the muzzle
-		auto newActor = world->SpawnActor<ABattlemageTheEndlessProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
-		newActor->GetCollisionComp()->IgnoreActorWhenMoving(character, true);
-
-		// get all actors attached to the character and ignore them
-		TArray<AActor*> attachedActors;
-		character->GetAttachedActors(attachedActors);
-		for (AActor* actor : attachedActors)
-		{
-			newActor->GetCollisionComp()->IgnoreActorWhenMoving(actor, true);
-		}
+	if (AttackEffect.NiagaraSystemClass)
+	{
+		SpawnAttackEffect(ActorInfo, character, world);
 	}
 
 	// Try and play the sound if specified
@@ -57,6 +39,76 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	CommitAbility(Handle, ActorInfo, ActivationInfo);
 	//UpdateComboState(character);
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+}
+
+void UAttackBaseGameplayAbility::SpawnAttackEffect(const FGameplayAbilityActorInfo* ActorInfo, ABattlemageTheEndlessCharacter* character, UWorld* const world)
+{
+	const FRotator SpawnRotation = ActorInfo->PlayerController->PlayerCameraManager->GetCameraRotation();
+	FName socketName = FName("cameraSocket");
+
+	// Spawn the system at the attachment point of the camera plus the rotated offset
+	FVector SpawnLocation = character->GetMesh()->GetSocketLocation(socketName)
+		+ AttackEffect.SpawnOffset.RotateAngleAxis(SpawnRotation.Yaw, FVector::ZAxisVector);
+
+	// handle bSnapToGround
+	if (AttackEffect.bSnapToGround)
+	{
+		FHitResult hitResult;
+		const FVector end = SpawnLocation - FVector(0.f, 0.f, 1000.f);
+		world->LineTraceSingleByChannel(hitResult, SpawnLocation, end, ECollisionChannel::ECC_Visibility);
+		if (hitResult.bBlockingHit)
+		{
+			SpawnLocation = hitResult.ImpactPoint;
+		}
+	}
+
+	//Set Spawn Collision Handling Override
+	FActorSpawnParameters ActorSpawnParams;
+	ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	UNiagaraComponent* newSystem;
+	if (AttackEffect.AttachSocket.IsNone())
+	{
+		newSystem = UNiagaraFunctionLibrary::SpawnSystemAtLocation(world, AttackEffect.NiagaraSystemClass->GetDefaultObject<UNiagaraSystem>(),
+			SpawnLocation, SpawnRotation, FVector(1.f), false, true, ENCPoolMethod::None, false);
+	}
+	else
+	{
+		newSystem = UNiagaraFunctionLibrary::SpawnSystemAttached(AttackEffect.NiagaraSystemClass->GetDefaultObject<UNiagaraSystem>(), character->GetMesh(),
+			AttackEffect.AttachSocket, FVector::ZeroVector, FRotator::ZeroRotator, EAttachLocation::KeepRelativeOffset, false,
+			true, ENCPoolMethod::None, false);
+	}
+
+	// todo: figure out collision handling
+
+	// kill from AttackEffect.bShouldKillPreviousEffect is handled by UAbilityComboManager::ActivateAbilityAndResetTimer
+}
+
+void UAttackBaseGameplayAbility::SpawnProjectile(const FGameplayAbilityActorInfo* ActorInfo, ABattlemageTheEndlessCharacter* character, UWorld* const world)
+{
+	const FRotator SpawnRotation = ActorInfo->PlayerController->PlayerCameraManager->GetCameraRotation();
+	// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
+	// Spells are always in the off hand for now, so get the offhand socket
+	FName socketName = character->LeftHanded ? FName("GripRight") : FName("GripLeft");
+
+	// Spawn the projectile at the attachment point of the weapon with respect for offsets
+	const FVector SpawnLocation = character->GetMesh()->GetSocketLocation(socketName) + SpawnRotation.RotateVector(character->CurrentGripOffset(socketName));
+
+	//Set Spawn Collision Handling Override
+	FActorSpawnParameters ActorSpawnParams;
+	ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	// Spawn the projectile at the muzzle
+	auto newActor = world->SpawnActor<ABattlemageTheEndlessProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+	newActor->GetCollisionComp()->IgnoreActorWhenMoving(character, true);
+
+	// get all actors attached to the character and ignore them
+	TArray<AActor*> attachedActors;
+	character->GetAttachedActors(attachedActors);
+	for (AActor* actor : attachedActors)
+	{
+		newActor->GetCollisionComp()->IgnoreActorWhenMoving(actor, true);
+	}
 }
 
 // deprecated in favor of combomanager
