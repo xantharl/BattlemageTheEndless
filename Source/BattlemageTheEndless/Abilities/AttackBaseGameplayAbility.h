@@ -24,9 +24,10 @@ struct FAttackEffectData
 	/// Effect to use for the attack
 	/// </summary>
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class UNiagaraSystem> NiagaraSystemClass;
+	UNiagaraSystem* NiagaraSystem;
 
-	UNiagaraComponent* NiagaraComponentInstance;
+	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UNiagaraComponent> NiagaraComponentInstance;
 
 	/// <summary>
 	/// Offset for spawn of the effect, calculated from the camera's position

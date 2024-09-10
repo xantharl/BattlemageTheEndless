@@ -68,26 +68,34 @@ void UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType A
 		return;
 	}
 
-	FString attackTypeName = *UEnum::GetDisplayValueAsText(AttackType).ToString();
 	FPickupCombos& pickupCombos = Combos[PickupActor];
-	// otherwise we need to find the most applicable Combo based on the AttackType and then start or advance the combo
-	TArray<UAbilityCombo*> matches = pickupCombos.Combos.FilterByPredicate(
-		[attackTypeName](const UAbilityCombo* combo) {
-			return combo->BaseComboIdentifier.GetTagName().ToString().Contains(attackTypeName); });
-
 	UAbilityCombo* combo;
 
-	// If the current attack isn't part of any combo, delegate to the weapon's input handler
-	if (matches.Num() == 0)
+	// TODO: This is kind of a hack to get spells working (since they don't have heavy/light combos)
+	if(pickupCombos.Combos.Num() == 1)
 	{
-		DelegateToWeapon(PickupActor, AttackType);
-		return;
+		combo = pickupCombos.Combos[0];
 	}
-	else if (matches.Num() > 1) 
+	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("More than one combo found for attack type %s. This is likely invalid configuration."), *attackTypeName);		
+		FString attackTypeName = *UEnum::GetDisplayValueAsText(AttackType).ToString();
+		// otherwise we need to find the most applicable Combo based on the AttackType and then start or advance the combo
+		TArray<UAbilityCombo*> matches = pickupCombos.Combos.FilterByPredicate(
+			[attackTypeName](const UAbilityCombo* combo) {
+				return combo->BaseComboIdentifier.GetTagName().ToString().Contains(attackTypeName); });
+
+		// If the current attack isn't part of any combo, delegate to the weapon's input handler
+		if (matches.Num() == 0)
+		{
+			DelegateToWeapon(PickupActor, AttackType);
+			return;
+		}
+		else if (matches.Num() > 1)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("More than one combo found for attack type %s. This is likely invalid configuration."), *attackTypeName);
+		}
+		combo = matches[0];
 	}
-	combo = matches[0];
 
 	// if we're switching combos (e.g. heavy to light) we need to replace the active combo and advance the new one
 	bool isComboSwap = pickupCombos.ActiveCombo && pickupCombos.ActiveCombo != combo;

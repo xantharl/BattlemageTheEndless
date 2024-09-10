@@ -16,7 +16,7 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		SpawnProjectile(ActorInfo, character, world);
 	}
 
-	if (AttackEffect.NiagaraSystemClass)
+	if (AttackEffect.NiagaraSystem)
 	{
 		SpawnAttackEffect(ActorInfo, character, world);
 	}
@@ -66,15 +66,14 @@ void UAttackBaseGameplayAbility::SpawnAttackEffect(const FGameplayAbilityActorIn
 	FActorSpawnParameters ActorSpawnParams;
 	ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	UNiagaraComponent* newSystem;
 	if (AttackEffect.AttachSocket.IsNone())
 	{
-		newSystem = UNiagaraFunctionLibrary::SpawnSystemAtLocation(world, AttackEffect.NiagaraSystemClass->GetDefaultObject<UNiagaraSystem>(),
+		AttackEffect.NiagaraComponentInstance = UNiagaraFunctionLibrary::SpawnSystemAtLocation(world, AttackEffect.NiagaraSystem,
 			SpawnLocation, SpawnRotation, FVector(1.f), false, true, ENCPoolMethod::None, false);
 	}
 	else
 	{
-		newSystem = UNiagaraFunctionLibrary::SpawnSystemAttached(AttackEffect.NiagaraSystemClass->GetDefaultObject<UNiagaraSystem>(), character->GetMesh(),
+		AttackEffect.NiagaraComponentInstance = UNiagaraFunctionLibrary::SpawnSystemAttached(AttackEffect.NiagaraSystem, character->GetMesh(),
 			AttackEffect.AttachSocket, FVector::ZeroVector, FRotator::ZeroRotator, EAttachLocation::KeepRelativeOffset, false,
 			true, ENCPoolMethod::None, false);
 	}
