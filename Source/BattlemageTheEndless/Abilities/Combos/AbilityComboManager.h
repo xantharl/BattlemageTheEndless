@@ -6,6 +6,8 @@
 #include "UObject/NoExportTypes.h"
 #include <BattlemageTheEndless/Pickups/PickupActor.h>
 #include "AbilityCombo.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
 #include "AbilityComboManager.generated.h"
 
 USTRUCT(BlueprintType)
@@ -40,6 +42,7 @@ protected:
 	FGameplayAbilitySpecHandle* SwitchAndAdvanceCombo(APickupActor* PickupActor, UAbilityCombo* Combo);
 
 	FGameplayAbilitySpecHandle* LastActivatedAbilityHandle;
+	TObjectPtr<UNiagaraComponent> LastAbilityNiagaraInstance;
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivateAccess = "true"))

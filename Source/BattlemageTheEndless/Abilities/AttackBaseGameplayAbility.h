@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
+#include "GameplayEffect.h"
 #include "../Pickups/BattlemageTheEndlessProjectile.h"
 #include "Kismet/GameplayStatics.h"
 #include "../Characters/BattlemageTheEndlessCharacter.h"
@@ -84,6 +85,9 @@ public:
 	/** AnimMontage to play each time we fire */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	UAnimMontage* FireAnimation;	
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true"))
+	TArray<TSubclassOf<UGameplayEffect>> EffectsToApply;
 
 	TObjectPtr<AActor> Owner;
 

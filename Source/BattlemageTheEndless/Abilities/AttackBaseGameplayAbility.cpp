@@ -21,11 +21,26 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		SpawnAttackEffect(ActorInfo, character, world);
 	}
 
+	for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
+	{
+		FGameplayEffectContextHandle context = character->AbilitySystemComponent->MakeEffectContext();
+		context.AddSourceObject(character);
+		context.AddInstigator(character, ActorInfo->AvatarActor.Get());
+		context.AddActors({ character });
+
+		FGameplayEffectSpecHandle specHandle = character->AbilitySystemComponent->MakeOutgoingSpec(effect, 1.f, context);
+		if (specHandle.IsValid())
+		{
+			auto handle = character->AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
+		}
+	}
+
 	// Try and play the sound if specified
 	if (FireSound)
 		UGameplayStatics::PlaySoundAtLocation(this, FireSound, character->GetActorLocation());
 
 	// Try and play a firing animation if specified
+	// TODO: Make this use AbilitySystemComponent->PlayMontage
 	auto animInstance = character->GetMesh()->GetAnimInstance();
 	if (FireAnimation && animInstance)
 	{
