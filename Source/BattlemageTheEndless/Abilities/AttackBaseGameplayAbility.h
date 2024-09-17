@@ -16,46 +16,6 @@
 
 class UNiagaraSystem;
 
-USTRUCT(BlueprintType)
-struct FAttackEffectData
-{
-	GENERATED_BODY()
-
-	/// <summary>
-	/// Effect to use for the attack
-	/// </summary>
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true"))
-	UNiagaraSystem* NiagaraSystem;
-
-	UPROPERTY(EditAnywhere, Instanced, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UNiagaraComponent> NiagaraComponentInstance;
-
-	/// <summary>
-	/// Offset for spawn of the effect, calculated from the camera's position
-	/// </summary>
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true"))
-	FVector SpawnOffset = FVector(500.f, 0.f, 0.f);
-
-	/// <summary>
-	/// Determines whether the effect should spawn at the offset location or on the ground below the offset location
-	/// </summary>
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true"))
-	bool bSnapToGround = false;
-
-	/// <summary>
-	/// Optional attachment socket if the effect should be attached to the character
-	/// </summary>
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true"))
-	FName AttachSocket;
-
-	/// <summary>
-	/// Determines whether the effect should kill the previous effect
-	///		This is handled in UAbilityComboManager::ActivateAbilityAndResetTimer
-	/// </summary>
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true"))
-	bool bShouldKillPreviousEffect = false;
-};
-
 /**
  * 
  */
@@ -74,9 +34,6 @@ public:
 	/** Projectile class to spawn */
 	UPROPERTY(EditDefaultsOnly, Category = Projectile)
 	TSubclassOf<class ABattlemageTheEndlessProjectile> ProjectileClass;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true"))
-	FAttackEffectData AttackEffect;
 
 	/** Sound to play each time we fire */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)

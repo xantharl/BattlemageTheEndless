@@ -16,11 +16,7 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		SpawnProjectile(ActorInfo, character, world);
 	}
 
-	if (AttackEffect.NiagaraSystem)
-	{
-		SpawnAttackEffect(ActorInfo, character, world);
-	}
-
+	// Apply effects to the character, these will in turn spawn any configured cues (Particles and/or sound)
 	for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
 	{
 		FGameplayEffectContextHandle context = character->AbilitySystemComponent->MakeEffectContext();
@@ -54,48 +50,6 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	CommitAbility(Handle, ActorInfo, ActivationInfo);
 	//UpdateComboState(character);
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
-}
-
-void UAttackBaseGameplayAbility::SpawnAttackEffect(const FGameplayAbilityActorInfo* ActorInfo, ABattlemageTheEndlessCharacter* character, UWorld* const world)
-{
-	const FRotator SpawnRotation = ActorInfo->PlayerController->PlayerCameraManager->GetCameraRotation();
-	FName socketName = FName("cameraSocket");
-
-	// Spawn the system at the attachment point of the camera plus the rotated offset
-	FVector SpawnLocation = character->GetMesh()->GetSocketLocation(socketName)
-		+ AttackEffect.SpawnOffset.RotateAngleAxis(SpawnRotation.Yaw, FVector::ZAxisVector);
-
-	// handle bSnapToGround
-	if (AttackEffect.bSnapToGround)
-	{
-		FHitResult hitResult;
-		const FVector end = SpawnLocation - FVector(0.f, 0.f, 1000.f);
-		world->LineTraceSingleByChannel(hitResult, SpawnLocation, end, ECollisionChannel::ECC_Visibility);
-		if (hitResult.bBlockingHit)
-		{
-			SpawnLocation = hitResult.ImpactPoint;
-		}
-	}
-
-	//Set Spawn Collision Handling Override
-	FActorSpawnParameters ActorSpawnParams;
-	ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	if (AttackEffect.AttachSocket.IsNone())
-	{
-		AttackEffect.NiagaraComponentInstance = UNiagaraFunctionLibrary::SpawnSystemAtLocation(world, AttackEffect.NiagaraSystem,
-			SpawnLocation, SpawnRotation, FVector(1.f), false, true, ENCPoolMethod::None, false);
-	}
-	else
-	{
-		AttackEffect.NiagaraComponentInstance = UNiagaraFunctionLibrary::SpawnSystemAttached(AttackEffect.NiagaraSystem, character->GetMesh(),
-			AttackEffect.AttachSocket, FVector::ZeroVector, FRotator::ZeroRotator, EAttachLocation::KeepRelativeOffset, false,
-			true, ENCPoolMethod::None, false);
-	}
-
-	// todo: figure out collision handling
-
-	// kill from AttackEffect.bShouldKillPreviousEffect is handled by UAbilityComboManager::ActivateAbilityAndResetTimer
 }
 
 void UAttackBaseGameplayAbility::SpawnProjectile(const FGameplayAbilityActorInfo* ActorInfo, ABattlemageTheEndlessCharacter* character, UWorld* const world)

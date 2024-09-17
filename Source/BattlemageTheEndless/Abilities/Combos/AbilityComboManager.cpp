@@ -131,15 +131,6 @@ void UAbilityComboManager::DelegateToWeapon(APickupActor* PickupActor, EAttackTy
 
 void UAbilityComboManager::ActivateAbilityAndResetTimer(FPickupCombos ComboData, FGameplayAbilitySpecHandle* Ability)
 {
-	// handle request to kill previous effect
-	//auto abilitySpec = Cast<UAttackBaseGameplayAbility>(AbilitySystemComponent->FindAbilitySpecFromHandle(*Ability)->Ability);
-	//if (abilitySpec && abilitySpec->AttackEffect.bShouldKillPreviousEffect)
-	//{
-	//	auto lastAbilitySpec = Cast<UAttackBaseGameplayAbility>(AbilitySystemComponent->FindAbilitySpecFromHandle(*LastActivatedAbilityHandle)->Ability);
-	//	if (lastAbilitySpec->AttackEffect.NiagaraComponentInstance)
-	//		lastAbilitySpec->AttackEffect.NiagaraComponentInstance->DeactivateImmediate();
-	//}
-
 	LastActivatedAbilityHandle = Ability;
 
 	bool activated = AbilitySystemComponent->TryActivateAbility(*Ability, true);
@@ -154,13 +145,6 @@ void UAbilityComboManager::ActivateAbilityAndResetTimer(FPickupCombos ComboData,
 	if (!activated)
 		return;
 
-	auto abilitySpec = Cast<UAttackBaseGameplayAbility>(AbilitySystemComponent->FindAbilitySpecFromHandle(*Ability)->Ability);
-	if (abilitySpec->AttackEffect.NiagaraComponentInstance)
-	{
-		LastAbilityNiagaraInstance = abilitySpec->AttackEffect.NiagaraComponentInstance;
-	}
-	// add a gameplay cue to spawn the effect
-	//AbilitySystemComponent->AddGameplayCue(FGameplayTag(FName("GameplayCue.NiagaraSpawn")), *AbilitySystemComponent->FindAbilitySpecFromHandle(*Ability)->GetLevel());
 	// intentionally overwrite the timer handle each time we advance the combo
 	GetWorld()->GetTimerManager().SetTimer(ComboTimerHandle, [&, ComboData] {EndComboHandler(); }, ComboExpiryTime, false);
 }
