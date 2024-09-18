@@ -385,6 +385,23 @@ void ABattlemageTheEndlessCharacter::EquipSpellClass(int slotNumber)
 	SetActivePickup(ActiveSpellClass);
 }
 
+bool ABattlemageTheEndlessCharacter::TryRemovePreviousAbilityEffect(AGameplayCueNotify_Actor* Notify)
+{
+	if (!AbilitySystemComponent)
+		return false;
+
+	// identify which effect spawned the provided cue
+	//auto EffectTag = Notify->DeriveGameplayCueTagFromAssetName();
+
+	//// Get active gameplay effects
+	//TArray<FActiveGameplayEffectHandle> ActiveEffects = AbilitySystemComponent->GetActiveEffects(FGameplayEffectQuery());
+
+	//// remove the ability effect
+	//AbilitySystemComponent->RemoveActiveGameplayEffect(ActiveEffects[0]);
+
+	return true;
+}
+
 void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D

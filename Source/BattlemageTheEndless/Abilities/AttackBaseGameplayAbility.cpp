@@ -49,7 +49,31 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 
 	CommitAbility(Handle, ActorInfo, ActivationInfo);
 	//UpdateComboState(character);
-	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+	// find longest duration gameplay effect if any exist
+	float longestDuration = 0.f;
+	for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
+	{
+		UGameplayEffect* effectCDO = effect.GetDefaultObject();
+		if (effectCDO->DurationPolicy == EGameplayEffectDurationType::HasDuration)
+		{
+			float duration;
+			effectCDO->DurationMagnitude.GetStaticMagnitudeIfPossible(0, duration, nullptr);
+			longestDuration = FMath::Max(duration, longestDuration);
+		}
+	}
+
+	// keep the ability alive if any effects have durations
+	// TODO: Account for infinite effects
+	if (longestDuration > 0.001f)
+	{
+		// set a timer to end the ability after the longest duration of any effect
+		FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UAttackBaseGameplayAbility::EndAbility, Handle, ActorInfo, ActivationInfo, true, true);
+		world->GetTimerManager().SetTimer(EndTimerHandle, TimerDelegate, longestDuration, false);
+	}
+	else
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+	}
 }
 
 void UAttackBaseGameplayAbility::SpawnProjectile(const FGameplayAbilityActorInfo* ActorInfo, ABattlemageTheEndlessCharacter* character, UWorld* const world)
@@ -97,4 +121,23 @@ void UAttackBaseGameplayAbility::UpdateComboState(ABattlemageTheEndlessCharacter
 		FGameplayTag StateComboTag = ownedComboTags.GetByIndex(0);
 		character->AbilitySystemComponent->UpdateTagMap(StateComboTag, 1);
 	}
+}
+
+void UAttackBaseGameplayAbility::CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility)
+{
+	// if we have a timer running to end the ability, clear it
+	UWorld* const world = GetWorld();
+	if (world)
+	{
+		world->GetTimerManager().ClearTimer(EndTimerHandle);
+	}
+
+	// TODO: Handle this unsafe cast (OwnerActor can be null)
+	ABattlemageTheEndlessCharacter* character = Cast<ABattlemageTheEndlessCharacter>(ActorInfo->OwnerActor);
+	for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
+	{
+		character->AbilitySystemComponent->RemoveActiveGameplayEffectBySourceEffect(effect, character->AbilitySystemComponent, 1);
+	}
+
+	Super::CancelAbility(Handle, ActorInfo, ActivationInfo, bReplicateCancelAbility);
 }

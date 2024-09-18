@@ -46,6 +46,12 @@ class BATTLEMAGETHEENDLESS_API AGameplayCueNotify_ActorWNiagara : public AGamepl
 public:
 	AGameplayCueNotify_ActorWNiagara();
 
+	/// <summary>
+	/// This component is necessary so that we can move the attached child components relative to it
+	/// </summary>
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Niagara, meta = (AllowPrivate))
+	USceneComponent* SceneRoot;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Niagara, meta = (AllowPrivate))
 	UNiagaraComponent* NiagaraConfig;
 
@@ -54,5 +60,11 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivate))
 	FAttackEffectData AttackEffect;
-	virtual void TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction) override;
+
+	virtual void HandleGameplayCue(AActor* MyTarget, EGameplayCueEvent::Type EventType, const FGameplayCueParameters& Parameters) override;
+
+	void TryDestroyNiagaraInstance();
+	
+protected:
+	void TryCreateNiagaraInstance();
 };

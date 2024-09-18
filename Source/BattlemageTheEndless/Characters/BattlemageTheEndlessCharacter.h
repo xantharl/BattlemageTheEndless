@@ -7,6 +7,7 @@
 #include "Logging/LogMacros.h"
 #include "GameFramework/CharacterMovementComponent.h" 
 #include "BMageCharacterMovementComponent.h"
+#include "GameplayCueNotify_Actor.h"
 #include <GameFramework/SpringArmComponent.h>
 #include "../Pickups/TP_WeaponComponent.h"
 #include "../Helpers/Traces.h"
@@ -263,6 +264,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = Equipment)
 	void EquipSpellClass(int slotNumber);
+
+	// Method called by Niagara specific impl of actor gameplay cue
+	bool TryRemovePreviousAbilityEffect(AGameplayCueNotify_Actor* Notify);
 
 protected:
 	/** Called for movement input */
