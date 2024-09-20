@@ -10,6 +10,15 @@
 #include "GameFramework/Character.h"
 #include "GameplayCueNotify_ActorWNiagara.generated.h"
 
+UENUM()
+enum class EAttachType : uint8
+{
+	None UMETA(DisplayName = "None"),
+	Character UMETA(DisplayName = "Character"),
+	PrimaryWeapon UMETA(DisplayName = "PrimaryWeapon"),
+	SecondaryWeapon UMETA(DisplayName = "SecondaryWeapon")
+};
+
 USTRUCT(BlueprintType)
 struct FAttackEffectData
 {
@@ -22,7 +31,13 @@ struct FAttackEffectData
 	bool bSnapToGround = false;
 
 	/// <summary>
-	/// Optional attachment socket if the effect should be attached to the character
+	/// Determines which object to attach to, if any
+	/// </summary>
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true"))
+	EAttachType AttachType = EAttachType::None;
+
+	/// <summary>
+	/// Specifies the attachment point for the effect, ignored if attach type is none
 	/// </summary>
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true"))
 	FName AttachSocket;

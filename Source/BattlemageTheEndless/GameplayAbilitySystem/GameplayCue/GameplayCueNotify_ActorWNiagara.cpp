@@ -69,7 +69,7 @@ void AGameplayCueNotify_ActorWNiagara::TryCreateNiagaraInstance()
 			UE_LOG(LogTemp, Warning, TEXT("No pawn found in AGameplayCueNotify_ActorWNiagara::TickActor"));
 			return;
 		}
-		auto character = Cast<ACharacter>(world->GetFirstPlayerController()->AcknowledgedPawn);
+		auto character = Cast<ABattlemageTheEndlessCharacter>(world->GetFirstPlayerController()->AcknowledgedPawn);
 		if (!character) {
 			UE_LOG(LogTemp, Warning, TEXT("No character found in AGameplayCueNotify_ActorWNiagara::TickActor"));
 			return;
@@ -100,17 +100,30 @@ void AGameplayCueNotify_ActorWNiagara::TryCreateNiagaraInstance()
 		FActorSpawnParameters ActorSpawnParams;
 		ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		if (AttackEffect.AttachSocket.IsNone())
+		if (AttackEffect.AttachType == EAttachType::None)
 		{
 			NiagaraInstance = UNiagaraFunctionLibrary::SpawnSystemAtLocation(world, NiagaraSystem,
 				SpawnLocation, SpawnRotation, NiagaraConfig->GetRelativeTransform().GetScale3D(), false, true, ENCPoolMethod::None, false);
+			return;
 		}
-		else
+
+		if (AttackEffect.AttachSocket.IsNone())
 		{
-			NiagaraInstance = UNiagaraFunctionLibrary::SpawnSystemAttached(NiagaraSystem, character->GetMesh(),
-				AttackEffect.AttachSocket, FVector::ZeroVector, SpawnRotation, EAttachLocation::KeepRelativeOffset, false,
-				true, ENCPoolMethod::None, false);
+			UE_LOG(LogTemp, Warning, TEXT("AttachSocket is not set for GameplayCue %s, system will not be spawned"), *GetName());
+			return;
 		}
+
+		USkeletalMeshComponent* attachToComponent;
+		if (AttackEffect.AttachType == EAttachType::Character)
+			attachToComponent = character->GetMesh();
+		else
+			attachToComponent = character->GetWeapon(
+				AttackEffect.AttachType == EAttachType::PrimaryWeapon ? EquipSlot::Primary : EquipSlot::Secondary)->Weapon;
+
+		NiagaraInstance = UNiagaraFunctionLibrary::SpawnSystemAttached(NiagaraSystem, attachToComponent,
+			AttackEffect.AttachSocket, FVector::ZeroVector, SpawnRotation, EAttachLocation::KeepRelativeOffset, 
+			false,true, ENCPoolMethod::None, false);
+		
 	}
 }
 

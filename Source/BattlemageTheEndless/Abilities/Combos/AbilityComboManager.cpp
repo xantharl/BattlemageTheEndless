@@ -79,7 +79,7 @@ void UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType A
 		}
 		else if (matches.Num() > 1)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("More than one combo found for attack type %s. This is likely invalid configuration."), *attackTypeName);
+			UE_LOG(LogTemp, Warning, TEXT("More than one combo found for attack type %s. This is invalid configuration."), *attackTypeName);
 		}
 		combo = matches[0];
 	}
@@ -104,7 +104,20 @@ void UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType A
 	if (!toActivate)
 		return;
 
-	ActivateAbilityAndResetTimer(pickupCombos, toActivate);
+	// we've only gotten this far if we're in a combo, so we can assume the ability is part of a combo
+	// if there is an ongoing ability, queue the next one
+	auto ongoingEffects = AbilitySystemComponent->GetActiveGameplayEffects();
+	auto query = FGameplayEffectQuery::MakeQuery_MatchAnyOwningTags(FGameplayTagContainer(FGameplayTag::RequestGameplayTag("State.Combo")));
+	if (ongoingEffects.GetNumGameplayEffects() > 0 && ongoingEffects.GetActiveEffects(query).Num() > 0)
+	{
+		NextAbilityHandle = toActivate;
+		auto remainingTime = FMath::Max(AbilitySystemComponent->GetActiveEffectsDuration(query));
+		FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UAbilityComboManager::ActivateAbilityAndResetTimer, *toActivate);
+		GetWorld()->GetTimerManager().SetTimer(QueuedAbilityTimer, TimerDelegate, remainingTime, false);
+	}
+
+	// otherwise immediately execute the ability
+	ActivateAbilityAndResetTimer(*toActivate);
 }
 
 // TODO: Separate the logic for spell and melee
@@ -123,24 +136,29 @@ void UAbilityComboManager::DelegateToWeapon(APickupActor* PickupActor, EAttackTy
 		AbilitySystemComponent->FindAbilitySpecFromClass(abilityClass)->Handle, true);
 }
 
-void UAbilityComboManager::ActivateAbilityAndResetTimer(FPickupCombos ComboData, FGameplayAbilitySpecHandle* Ability)
+void UAbilityComboManager::ActivateAbilityAndResetTimer(FGameplayAbilitySpecHandle Ability)
 {
-	LastActivatedAbilityHandle = Ability;
+	// This is for the case where we entered this function via the queued ability timer
+	if (NextAbilityHandle)
+		NextAbilityHandle = nullptr;
 
-	bool activated = AbilitySystemComponent->TryActivateAbility(*Ability, true);
-	auto spec = AbilitySystemComponent->FindAbilitySpecFromHandle(*Ability);
+	LastActivatedAbilityHandle = &Ability;
+
+	bool activated = AbilitySystemComponent->TryActivateAbility(Ability, true);
+	auto spec = AbilitySystemComponent->FindAbilitySpecFromHandle(Ability);
 
 	if (GEngine && spec && spec->Ability)
 	{
-		FString abilityName = AbilitySystemComponent->FindAbilitySpecFromHandle(*Ability)->Ability->GetName();
-		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("Ability %s activated? %s"), *abilityName, *FString(activated ? "true": "false")));
+		FString abilityName = AbilitySystemComponent->FindAbilitySpecFromHandle(Ability)->Ability->GetName();
+		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("Ability %s activated? %s"), 
+			*abilityName, *FString(activated ? "true": "false")));
 	}
 
 	if (!activated)
 		return;
 
 	// intentionally overwrite the timer handle each time we advance the combo
-	GetWorld()->GetTimerManager().SetTimer(ComboTimerHandle, [&, ComboData] {EndComboHandler(); }, ComboExpiryTime, false);
+	GetWorld()->GetTimerManager().SetTimer(ComboTimerHandle, [&] {EndComboHandler(); }, ComboExpiryTime, false);
 }
 
 void UAbilityComboManager::EndComboHandler() 

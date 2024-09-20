@@ -260,7 +260,7 @@ public:
 	double JumpCooldown = 0.05;
 
 	UFUNCTION(BlueprintCallable, Category = Weapon)
-	UTP_WeaponComponent* GetWeapon(EquipSlot SlotType);
+	APickupActor* GetWeapon(EquipSlot SlotType);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Inventory, meta = (AllowPrivateAccess = "true"))
 	bool LeftHanded = false;

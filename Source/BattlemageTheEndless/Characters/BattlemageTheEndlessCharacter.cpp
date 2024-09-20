@@ -373,7 +373,7 @@ void ABattlemageTheEndlessCharacter::LaunchJump()
 
 FVector ABattlemageTheEndlessCharacter::CurrentGripOffset(FName SocketName)
 {
-	return GetWeapon(LeftHanded ? EquipSlot::Primary : EquipSlot::Secondary)->MuzzleOffset;
+	return GetWeapon(LeftHanded ? EquipSlot::Primary : EquipSlot::Secondary)->Weapon->MuzzleOffset;
 }
 
 void ABattlemageTheEndlessCharacter::EquipSpellClass(int slotNumber)
@@ -603,15 +603,15 @@ void ABattlemageTheEndlessCharacter::SelectActiveSpell(bool nextOrPrevious)
 	ActiveSpellClass->Weapon->NextOrPreviousSpell(nextOrPrevious);
 }
 
-UTP_WeaponComponent* ABattlemageTheEndlessCharacter::GetWeapon(EquipSlot SlotType)
+APickupActor* ABattlemageTheEndlessCharacter::GetWeapon(EquipSlot SlotType)
 {
 	if (LeftHanded)
 	{
-		return SlotType == EquipSlot::Primary ? LeftHandWeapon->Weapon : RightHandWeapon->Weapon;
+		return SlotType == EquipSlot::Primary ? LeftHandWeapon : RightHandWeapon;
 	}
 	else
 	{
-		return SlotType == EquipSlot::Primary ? RightHandWeapon->Weapon : LeftHandWeapon->Weapon;
+		return SlotType == EquipSlot::Primary ? RightHandWeapon : LeftHandWeapon;
 	}
 	
 }

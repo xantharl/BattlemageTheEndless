@@ -35,7 +35,8 @@ protected:
 
 	int CurrentComboNumber = 0;
 
-	void ActivateAbilityAndResetTimer(FPickupCombos ComboData, FGameplayAbilitySpecHandle* Ability);
+	UFUNCTION()
+	void ActivateAbilityAndResetTimer(FGameplayAbilitySpecHandle Ability);
 
 	void EndComboHandler();
 
@@ -43,6 +44,14 @@ protected:
 
 	FGameplayAbilitySpecHandle* LastActivatedAbilityHandle;
 	TObjectPtr<UNiagaraComponent> LastAbilityNiagaraInstance;
+
+	/// <summary>
+	/// The combo manager allows for an action queue of 1, this is used in the event that input
+	///  is received for an ability while one is ongoing
+	/// </summary>
+	FGameplayAbilitySpecHandle* NextAbilityHandle;
+
+	FTimerHandle QueuedAbilityTimer;
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivateAccess = "true"))
