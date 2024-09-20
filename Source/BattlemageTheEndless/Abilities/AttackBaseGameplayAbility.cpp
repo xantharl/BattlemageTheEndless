@@ -2,6 +2,54 @@
 
 #include "AttackBaseGameplayAbility.h"
 
+FGameplayTag UAttackBaseGameplayAbility::GetAbilityName()
+{
+	FGameplayTagContainer baseComboIdentifierTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Weapons")));
+	baseComboIdentifierTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Spells")));
+
+	// otherwise identify this ability's BaseComboIdentifier
+	auto tags = AbilityTags.Filter(baseComboIdentifierTags);
+	if (tags.Num() > 0)
+	{
+		return tags.GetByIndex(0);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Ability %s has no Weapons or Spells tag, returning empty tag"), *GetName());
+		return FGameplayTag();
+	}
+}
+
+bool UAttackBaseGameplayAbility::HasComboTag()
+{
+	// populate tags to look for
+	FGameplayTagContainer comboStateTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("State.Combo")));
+	auto comboTags = AbilityTags.Filter(comboStateTags);
+
+	if (comboTags.Num() > 1)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Ability %s has more than one State.Combo tag. This is not supported."), *GetName());
+		return false;
+	}
+
+	return comboTags.Num() > 0;
+}
+
+bool UAttackBaseGameplayAbility::IsFirstInCombo()
+{
+	// populate tags to look for
+	FGameplayTagContainer comboStateTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("State.Combo")));
+	auto comboTags = AbilityTags.Filter(comboStateTags);
+
+	if (comboTags.Num() > 1)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Ability %s has more than one State.Combo tag. This is not supported."), *GetName());
+		return false;
+	}
+
+	return comboTags.Num() > 0 && comboTags.First().ToString().EndsWith(".1");
+}
+
 void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	UWorld* const world = GetWorld();

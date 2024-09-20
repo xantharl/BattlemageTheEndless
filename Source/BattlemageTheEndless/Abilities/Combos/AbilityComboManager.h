@@ -49,7 +49,7 @@ public:
 	TMap<APickupActor*, FPickupCombos> Combos;
 
 	// Adds a single ability to a combo, or creates a new combo if the ability is the first in a combo
-	void AddAbilityToCombo(APickupActor* PickupActor, UGameplayAbility* Ability, FGameplayAbilitySpecHandle Handle);
+	void AddAbilityToCombo(APickupActor* PickupActor, UAttackBaseGameplayAbility* Ability, FGameplayAbilitySpecHandle Handle);
 
 	void ProcessInput(APickupActor* PickupActor, EAttackType AttackType);
 

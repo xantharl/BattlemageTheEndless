@@ -48,6 +48,11 @@ public:
 
 	TObjectPtr<AActor> Owner;
 
+	FGameplayTag GetAbilityName();
+	bool HasComboTag();
+
+	bool IsFirstInCombo();
+
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData);
 	void SpawnProjectile(const FGameplayAbilityActorInfo* ActorInfo, ABattlemageTheEndlessCharacter* character, UWorld* const world);
 	void UpdateComboState(ABattlemageTheEndlessCharacter* character);

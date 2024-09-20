@@ -4,7 +4,7 @@
 #include "Abilities/GameplayAbility.h"
 #include <BattlemageTheEndless/Abilities/AttackBaseGameplayAbility.h>
 
-void UAbilityComboManager::AddAbilityToCombo(APickupActor* PickupActor, UGameplayAbility* Ability, FGameplayAbilitySpecHandle Handle)
+void UAbilityComboManager::AddAbilityToCombo(APickupActor* PickupActor, UAttackBaseGameplayAbility* Ability, FGameplayAbilitySpecHandle Handle)
 {
 	// We build combos for each pickup the first time it is equipped and assume they will not change during gameplay
 	// TODO: If we want to allow for dynamic combos, we will need an event this can subscribe to for a rebuild
@@ -13,29 +13,13 @@ void UAbilityComboManager::AddAbilityToCombo(APickupActor* PickupActor, UGamepla
 		Combos.Add(PickupActor, FPickupCombos());
 	}
 
-	// populate tags to look for
-	FGameplayTagContainer comboStateTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("State.Combo")));
-	FGameplayTagContainer baseComboIdentifierTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Weapons")));
-	baseComboIdentifierTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Spells")));
-
-	// create or add to a combo as needed
-	auto ownedComboStateTags = Ability->AbilityTags.Filter(comboStateTags);
-		
 	// nothing to do if this ability isn't part of a combo
-	if (ownedComboStateTags.Num() == 0)
+	if (!Ability->HasComboTag())
 		return;
-	else if (ownedComboStateTags.Num() > 1)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Ability %s has more than one State.Combo tag. This is not supported."), *Ability->GetName());
-		return;
-	}
-
-	// otherwise identify this ability's BaseComboIdentifier
-	auto ownedBaseComboTags = Ability->AbilityTags.Filter(baseComboIdentifierTags);
 
 	// it is expected that the resulting tag will be something like Weapons.Sword.LightAttack.1
 	// meaning we want the direct parent to be the BaseComboIdentifier
-	FGameplayTag parentTag = ownedBaseComboTags.First().GetGameplayTagParents().GetByIndex(1);
+	FGameplayTag parentTag = Ability->GetAbilityName().GetGameplayTagParents().GetByIndex(1);
 	UAbilityCombo* combo = nullptr;
 	if (Combos[PickupActor].Combos.Num() > 0)
 	{
@@ -61,12 +45,15 @@ void UAbilityComboManager::AddAbilityToCombo(APickupActor* PickupActor, UGamepla
 
 void UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType AttackType)
 {
-	// If we aren't aware of any combos for this pickup, delegate to the weapon's input handler
-	if (!Combos.Contains(PickupActor))
+	// If we aren't aware of any combos for this pickup or the weapon's active ability has no combos, delegate to the weapon
+	if (!Combos.Contains(PickupActor) || PickupActor->Weapon->ActiveAbility 
+		&& !PickupActor->Weapon->ActiveAbility->GetDefaultObject<UAttackBaseGameplayAbility>()->HasComboTag())
 	{
 		DelegateToWeapon(PickupActor, AttackType);
 		return;
 	}
+
+	// if the active ability does not have a combo, delegate to the weapon's input handler
 
 	FPickupCombos& pickupCombos = Combos[PickupActor];
 	UAbilityCombo* combo;
@@ -120,11 +107,18 @@ void UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType A
 	ActivateAbilityAndResetTimer(pickupCombos, toActivate);
 }
 
+// TODO: Separate the logic for spell and melee
 void UAbilityComboManager::DelegateToWeapon(APickupActor* PickupActor, EAttackType AttackType)
 {
-	auto abilityClass = PickupActor->Weapon->GetAbilityByAttackType(AttackType);
+	TSubclassOf<UGameplayAbility> abilityClass;
+	if (PickupActor->Weapon->SlotType == EquipSlot::Secondary)
+		abilityClass = PickupActor->Weapon->ActiveAbility;
+	else
+		abilityClass = PickupActor->Weapon->GetAbilityByAttackType(AttackType);
+	
 	if (!abilityClass)
 		return;
+
 	AbilitySystemComponent->TryActivateAbility(
 		AbilitySystemComponent->FindAbilitySpecFromClass(abilityClass)->Handle, true);
 }

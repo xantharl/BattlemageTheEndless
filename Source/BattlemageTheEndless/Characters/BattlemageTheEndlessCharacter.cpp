@@ -14,6 +14,7 @@
 #include <GameFramework/FloatingPawnMovement.h>
 #include <format>
 #include <Kismet/GameplayStatics.h>
+#include <BattlemageTheEndless/Abilities/AttackBaseGameplayAbility.h>
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 //////////////////////////////////////////////////////////////////////////
@@ -256,6 +257,9 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 		EnhancedInputComponent->BindAction(SpellClassTwoAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::EquipSpellClass, 2);
 		EnhancedInputComponent->BindAction(SpellClassThreeAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::EquipSpellClass, 3);
 		EnhancedInputComponent->BindAction(SpellClassFourAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::EquipSpellClass, 4);
+
+		EnhancedInputComponent->BindAction(NextSpellAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::SelectActiveSpell, true);
+		EnhancedInputComponent->BindAction(PreviousSpellAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::SelectActiveSpell, false);
 
 		// Casting Related Actions
 		EnhancedInputComponent->BindAction(CastingModeAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::ToggleCastingMode);
@@ -509,6 +513,7 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 	APickupActor* currentItem = isRightHand ? RightHandWeapon : LeftHandWeapon;
 	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(Controller->InputComponent);
 
+	// if there is an equipped item in the requested slot, unequip it and remove abilities it grants
 	if (currentItem)
 	{
 		// Hide the weapon being removed from active status
@@ -550,7 +555,13 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 	{
 		FGameplayAbilitySpecHandle handle = AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
 		EquipmentAbilityHandles[pickup->Weapon->SlotType].Handles.Add(handle);
-		ComboManager->AddAbilityToCombo(pickup, ability->GetDefaultObject<UGameplayAbility>(), handle);
+		ComboManager->AddAbilityToCombo(pickup, ability->GetDefaultObject<UAttackBaseGameplayAbility>(), handle);
+	}
+
+	// Set the active spell to the first granted ability if it is not already set and the item is a spell focus
+	if (pickup->Weapon->SlotType == EquipSlot::Secondary && pickup->Weapon->GrantedAbilities.Num() > 0 && !pickup->Weapon->ActiveAbility)
+	{
+		pickup->Weapon->ActiveAbility = pickup->Weapon->GrantedAbilities[0];
 	}
 
 	// add the mapping context and bindings if applicable
@@ -578,6 +589,14 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 	{
 		return;
 	}*/
+}
+
+void ABattlemageTheEndlessCharacter::SelectActiveSpell(bool nextOrPrevious)
+{
+	if (!ActiveSpellClass || !ActiveSpellClass->Weapon)
+		return;
+
+	ActiveSpellClass->Weapon->NextOrPreviousSpell(nextOrPrevious);
 }
 
 UTP_WeaponComponent* ABattlemageTheEndlessCharacter::GetWeapon(EquipSlot SlotType)

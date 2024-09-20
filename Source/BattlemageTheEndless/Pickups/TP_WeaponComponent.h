@@ -28,6 +28,7 @@ UENUM()
 enum class EquipSlot : uint8
 {
 	Primary UMETA(DisplayName = "Primary"),
+	// Secondary is unanimous with spells for now
 	Secondary UMETA(DisplayName = "Secondary")
 };
 
@@ -48,6 +49,10 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
 	TArray<TSubclassOf<class UGameplayAbility>> GrantedAbilities;
+
+	// used for weapons which have multiple primary abilities (spells)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
+	TSubclassOf<class UAttackBaseGameplayAbility> ActiveAbility;
 
 	/** Delegate to whom anyone can subscribe to receive this event */
 	UPROPERTY(BlueprintAssignable, Category = "Interaction")
@@ -105,6 +110,8 @@ public:
 	TSubclassOf<UGameplayAbility> GetAbilityByAttackType(EAttackType AttackType);
 
 	void ResetHits();
+
+	void NextOrPreviousSpell(bool nextOrPrevious);
 
 protected:
 	/** Ends gameplay for this component. */

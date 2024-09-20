@@ -158,6 +158,16 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* SpellClassFourAction;
 
+	// These next two actions are placeholders until I get a final spell selection system in place
+
+	// Select the next spell in the equipped class
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* NextSpellAction;
+
+	// Select the previous spell in the equipped class
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* PreviousSpellAction;
+
 	UPROPERTY(EditAnywhere, Category = Sound)
 	class USoundWave* JumpLandingSound;
 
@@ -280,6 +290,8 @@ protected:
 	void RedirectVelocityToLookDirection(bool wallrunEnded);
 
 	void SetActivePickup(APickupActor* pickup);
+	// True = next, False = previous
+	void SelectActiveSpell(bool nextOrPrevious);
 
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;

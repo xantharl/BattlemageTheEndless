@@ -9,6 +9,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "Abilities/GameplayAbility.h"
 #include "../Characters/BattlemageTheEndlessCharacter.h"
+#include "../Abilities/AttackBaseGameplayAbility.h"
 
 // Sets default values for this component's properties
 UTP_WeaponComponent::UTP_WeaponComponent()
@@ -17,6 +18,7 @@ UTP_WeaponComponent::UTP_WeaponComponent()
 	MuzzleOffset = FVector(10.0f, 0.0f, 10.0f);
 }
 
+// TODO: Split out melee and spells, the use cases are too divergent
 TSubclassOf<UGameplayAbility> UTP_WeaponComponent::GetAbilityByAttackType(EAttackType AttackType)
 {
 	// if there's only 1 ability, return it
@@ -50,6 +52,46 @@ void UTP_WeaponComponent::ResetHits()
 {
 	LastHitCharacters.Empty();
 	LastAttackAnimationName = "";
+}
+
+void UTP_WeaponComponent::NextOrPreviousSpell(bool nextOrPrevious)
+{
+	if (SlotType != EquipSlot::Secondary)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Only secondary weapons can switch spells"));
+		return;
+	}
+
+	// find the index of the current ActiveAbility in GrantedAbilities
+	int ActiveAbilityIndex = GrantedAbilities.Find((TSubclassOf<UGameplayAbility>)ActiveAbility);
+	if (ActiveAbilityIndex == INDEX_NONE)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ActiveAbility not found in GrantedAbilities"));
+		return;
+	}
+
+	UAttackBaseGameplayAbility* abilityDefaultObject;
+	// select the next or previous spell, wrapping around the array and continuing if the ability is part of a combo
+	//	 and not the start of it
+	do 
+	{
+		ActiveAbilityIndex = nextOrPrevious ? ActiveAbilityIndex + 1 : ActiveAbilityIndex - 1;
+		if (ActiveAbilityIndex < 0)
+		{
+			ActiveAbilityIndex = GrantedAbilities.Num() - 1;
+		}
+		else if (ActiveAbilityIndex >= GrantedAbilities.Num())
+		{
+			ActiveAbilityIndex = 0;
+		}
+		ActiveAbility = GrantedAbilities[ActiveAbilityIndex];
+		abilityDefaultObject = ActiveAbility->GetDefaultObject<UAttackBaseGameplayAbility>();
+	} while (abilityDefaultObject->HasComboTag() && !abilityDefaultObject->IsFirstInCombo());
+
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("Switched to %s"), *ActiveAbility->GetName()));
+	}
 }
 
 void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
