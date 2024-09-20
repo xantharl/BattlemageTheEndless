@@ -549,12 +549,16 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 	// set it to the appropriate hand
 	isRightHand ? RightHandWeapon = pickup : LeftHandWeapon = pickup;
 
+	// The handles in GAS change each time we grant an ability, so we need to reset them each time we equip a new weapon
+	// TODO: We should be able to assign all abilities on begin play and not have to do this since we're explicit when activating an ability
+	if (ComboManager->Combos.Contains(pickup))
+		ComboManager->Combos.Remove(pickup);
+
 	// grant abilities for the new weapon
 	// Needs to happen before bindings since bindings look up assigned abilities
 	for (TSubclassOf<UGameplayAbility>& ability : pickup->Weapon->GrantedAbilities)
 	{
 		FGameplayAbilitySpecHandle handle = AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
-		EquipmentAbilityHandles[pickup->Weapon->SlotType].Handles.Add(handle);
 		ComboManager->AddAbilityToCombo(pickup, ability->GetDefaultObject<UAttackBaseGameplayAbility>(), handle);
 	}
 
