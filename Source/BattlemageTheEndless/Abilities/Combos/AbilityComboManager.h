@@ -42,7 +42,7 @@ protected:
 
 	FGameplayAbilitySpecHandle* SwitchAndAdvanceCombo(APickupActor* PickupActor, UAbilityCombo* Combo);
 
-	FGameplayAbilitySpecHandle* LastActivatedAbilityHandle;
+	FGameplayAbilitySpecHandle LastActivatedAbilityHandle;
 	TObjectPtr<UNiagaraComponent> LastAbilityNiagaraInstance;
 
 	/// <summary>
