@@ -12,6 +12,8 @@
 #include "Engine/EngineTypes.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
+#include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
+#include "Abilities/Tasks/AbilityTask_WaitGameplayEffectRemoved.h"
 #include "AttackBaseGameplayAbility.generated.h"
 
 class UNiagaraSystem;
@@ -59,7 +61,21 @@ public:
 	void SpawnProjectile(const FGameplayAbilityActorInfo* ActorInfo, ABattlemageTheEndlessCharacter* character, UWorld* const world);
 	void UpdateComboState(ABattlemageTheEndlessCharacter* character);
 	virtual void CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility) override;
+	void ResetTimerAndClearEffects(const FGameplayAbilityActorInfo* ActorInfo);
+	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
+
+	UFUNCTION()
+	void OnMontageCancelled();
+
+	UFUNCTION()
+	void OnEffectRemoved(const FGameplayEffectRemovalInfo& GameplayEffectRemovalInfo);
+
+	UFUNCTION()
+	void OnMontageCompleted();
 
 protected:
 	FTimerHandle EndTimerHandle;
+
+	TArray<FActiveGameplayEffectHandle> ActiveEffectHandles;
+
 };

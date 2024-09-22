@@ -58,6 +58,36 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		SpawnProjectile(ActorInfo, character, world);
 	}
 
+	// Try and play the sound if specified
+	// TODO: Migrate to GameplayCue
+	if (FireSound)
+		UGameplayStatics::PlaySoundAtLocation(this, FireSound, character->GetActorLocation());
+
+	// Try and play a firing animation if specified
+	// TODO: Make this use AbilitySystemComponent->PlayMontage
+	auto animInstance = character->GetMesh()->GetAnimInstance();
+	float montageDuration = 0.f;
+	if (FireAnimation && animInstance)
+	{
+		// TODO: Add a montage rate parameter to the ability
+		auto task = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, FireAnimation, 
+			1.0f, NAME_None, true, 1.0f, 0.f, true);
+		task->OnBlendOut.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCompleted);
+		task->OnCompleted.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCompleted);
+		task->OnInterrupted.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCancelled);
+		task->OnCancelled.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCancelled);
+		task->ReadyForActivation();
+
+		// TODO: account for rate parameter when added
+		montageDuration = FireAnimation->GetPlayLength();
+	}
+
+	if (CooldownGameplayEffectClass)
+		CommitAbilityCooldown(Handle, ActorInfo, ActivationInfo, false);
+
+	CommitAbility(Handle, ActorInfo, ActivationInfo);
+
+	bool effectsApplied = false;
 	// Apply effects to the character, these will in turn spawn any configured cues (Particles and/or sound)
 	for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
 	{
@@ -70,29 +100,22 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		if (specHandle.IsValid())
 		{
 			auto handle = character->AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
+			ActiveEffectHandles.Add(handle);
+
+			// TODO: This currently assumes all effects have a duration
+			auto task = UAbilityTask_WaitGameplayEffectRemoved::WaitForGameplayEffectRemoved(this, handle);
+			task->OnRemoved.AddDynamic(this, &UAttackBaseGameplayAbility::OnEffectRemoved);
+			task->ReadyForActivation();
+			effectsApplied = true;
 		}
 	}
 
-	// Try and play the sound if specified
-	if (FireSound)
-		UGameplayStatics::PlaySoundAtLocation(this, FireSound, character->GetActorLocation());
+	// If any effects were applied, don't set an end timer, let the effect task handle the end
+	if (effectsApplied)
+		return;
 
-	// Try and play a firing animation if specified
-	// TODO: Make this use AbilitySystemComponent->PlayMontage
-	auto animInstance = character->GetMesh()->GetAnimInstance();
-	if (FireAnimation && animInstance)
-	{
-		// in the old system we resumed an ongoing montage, but now we are requiring a montage per phase of the ability
-		animInstance->Montage_Play(FireAnimation, 1.f);
-	}
-
-	if (CooldownGameplayEffectClass)
-		CommitAbilityCooldown(Handle, ActorInfo, ActivationInfo, false);
-
-	CommitAbility(Handle, ActorInfo, ActivationInfo);
-	//UpdateComboState(character);
 	// find longest duration gameplay effect if any exist
-	float longestDuration = 0.f;
+	float longestEffectDuration = 0.f;
 	for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
 	{
 		UGameplayEffect* effectCDO = effect.GetDefaultObject();
@@ -100,22 +123,27 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		{
 			float duration;
 			effectCDO->DurationMagnitude.GetStaticMagnitudeIfPossible(0, duration, nullptr);
-			longestDuration = FMath::Max(duration, longestDuration);
+			longestEffectDuration = FMath::Max(duration, longestEffectDuration);
 		}
 	}
 
-	// keep the ability alive if any effects have durations
-	// TODO: Account for infinite effects
-	if (longestDuration > 0.001f)
-	{
-		// set a timer to end the ability after the longest duration of any effect
-		FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UAttackBaseGameplayAbility::EndAbility, Handle, ActorInfo, ActivationInfo, true, true);
-		world->GetTimerManager().SetTimer(EndTimerHandle, TimerDelegate, longestDuration, false);
-	}
-	else
+	// If we have no montage and no effects, end the ability immediately
+	if (longestEffectDuration < 0.001f && montageDuration < 0.001f)
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+		return;
 	}
+
+	// if the ability has a montage or any effects have durations, keep it alive until the longer duration
+	bool useEffectsDuration = longestEffectDuration > montageDuration;
+
+	// if the montage has the longer duration, just return and let the task callback handle the end
+	if (!useEffectsDuration)
+		return;
+
+	// if the effects have the longer duration, set a timer to end the ability after that duration
+	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UAttackBaseGameplayAbility::EndAbility, Handle, ActorInfo, ActivationInfo, true, true);
+	world->GetTimerManager().SetTimer(EndTimerHandle, TimerDelegate, longestEffectDuration, false);
 }
 
 void UAttackBaseGameplayAbility::SpawnProjectile(const FGameplayAbilityActorInfo* ActorInfo, ABattlemageTheEndlessCharacter* character, UWorld* const world)
@@ -167,19 +195,56 @@ void UAttackBaseGameplayAbility::UpdateComboState(ABattlemageTheEndlessCharacter
 
 void UAttackBaseGameplayAbility::CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility)
 {
+	ResetTimerAndClearEffects(ActorInfo);
+	Super::CancelAbility(Handle, ActorInfo, ActivationInfo, bReplicateCancelAbility);
+}
+
+void UAttackBaseGameplayAbility::ResetTimerAndClearEffects(const FGameplayAbilityActorInfo* ActorInfo)
+{
 	// if we have a timer running to end the ability, clear it
 	UWorld* const world = GetWorld();
-	if (world)
+	if (world && world->GetTimerManager().IsTimerActive(EndTimerHandle))
 	{
 		world->GetTimerManager().ClearTimer(EndTimerHandle);
 	}
 
 	// TODO: Handle this unsafe cast (OwnerActor can be null)
-	ABattlemageTheEndlessCharacter* character = Cast<ABattlemageTheEndlessCharacter>(ActorInfo->OwnerActor);
-	for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
-	{
-		character->AbilitySystemComponent->RemoveActiveGameplayEffectBySourceEffect(effect, character->AbilitySystemComponent, 1);
-	}
+	//ABattlemageTheEndlessCharacter* character = Cast<ABattlemageTheEndlessCharacter>(ActorInfo->OwnerActor);
+	//for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
+	//{
+	//	character->AbilitySystemComponent->RemoveActiveGameplayEffectBySourceEffect(effect, character->AbilitySystemComponent, 1);
+	//}
+}
 
-	Super::CancelAbility(Handle, ActorInfo, ActivationInfo, bReplicateCancelAbility);
+void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
+{
+	ResetTimerAndClearEffects(ActorInfo);
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+void UAttackBaseGameplayAbility::OnMontageCancelled()
+{
+	EndAbility(this->CurrentSpecHandle, this->CurrentActorInfo, this->CurrentActivationInfo, true, true);
+}
+
+void UAttackBaseGameplayAbility::OnEffectRemoved(const FGameplayEffectRemovalInfo& GameplayEffectRemovalInfo)
+{
+	ActiveEffectHandles.Remove(GameplayEffectRemovalInfo.ActiveEffect->Handle);
+	if (ActiveEffectHandles.IsEmpty())
+	{
+		if (GEngine)
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Ending ability %s due to effect removal"), *GetName()));
+		EndAbility(this->CurrentSpecHandle, this->CurrentActorInfo, this->CurrentActivationInfo, true, false);
+	}
+}
+
+void UAttackBaseGameplayAbility::OnMontageCompleted()
+{
+	// check if effects are still active, if so keep the ability alive
+	if (ActiveEffectHandles.Num() > 0)
+		return;
+
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Ending ability %s due to montage finish"), *GetName()));
+	EndAbility(this->CurrentSpecHandle, this->CurrentActorInfo, this->CurrentActivationInfo, true, false);
 }

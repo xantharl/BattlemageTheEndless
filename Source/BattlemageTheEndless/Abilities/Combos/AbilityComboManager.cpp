@@ -105,19 +105,20 @@ void UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType A
 		return;
 
 	// we've only gotten this far if we're in a combo, so we can assume the ability is part of a combo
-	// if there is an ongoing ability, queue the next one
-	auto ongoingEffects = AbilitySystemComponent->GetActiveGameplayEffects();
-	auto query = FGameplayEffectQuery::MakeQuery_MatchAnyOwningTags(FGameplayTagContainer(FGameplayTag::RequestGameplayTag("State.Combo")));
-	if (ongoingEffects.GetNumGameplayEffects() > 0 && ongoingEffects.GetActiveEffects(query).Num() > 0)
+	// if there is an ongoing ability, queue the next one and subscribe to the end event
+	auto lastAbility = AbilitySystemComponent->FindAbilitySpecFromHandle(*toActivate)->Ability;
+	if (lastAbility && lastAbility->IsActive())
 	{
 		NextAbilityHandle = toActivate;
-		auto remainingTime = FMath::Max(AbilitySystemComponent->GetActiveEffectsDuration(query));
-		FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UAbilityComboManager::ActivateAbilityAndResetTimer, *toActivate);
-		GetWorld()->GetTimerManager().SetTimer(QueuedAbilityTimer, TimerDelegate, remainingTime, false);
+		auto ability = lastAbility.Get();
+		ability->OnGameplayAbilityEnded.AddLambda([this, toActivate](UGameplayAbility* ability) {
+			ActivateAbilityAndResetTimer(*toActivate);
+		});
 	}
-
-	// otherwise immediately execute the ability
-	ActivateAbilityAndResetTimer(*toActivate);
+	else
+	{
+		ActivateAbilityAndResetTimer(*toActivate);
+	}
 }
 
 // TODO: Separate the logic for spell and melee
@@ -136,7 +137,7 @@ void UAbilityComboManager::DelegateToWeapon(APickupActor* PickupActor, EAttackTy
 		AbilitySystemComponent->FindAbilitySpecFromClass(abilityClass)->Handle, true);
 }
 
-void UAbilityComboManager::ActivateAbilityAndResetTimer(FGameplayAbilitySpecHandle Ability)
+void UAbilityComboManager::ActivateAbilityAndResetTimer(struct FGameplayAbilitySpecHandle& Ability)
 {
 	// This is for the case where we entered this function via the queued ability timer
 	if (NextAbilityHandle)

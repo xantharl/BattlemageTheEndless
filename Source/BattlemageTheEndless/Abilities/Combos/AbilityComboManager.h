@@ -36,7 +36,7 @@ protected:
 	int CurrentComboNumber = 0;
 
 	UFUNCTION()
-	void ActivateAbilityAndResetTimer(FGameplayAbilitySpecHandle Ability);
+	void ActivateAbilityAndResetTimer(struct FGameplayAbilitySpecHandle& Ability);
 
 	void EndComboHandler();
 
