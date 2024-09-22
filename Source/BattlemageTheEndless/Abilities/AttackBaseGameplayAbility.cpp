@@ -87,7 +87,8 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 
 	CommitAbility(Handle, ActorInfo, ActivationInfo);
 
-	bool effectsApplied = false;
+	bool durationEffectsApplied = false;
+
 	// Apply effects to the character, these will in turn spawn any configured cues (Particles and/or sound)
 	for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
 	{
@@ -102,48 +103,31 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 			auto handle = character->AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
 			ActiveEffectHandles.Add(handle);
 
-			// TODO: This currently assumes all effects have a duration
+			// TODO: Figure out what to do with infinite effects (keep alive?)
+			if (effect.GetDefaultObject()->DurationPolicy != EGameplayEffectDurationType::HasDuration)
+				continue;
+			
 			auto task = UAbilityTask_WaitGameplayEffectRemoved::WaitForGameplayEffectRemoved(this, handle);
 			task->OnRemoved.AddDynamic(this, &UAttackBaseGameplayAbility::OnEffectRemoved);
 			task->ReadyForActivation();
-			effectsApplied = true;
+			durationEffectsApplied = true;
 		}
 	}
 
-	// If any effects were applied, don't set an end timer, let the effect task handle the end
-	if (effectsApplied)
+	// If any effects were applied, don't set an end timer, let the effect tasks handle the end
+	if (durationEffectsApplied)
 		return;
 
-	// find longest duration gameplay effect if any exist
-	float longestEffectDuration = 0.f;
-	for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
-	{
-		UGameplayEffect* effectCDO = effect.GetDefaultObject();
-		if (effectCDO->DurationPolicy == EGameplayEffectDurationType::HasDuration)
-		{
-			float duration;
-			effectCDO->DurationMagnitude.GetStaticMagnitudeIfPossible(0, duration, nullptr);
-			longestEffectDuration = FMath::Max(duration, longestEffectDuration);
-		}
-	}
-
 	// If we have no montage and no effects, end the ability immediately
-	if (longestEffectDuration < 0.001f && montageDuration < 0.001f)
+	if (montageDuration < 0.001f)
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 		return;
 	}
 
-	// if the ability has a montage or any effects have durations, keep it alive until the longer duration
-	bool useEffectsDuration = longestEffectDuration > montageDuration;
-
-	// if the montage has the longer duration, just return and let the task callback handle the end
-	if (!useEffectsDuration)
-		return;
-
 	// if the effects have the longer duration, set a timer to end the ability after that duration
 	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UAttackBaseGameplayAbility::EndAbility, Handle, ActorInfo, ActivationInfo, true, true);
-	world->GetTimerManager().SetTimer(EndTimerHandle, TimerDelegate, longestEffectDuration, false);
+	world->GetTimerManager().SetTimer(EndTimerHandle, TimerDelegate, montageDuration, false);
 }
 
 void UAttackBaseGameplayAbility::SpawnProjectile(const FGameplayAbilityActorInfo* ActorInfo, ABattlemageTheEndlessCharacter* character, UWorld* const world)
