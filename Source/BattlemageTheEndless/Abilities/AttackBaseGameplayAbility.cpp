@@ -64,7 +64,6 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		UGameplayStatics::PlaySoundAtLocation(this, FireSound, character->GetActorLocation());
 
 	// Try and play a firing animation if specified
-	// TODO: Make this use AbilitySystemComponent->PlayMontage
 	auto animInstance = character->GetMesh()->GetAnimInstance();
 	float montageDuration = 0.f;
 	if (FireAnimation && animInstance)
@@ -204,6 +203,22 @@ void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Han
 {
 	ResetTimerAndClearEffects(ActorInfo);
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+
+	TryPlayComboPause(ActorInfo);
+}
+
+void UAttackBaseGameplayAbility::TryPlayComboPause(const FGameplayAbilityActorInfo* ActorInfo)
+{
+	ABattlemageTheEndlessCharacter* character = Cast<ABattlemageTheEndlessCharacter>(ActorInfo->OwnerActor);
+	if (!character)
+	{
+		return;
+	}
+	auto animInstance = character->GetMesh()->GetAnimInstance();
+	if (animInstance && ComboPauseAnimation)
+	{
+		animInstance->Montage_Play(ComboPauseAnimation);
+	}
 }
 
 void UAttackBaseGameplayAbility::OnMontageCancelled()
@@ -217,7 +232,7 @@ void UAttackBaseGameplayAbility::OnEffectRemoved(const FGameplayEffectRemovalInf
 	if (ActiveEffectHandles.IsEmpty())
 	{
 		if (GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Ending ability %s due to effect removal"), *GetName()));
+			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ending ability %s due to effect removal"), *GetName()));
 		EndAbility(this->CurrentSpecHandle, this->CurrentActorInfo, this->CurrentActivationInfo, true, false);
 	}
 }
@@ -229,6 +244,6 @@ void UAttackBaseGameplayAbility::OnMontageCompleted()
 		return;
 
 	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, FString::Printf(TEXT("Ending ability %s due to montage finish"), *GetName()));
+		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ending ability %s due to montage finish"), *GetName()));
 	EndAbility(this->CurrentSpecHandle, this->CurrentActorInfo, this->CurrentActivationInfo, true, false);
 }

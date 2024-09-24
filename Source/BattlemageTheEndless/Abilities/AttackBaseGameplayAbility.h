@@ -43,7 +43,11 @@ public:
 
 	/** AnimMontage to play each time we fire */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
-	UAnimMontage* FireAnimation;	
+	UAnimMontage* FireAnimation;
+
+	/** Plays between combo stages if needed (next attack not requested yet) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	UAnimMontage* ComboPauseAnimation;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true"))
 	TArray<TSubclassOf<UGameplayEffect>> EffectsToApply;
@@ -63,6 +67,12 @@ public:
 	virtual void CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility) override;
 	void ResetTimerAndClearEffects(const FGameplayAbilityActorInfo* ActorInfo);
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
+
+	/// <summary>
+	/// Play the animation used for a pause between combo stages if present
+	/// </summary>
+	/// <param name="ActorInfo"></param>
+	void TryPlayComboPause(const FGameplayAbilityActorInfo* ActorInfo);
 
 	UFUNCTION()
 	void OnMontageCancelled();

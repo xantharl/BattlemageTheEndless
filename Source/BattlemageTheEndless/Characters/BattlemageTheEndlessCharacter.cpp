@@ -39,6 +39,7 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 	AbilitySystemComponent->SetIsReplicated(true);
 
 	ComboManager = CreateDefaultSubobject<UAbilityComboManager>(TEXT("ComboManager"));
+	AbilitySystemComponent->AbilityFailedCallbacks.AddUObject(ComboManager, &UAbilityComboManager::OnAbilityFailed);
 	ComboManager->AbilitySystemComponent = AbilitySystemComponent;
 }
 

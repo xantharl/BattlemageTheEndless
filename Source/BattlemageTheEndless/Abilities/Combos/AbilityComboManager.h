@@ -54,6 +54,8 @@ protected:
 	FTimerHandle QueuedAbilityTimer;
 
 public:
+	void OnAbilityFailed(const UGameplayAbility* ability, const FGameplayTagContainer& reason);
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivateAccess = "true"))
 	TMap<APickupActor*, FPickupCombos> Combos;
 

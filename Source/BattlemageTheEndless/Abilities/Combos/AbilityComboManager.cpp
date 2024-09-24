@@ -125,12 +125,16 @@ void UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType A
 			? lastAbility->NonReplicatedInstances : lastAbility->ReplicatedInstances;
 
 		// TODO: We are assuming only one instance of the ability is active at a time for now
-		if (instances.Num() > 0)
+		if (instances.Num() > 0 && instances[0]->IsActive())
 		{
 			NextAbilityHandle = toActivate;
-			instances[0]->OnGameplayAbilityEnded.AddLambda([this, lastAbility, toActivate](UGameplayAbility* ability) {
+			instances[0]->OnGameplayAbilityEnded.AddLambda([this, toActivate](UGameplayAbility* ability) {
 				ActivateAbilityAndResetTimer(*toActivate);
 				});
+		}
+		else
+		{
+			ActivateAbilityAndResetTimer(*toActivate);
 		}
 	}
 	else
@@ -159,7 +163,21 @@ void UAbilityComboManager::ActivateAbilityAndResetTimer(struct FGameplayAbilityS
 {
 	// This is for the case where we entered this function via the queued ability timer
 	if (NextAbilityHandle)
+	{
 		NextAbilityHandle = nullptr;
+
+		// unsubscribe from the last ability's end event
+		auto lastAbility = AbilitySystemComponent->FindAbilitySpecFromHandle(LastActivatedAbilityHandle);
+		TArray<TObjectPtr<UGameplayAbility>> instances = lastAbility->Ability->GetReplicationPolicy() == EGameplayAbilityReplicationPolicy::ReplicateNo
+			? lastAbility->NonReplicatedInstances : lastAbility->ReplicatedInstances;
+
+		// TODO: We are assuming only one instance of the ability is active at a time for now
+		if (instances.Num() > 0)
+		{
+			// This is assuming we only have one delegate
+			instances[0]->OnGameplayAbilityEnded.RemoveAll(instances[0]);
+		}
+	}
 
 
 	bool activated = AbilitySystemComponent->TryActivateAbility(Ability, true);
@@ -175,7 +193,7 @@ void UAbilityComboManager::ActivateAbilityAndResetTimer(struct FGameplayAbilityS
 	}
 
 	if (!activated)
-		return;
+ 		return;
 
 	// intentionally overwrite the timer handle each time we advance the combo
 	GetWorld()->GetTimerManager().SetTimer(ComboTimerHandle, [&] {EndComboHandler(); }, ComboExpiryTime, false);
@@ -202,6 +220,15 @@ void UAbilityComboManager::EndComboHandler()
 	LastAbilityNiagaraInstance = nullptr;
 	if (GetWorld()->GetTimerManager().IsTimerActive(ComboTimerHandle))
 		GetWorld()->GetTimerManager().ClearTimer(ComboTimerHandle);
+}
+
+void UAbilityComboManager::OnAbilityFailed(const UGameplayAbility* ability, const FGameplayTagContainer& reason)
+{
+	if(GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Red,
+			FString::Printf(TEXT("Ability %s failed because %s"), *ability->GetName(), *reason.First().ToString()));
+	}
 }
 
 FGameplayAbilitySpecHandle* UAbilityComboManager::SwitchAndAdvanceCombo(APickupActor* PickupActor, UAbilityCombo* Combo)
