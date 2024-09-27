@@ -71,7 +71,8 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		// TODO: Add a montage rate parameter to the ability
 		auto task = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, FireAnimation, 
 			1.0f, NAME_None, true, 1.0f, 0.f, true);
-		task->OnBlendOut.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCompleted);
+		// this is firing way earlier than expected, so we'll use the OnCompleted event instead
+		//task->OnBlendOut.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCompleted);
 		task->OnCompleted.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCompleted);
 		task->OnInterrupted.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCancelled);
 		task->OnCancelled.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCancelled);
@@ -202,9 +203,8 @@ void UAttackBaseGameplayAbility::ResetTimerAndClearEffects(const FGameplayAbilit
 void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
 	ResetTimerAndClearEffects(ActorInfo);
-	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
-
 	TryPlayComboPause(ActorInfo);
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
 void UAttackBaseGameplayAbility::TryPlayComboPause(const FGameplayAbilityActorInfo* ActorInfo)
@@ -215,7 +215,8 @@ void UAttackBaseGameplayAbility::TryPlayComboPause(const FGameplayAbilityActorIn
 		return;
 	}
 	auto animInstance = character->GetMesh()->GetAnimInstance();
-	if (animInstance && ComboPauseAnimation)
+	// only play the pause animation if the combo pause animation is set and nothing is playing in the slot
+	if (animInstance && ComboPauseAnimation && !animInstance->IsSlotActive(ComboPauseAnimation->SlotAnimTracks[0].SlotName))
 	{
 		animInstance->Montage_Play(ComboPauseAnimation);
 	}
