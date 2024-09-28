@@ -28,6 +28,7 @@
 #include "../Pickups/PickupActor.h"
 #include "../BMageJumpAbility.h"
 #include <BattlemageTheEndless/Abilities/Combos/AbilityComboManager.h>
+#include <BattlemageTheEndless/Abilities/BaseAttributeSet.h>
 
 #include "BattlemageTheEndlessCharacter.generated.h"
 
@@ -196,6 +197,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
 	class UBMageAbilitySystemComponent* AbilitySystemComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
+	UBaseAttributeSet* AttributeSet;
+
 	virtual void PossessedBy(AController* NewController) override;
 
 	void SetupCapsule();
@@ -206,7 +210,6 @@ public:
 	//Call Gamemode class to Restart Player Character.
 	void CallRestartPlayer();
 
-	virtual void ApplyDamage(float damage);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivate))
 	TMap<EquipSlot, FPickups> Equipment;
@@ -235,6 +238,8 @@ protected:
 	float MaxHealth = 100;
 
 	ACheckPoint* LastCheckPoint;
+
+	FDelegateHandle HealthChangedDelegateHandle;
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UAbilityComboManager* ComboManager;
@@ -314,6 +319,6 @@ protected:
 
 	void ToggleMenu();
 
-
+	virtual void HealthChanged(const FOnAttributeChangeData& Data);
 };
 

@@ -45,6 +45,7 @@ void ABattlemageTheEndlessProjectile::OnHit(UPrimitiveComponent* HitComp, AActor
 	// if OtherActor is a BattlemageTheEndlessCharacter, apply damage
 	if (ABattlemageTheEndlessCharacter* otherCharacter = Cast<ABattlemageTheEndlessCharacter>(OtherActor))
 	{
-		otherCharacter->ApplyDamage(this->Damage);
+		// TODO: Refactor into gameplay effect for damage
+		otherCharacter->AttributeSet->SetHealth(otherCharacter->AttributeSet->GetHealth() - Damage);
 	}
 }

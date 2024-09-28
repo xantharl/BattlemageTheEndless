@@ -175,14 +175,16 @@ void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 		LastAttackAnimationName = attackAnimationName;
 	}
 
-	// If we hit a Battlemage character, apply damage	
-	if (!Hit.HitObjectHandle.DoesRepresentClass(ABattlemageTheEndlessCharacter::StaticClass()))
+	// if either actor involed is not a Battlemage, exit
+	auto attacker = Cast<ABattlemageTheEndlessCharacter>(character);
+	auto hitActor = Cast<ABattlemageTheEndlessCharacter>(Hit.GetActor());
+	if (!attacker || !hitActor)
+	{
 		return;
-	
-	ABattlemageTheEndlessCharacter* otherCharacter = Cast<ABattlemageTheEndlessCharacter>(Hit.HitObjectHandle.FetchActor());
+	}
 
 	// If this character has already been hit by this stage of the combo, don't hit them again
-	if (LastHitCharacters.Contains(otherCharacter) || otherCharacter == character ) 	// Stop hitting yourself
+	if (LastHitCharacters.Contains(hitActor) || hitActor == attacker) 	// Stop hitting yourself
 	{
 		return;
 	}
@@ -192,7 +194,15 @@ void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("Hit by Animation %s"), *LastAttackAnimationName));
 	}
 
-	LastHitCharacters.Add(otherCharacter);
-	float Damage = LightAttackDamage;
-	otherCharacter->ApplyDamage(Damage);
+	LastHitCharacters.Add(hitActor);
+
+	// get the active ability
+	auto abilitySpec = Cast<UAttackBaseGameplayAbility>(
+		attacker->AbilitySystemComponent->FindAbilitySpecFromHandle(attacker->ComboManager->LastActivatedAbilityHandle)->Ability);
+
+	// Not used currently
+	bool durationEffectsApplied = false;
+
+	// apply any on hit effects from the weapon attack, all effects on a weapon are assumed to be on hit
+	abilitySpec->ApplyEffects(attacker, hitActor, durationEffectsApplied);
 }

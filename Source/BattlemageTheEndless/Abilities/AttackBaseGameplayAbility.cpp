@@ -90,29 +90,7 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	bool durationEffectsApplied = false;
 
 	// Apply effects to the character, these will in turn spawn any configured cues (Particles and/or sound)
-	for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
-	{
-		FGameplayEffectContextHandle context = character->AbilitySystemComponent->MakeEffectContext();
-		context.AddSourceObject(character);
-		context.AddInstigator(character, ActorInfo->AvatarActor.Get());
-		context.AddActors({ character });
-
-		FGameplayEffectSpecHandle specHandle = character->AbilitySystemComponent->MakeOutgoingSpec(effect, 1.f, context);
-		if (specHandle.IsValid())
-		{
-			auto handle = character->AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
-			ActiveEffectHandles.Add(handle);
-
-			// TODO: Figure out what to do with infinite effects (keep alive?)
-			if (effect.GetDefaultObject()->DurationPolicy != EGameplayEffectDurationType::HasDuration)
-				continue;
-			
-			auto task = UAbilityTask_WaitGameplayEffectRemoved::WaitForGameplayEffectRemoved(this, handle);
-			task->OnRemoved.AddDynamic(this, &UAttackBaseGameplayAbility::OnEffectRemoved);
-			task->ReadyForActivation();
-			durationEffectsApplied = true;
-		}
-	}
+	ApplyEffects(character, character, durationEffectsApplied, ActorInfo->AvatarActor.Get());
 
 	// If any effects were applied, don't set an end timer, let the effect tasks handle the end
 	if (durationEffectsApplied)
@@ -128,6 +106,33 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	// if the effects have the longer duration, set a timer to end the ability after that duration
 	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UAttackBaseGameplayAbility::EndAbility, Handle, ActorInfo, ActivationInfo, true, true);
 	world->GetTimerManager().SetTimer(EndTimerHandle, TimerDelegate, montageDuration, false);
+}
+
+void UAttackBaseGameplayAbility::ApplyEffects(ABattlemageTheEndlessCharacter* instigator, ABattlemageTheEndlessCharacter* target, bool& durationEffectsApplied, AActor* effectCauser)
+{
+	for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
+	{
+		FGameplayEffectContextHandle context = target->AbilitySystemComponent->MakeEffectContext();
+		context.AddSourceObject(instigator);
+		context.AddInstigator(instigator, effectCauser ? effectCauser : instigator);
+		context.AddActors({ instigator });
+
+		FGameplayEffectSpecHandle specHandle = target->AbilitySystemComponent->MakeOutgoingSpec(effect, 1.f, context);
+		if (specHandle.IsValid())
+		{
+			auto handle = target->AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
+			ActiveEffectHandles.Add(handle);
+
+			// TODO: Figure out what to do with infinite effects (keep alive?)
+			if (effect.GetDefaultObject()->DurationPolicy != EGameplayEffectDurationType::HasDuration)
+				continue;
+
+			auto task = UAbilityTask_WaitGameplayEffectRemoved::WaitForGameplayEffectRemoved(this, handle);
+			task->OnRemoved.AddDynamic(this, &UAttackBaseGameplayAbility::OnEffectRemoved);
+			task->ReadyForActivation();
+			durationEffectsApplied = true;
+		}
+	}
 }
 
 void UAttackBaseGameplayAbility::SpawnProjectile(const FGameplayAbilityActorInfo* ActorInfo, ABattlemageTheEndlessCharacter* character, UWorld* const world)

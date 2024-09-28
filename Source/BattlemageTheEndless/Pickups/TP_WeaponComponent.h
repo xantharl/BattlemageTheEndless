@@ -66,15 +66,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combo)
 	float ComboBreakTime = 0.25f;
 
-	/** Light attack damage */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Damage)
-	float LightAttackDamage = 10.f;
-
-	/** Light attack damage */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Damage)
-	float HeavyAttackDamage = 20.f;
-
-	/** Light attack damage */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Damage)
 	float ComboFinisherMultiple = 1.5f;
 

@@ -38,6 +38,19 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 	AbilitySystemComponent = CreateDefaultSubobject<UBMageAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
 
+	// Minimal Mode means that no GameplayEffects will replicate. They will only live on the Server. Attributes, GameplayTags, and GameplayCues will still replicate to us.
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
+
+	// Create the attribute set, this replicates by default
+	// Adding it as a subobject of the owning actor of an AbilitySystemComponent
+	// automatically registers the AttributeSet with the AbilitySystemComponent
+	AttributeSet = CreateDefaultSubobject<UBaseAttributeSet>(TEXT("AttributeSet"));
+	AttributeSet->InitHealth(MaxHealth);
+	AttributeSet->InitMaxHealth(MaxHealth);
+	AttributeSet->InitHealthRegenRate(0.f);
+
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute()).AddUObject(this, &ABattlemageTheEndlessCharacter::HealthChanged);
+
 	ComboManager = CreateDefaultSubobject<UAbilityComboManager>(TEXT("ComboManager"));
 	AbilitySystemComponent->AbilityFailedCallbacks.AddUObject(ComboManager, &UAbilityComboManager::OnAbilityFailed);
 	ComboManager->AbilitySystemComponent = AbilitySystemComponent;
@@ -132,87 +145,89 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 		movement->InitAbilities(this, GetMesh());
 	}
 
-	// Add Input Mapping Context
+	// Add Input Mapping Context and equipment, only do this for controlled players
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
-	}
+		if (!AbilitySystemComponent)
+			return;
 
-	if (!AbilitySystemComponent)
-		return;
-	
-	// add default abilities
-	for (TSubclassOf<UGameplayAbility>& Ability : DefaultAbilities)
-	{
-		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
-	}
-
-	// init equipment map
-	if (Equipment.Num() == 0)
-	{
-		Equipment.Add(EquipSlot::Primary, FPickups());
-		Equipment.Add(EquipSlot::Secondary, FPickups());
-	}
-
-	// init equipment abiltiy handles
-	if (EquipmentAbilityHandles.Num() == 0)
-	{
-		EquipmentAbilityHandles.Add(EquipSlot::Primary, FAbilityHandles());
-		EquipmentAbilityHandles.Add(EquipSlot::Secondary, FAbilityHandles());
-	}
-
-	// add abilities given by Weapons
-	for (const TSubclassOf<class APickupActor> PickupType: DefaultEquipment)
-	{
-		// create the actor
-		APickupActor* pickup = GetWorld()->SpawnActor<APickupActor>(PickupType, GetActorLocation(), GetActorRotation());
-
-		if (!pickup || !pickup->Weapon)
-			continue;
-
-		// disable collision so we won't block the player
-		pickup->BaseCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		pickup->BaseCapsule->OnComponentBeginOverlap.RemoveAll(this);
-
-		// Attach the weapon to the appropriate socket
-		bool isRightHand = pickup->Weapon->SlotType == EquipSlot::Primary != LeftHanded;
-		FName socketName = isRightHand ? FName("GripRight") : FName("GripLeft");
-		pickup->Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), socketName);
-
-		// offset the weapon from the socket if needed
-		if (pickup->Weapon->AttachmentOffset != FVector::ZeroVector && pickup->Weapon->GetRelativeLocation() == FVector::ZeroVector)
-			pickup->Weapon->AddLocalOffset(pickup->Weapon->AttachmentOffset);
-
-		// hide if this isn't the first item (since the first item is equipped by default)
-		if(Equipment[pickup->Weapon->SlotType].Pickups.Num() > 0)
+		// add default abilities
+		for (TSubclassOf<UGameplayAbility>& Ability : DefaultAbilities)
 		{
-			pickup->SetHidden(true);
-			pickup->Weapon->SetHiddenInGame(true);
+			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
 		}
 
-		// add the pickup to the appropriate slot in the equipment map
-		Equipment[pickup->Weapon->SlotType].Pickups.Add(pickup);
+		// init equipment map
+		if (Equipment.Num() == 0)
+		{
+			Equipment.Add(EquipSlot::Primary, FPickups());
+			Equipment.Add(EquipSlot::Secondary, FPickups());
+		}
 
-		// track active spell class if this is a spell, this is used later to switch between spell classes
-		if (pickup->Weapon->SlotType == EquipSlot::Secondary)
-			ActiveSpellClass = pickup;
+		// init equipment abiltiy handles
+		if (EquipmentAbilityHandles.Num() == 0)
+		{
+			EquipmentAbilityHandles.Add(EquipSlot::Primary, FAbilityHandles());
+			EquipmentAbilityHandles.Add(EquipSlot::Secondary, FAbilityHandles());
+		}
+
+		// add abilities given by Weapons
+		for (const TSubclassOf<class APickupActor> PickupType : DefaultEquipment)
+		{
+			// create the actor
+			APickupActor* pickup = GetWorld()->SpawnActor<APickupActor>(PickupType, GetActorLocation(), GetActorRotation());
+
+			if (!pickup || !pickup->Weapon)
+				continue;
+
+			// disable collision so we won't block the player
+			pickup->BaseCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			pickup->BaseCapsule->OnComponentBeginOverlap.RemoveAll(this);
+
+			// Attach the weapon to the appropriate socket
+			bool isRightHand = pickup->Weapon->SlotType == EquipSlot::Primary != LeftHanded;
+			FName socketName = isRightHand ? FName("GripRight") : FName("GripLeft");
+			pickup->Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), socketName);
+
+			// offset the weapon from the socket if needed
+			if (pickup->Weapon->AttachmentOffset != FVector::ZeroVector && pickup->Weapon->GetRelativeLocation() == FVector::ZeroVector)
+				pickup->Weapon->AddLocalOffset(pickup->Weapon->AttachmentOffset);
+
+			// hide if this isn't the first item (since the first item is equipped by default)
+			if (Equipment[pickup->Weapon->SlotType].Pickups.Num() > 0)
+			{
+				pickup->SetHidden(true);
+				pickup->Weapon->SetHiddenInGame(true);
+			}
+
+			// add the pickup to the appropriate slot in the equipment map
+			Equipment[pickup->Weapon->SlotType].Pickups.Add(pickup);
+
+			// track active spell class if this is a spell, this is used later to switch between spell classes
+			if (pickup->Weapon->SlotType == EquipSlot::Secondary)
+				ActiveSpellClass = pickup;
+		}
+
+		// assign abilities and attach the first pickup from each slot
+		auto pickups = TArray<TObjectPtr<APickupActor>>();
+		if (Equipment[EquipSlot::Primary].Pickups.Num() > 0)
+			pickups.Add(Equipment[EquipSlot::Primary].Pickups[0]);
+		if (Equipment[EquipSlot::Secondary].Pickups.Num() > 0)
+			pickups.Add(Equipment[EquipSlot::Secondary].Pickups[0]);
+
+		for (auto pickup : pickups)
+		{
+			// Assign the weapon to the appropriate slot
+			SetActivePickup(pickup);
+		}
 	}
 
-	// assign abilities and attach the first pickup from each slot
-	auto pickups = TArray<TObjectPtr<APickupActor>>();
-	if (Equipment[EquipSlot::Primary].Pickups.Num() > 0)
-		pickups.Add(Equipment[EquipSlot::Primary].Pickups[0]);
-	if (Equipment[EquipSlot::Secondary].Pickups.Num() > 0)
-		pickups.Add(Equipment[EquipSlot::Secondary].Pickups[0]);
-
-	for (auto pickup : pickups)
-	{
-		// Assign the weapon to the appropriate slot
-		SetActivePickup(pickup);
-	}
+	HealthChangedDelegateHandle = AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute())
+		.AddUObject(this, &ABattlemageTheEndlessCharacter::HealthChanged);
 }
 
 void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -685,11 +700,6 @@ bool ABattlemageTheEndlessCharacter::IsDodging()
 	return movement && movement->IsAbilityActive(MovementAbilityType::Dodge);
 }
 
-void ABattlemageTheEndlessCharacter::ApplyDamage(float damage)
-{
-	Health -= damage > Health ? Health : damage;
-}
-
 FName ABattlemageTheEndlessCharacter::GetTargetSocketName(EquipSlot SlotType)
 {
 	if (SlotType == EquipSlot::Primary)
@@ -763,5 +773,20 @@ void ABattlemageTheEndlessCharacter::ToggleMenu()
 	//	ContainerWidget->AddToViewport();
 	//	ContainerWidget->ActivateWidget();
 	//	ContainerWidget->MainMenuStack->GetWidgetList()[0]->ActivateWidget();
+	//}
+}
+
+void ABattlemageTheEndlessCharacter::HealthChanged(const FOnAttributeChangeData& Data)
+{
+	// If health isn't set up, exit
+	if (AttributeSet->GetMaxHealth() == 0)
+		return;
+
+	// if the health is less than or equal to 0, the player is dead
+	// TODO: Untangle dummy restart from player restart, the issue is likely in using the controller to restart the player
+	//if (Data.NewValue <= 0)
+	//{
+	//	// Call the RestartPlayer function
+	//	CallRestartPlayer();
 	//}
 }

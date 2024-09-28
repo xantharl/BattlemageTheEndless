@@ -15,18 +15,14 @@ ATrainingDummyActor::ATrainingDummyActor(const FObjectInitializer& ObjectInitial
 void ATrainingDummyActor::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	HealthChangedDelegateHandle = AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute())
+		.AddUObject(this, &ATrainingDummyActor::HealthChanged);
 }
 
 void ATrainingDummyActor::ResetHealth()
 {
-	// Return if this wasn't invoked by the latest hit
-	if (time(0) - LastHitTime > 3.0f)
-	{
-		return;
-	}
-
-	Health = MaxHealth;
+	AttributeSet->Health.SetCurrentValue(AttributeSet->MaxHealth.GetBaseValue());
 	GetWorldTimerManager().ClearTimer(ResetHealthTimer);
 }
 
@@ -43,10 +39,13 @@ void ATrainingDummyActor::SetupPlayerInputComponent(UInputComponent* PlayerInput
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
-void ATrainingDummyActor::ApplyDamage(float damage)
+void ATrainingDummyActor::HealthChanged(const FOnAttributeChangeData& Data)
 {
-	LastHitTime = time(0);
-	GetWorld()->GetTimerManager().SetTimer(ResetHealthTimer, this, &ATrainingDummyActor::ResetHealth, WaitBeforeResetHealthSeconds, false);
+	Super::HealthChanged(Data);
 
-	ABattlemageTheEndlessCharacter::ApplyDamage(damage);
+	if (Data.NewValue <= AttributeSet->GetHealth())
+	{
+		// Replaces existing timer if present
+		GetWorld()->GetTimerManager().SetTimer(ResetHealthTimer, this, &ATrainingDummyActor::ResetHealth, WaitBeforeResetHealthSeconds, false);
+	}
 }

@@ -42,7 +42,6 @@ protected:
 
 	FGameplayAbilitySpecHandle* SwitchAndAdvanceCombo(APickupActor* PickupActor, UAbilityCombo* Combo);
 
-	FGameplayAbilitySpecHandle LastActivatedAbilityHandle;
 	TObjectPtr<UNiagaraComponent> LastAbilityNiagaraInstance;
 
 	/// <summary>
@@ -54,6 +53,8 @@ protected:
 	FTimerHandle QueuedAbilityTimer;
 
 public:
+	FGameplayAbilitySpecHandle LastActivatedAbilityHandle;
+
 	void OnAbilityFailed(const UGameplayAbility* ability, const FGameplayTagContainer& reason);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivateAccess = "true"))

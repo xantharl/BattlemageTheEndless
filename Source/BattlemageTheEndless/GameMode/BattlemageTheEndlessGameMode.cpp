@@ -24,6 +24,7 @@ void ABattlemageTheEndlessGameMode::BeginPlay()
     }
 }
 
+// TODO: figure out how to keep items on death
 void ABattlemageTheEndlessGameMode::RestartPlayer(AController* NewPlayer)
 {
     Super::RestartPlayer(NewPlayer);

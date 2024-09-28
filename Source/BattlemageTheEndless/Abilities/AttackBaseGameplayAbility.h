@@ -62,6 +62,14 @@ public:
 	FGameplayTagContainer GetComboTags();
 
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData);
+	/// <summary>
+	/// Helper to apply any effects owned by this ability to the target, which can be the same as the character if applying to self
+	/// </summary>
+	/// <param name="character">Character causing the effect(s)</param>
+	/// <param name="target">Target of the effect(s)</param>
+	/// <param name="effectCauser">EffectCauser is the actor that is the physical source of the effect</param>
+	/// <param name="durationEffectsApplied">Out bool indicating whether duration effects were applied</param>
+	void ApplyEffects(ABattlemageTheEndlessCharacter* character, ABattlemageTheEndlessCharacter* target, bool& durationEffectsApplied, AActor* effectCauser = nullptr);
 	void SpawnProjectile(const FGameplayAbilityActorInfo* ActorInfo, ABattlemageTheEndlessCharacter* character, UWorld* const world);
 	void UpdateComboState(ABattlemageTheEndlessCharacter* character);
 	virtual void CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility) override;
