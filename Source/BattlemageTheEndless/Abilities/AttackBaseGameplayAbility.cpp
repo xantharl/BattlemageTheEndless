@@ -153,6 +153,9 @@ void UAttackBaseGameplayAbility::SpawnProjectile(const FGameplayAbilityActorInfo
 	auto newActor = world->SpawnActor<ABattlemageTheEndlessProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
 	newActor->GetCollisionComp()->IgnoreActorWhenMoving(character, true);
 
+	// Handle the projectile's collision, applying any effects to the target
+	newActor->GetCollisionComp()->OnComponentHit.AddDynamic(this, &UAttackBaseGameplayAbility::OnProjectileHit);
+
 	// get all actors attached to the character and ignore them
 	TArray<AActor*> attachedActors;
 	character->GetAttachedActors(attachedActors);
@@ -184,11 +187,11 @@ void UAttackBaseGameplayAbility::UpdateComboState(ABattlemageTheEndlessCharacter
 
 void UAttackBaseGameplayAbility::CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility)
 {
-	ResetTimerAndClearEffects(ActorInfo);
+	ResetTimerAndClearEffects(ActorInfo, true);
 	Super::CancelAbility(Handle, ActorInfo, ActivationInfo, bReplicateCancelAbility);
 }
 
-void UAttackBaseGameplayAbility::ResetTimerAndClearEffects(const FGameplayAbilityActorInfo* ActorInfo)
+void UAttackBaseGameplayAbility::ResetTimerAndClearEffects(const FGameplayAbilityActorInfo* ActorInfo, bool wasCancelled)
 {
 	// if we have a timer running to end the ability, clear it
 	UWorld* const world = GetWorld();
@@ -198,11 +201,20 @@ void UAttackBaseGameplayAbility::ResetTimerAndClearEffects(const FGameplayAbilit
 	}
 
 	// TODO: Handle this unsafe cast (OwnerActor can be null)
-	//ABattlemageTheEndlessCharacter* character = Cast<ABattlemageTheEndlessCharacter>(ActorInfo->OwnerActor);
-	//for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
-	//{
-	//	character->AbilitySystemComponent->RemoveActiveGameplayEffectBySourceEffect(effect, character->AbilitySystemComponent, 1);
-	//}
+	ABattlemageTheEndlessCharacter* character = Cast<ABattlemageTheEndlessCharacter>(ActorInfo->OwnerActor);
+
+	// no need to remove effect manually if the ability ended normally
+	if (!wasCancelled)
+		return;
+
+	// remove any active effects to kill their cues
+	for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
+	{
+		if (effect->GetDefaultObject<UGameplayEffect>()->DurationPolicy != EGameplayEffectDurationType::HasDuration)
+			continue;
+
+		character->AbilitySystemComponent->RemoveActiveGameplayEffectBySourceEffect(effect, character->AbilitySystemComponent, 1);
+	}
 }
 
 void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
@@ -212,14 +224,24 @@ void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Han
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
+void UAttackBaseGameplayAbility::OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	// if OtherActor is a BattlemageTheEndlessCharacter, apply effects
+	if (ABattlemageTheEndlessCharacter* otherCharacter = Cast<ABattlemageTheEndlessCharacter>(OtherActor))
+	{
+		bool durationEffectsApplied = false;
+		ApplyEffects(Owner, otherCharacter, durationEffectsApplied);
+	}
+}
+
 void UAttackBaseGameplayAbility::TryPlayComboPause(const FGameplayAbilityActorInfo* ActorInfo)
 {
-	ABattlemageTheEndlessCharacter* character = Cast<ABattlemageTheEndlessCharacter>(ActorInfo->OwnerActor);
-	if (!character)
+	Owner = Cast<ABattlemageTheEndlessCharacter>(ActorInfo->OwnerActor);
+	if (!Owner)
 	{
 		return;
 	}
-	auto animInstance = character->GetMesh()->GetAnimInstance();
+	auto animInstance = Owner->GetMesh()->GetAnimInstance();
 	// only play the pause animation if the combo pause animation is set and nothing is playing in the slot
 	if (animInstance && ComboPauseAnimation && !animInstance->IsSlotActive(ComboPauseAnimation->SlotAnimTracks[0].SlotName))
 	{
@@ -252,4 +274,12 @@ void UAttackBaseGameplayAbility::OnMontageCompleted()
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ending ability %s due to montage finish"), *GetName()));
 	EndAbility(this->CurrentSpecHandle, this->CurrentActorInfo, this->CurrentActivationInfo, true, false);
+}
+
+bool UAttackBaseGameplayAbility::WillCancelAbility(FGameplayAbilitySpec* OtherAbility)
+{
+	if (CancelAbilitiesWithTag.Num() == 0)
+		return false;
+
+	return OtherAbility->Ability->AbilityTags.HasAny(CancelAbilitiesWithTag);
 }

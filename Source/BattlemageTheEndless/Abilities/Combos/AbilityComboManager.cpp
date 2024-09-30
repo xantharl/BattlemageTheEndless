@@ -124,8 +124,13 @@ void UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType A
 		TArray<TObjectPtr<UGameplayAbility>> instances = lastAbility->Ability->GetReplicationPolicy() == EGameplayAbilityReplicationPolicy::ReplicateNo
 			? lastAbility->NonReplicatedInstances : lastAbility->ReplicatedInstances;
 
+		// check for current ability should kill active ability case
+		auto toActivateSpec = AbilitySystemComponent->FindAbilitySpecFromHandle(*toActivate);
+		bool willCancelPrevious = Cast<UAttackBaseGameplayAbility>(toActivateSpec->Ability)->WillCancelAbility(lastAbility);
+
 		// TODO: We are assuming only one instance of the ability is active at a time for now
-		if (instances.Num() > 0 && instances[0]->IsActive())
+		// Don't buffer if the next ability will cancel the current one
+		if (!willCancelPrevious && instances.Num() > 0 && instances[0]->IsActive())
 		{
 			NextAbilityHandle = toActivate;
 			instances[0]->OnGameplayAbilityEnded.AddLambda([this, toActivate](UGameplayAbility* ability) {

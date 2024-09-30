@@ -41,11 +41,4 @@ void ABattlemageTheEndlessProjectile::OnHit(UPrimitiveComponent* HitComp, AActor
 	{
 		OtherComp->AddImpulseAtLocation(GetVelocity() * 100.0f, GetActorLocation());
 	}
-
-	// if OtherActor is a BattlemageTheEndlessCharacter, apply damage
-	if (ABattlemageTheEndlessCharacter* otherCharacter = Cast<ABattlemageTheEndlessCharacter>(OtherActor))
-	{
-		// TODO: Refactor into gameplay effect for damage
-		otherCharacter->AttributeSet->SetHealth(otherCharacter->AttributeSet->GetHealth() - Damage);
-	}
 }

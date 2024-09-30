@@ -23,9 +23,9 @@ class ABattlemageTheEndlessProjectile : public AActor
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	UProjectileMovementComponent* ProjectileMovement;
 
+	// TODO: Migrate to gameplay effect
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Damage, meta = (AllowPrivateAccess = "true"))
 	float Damage = 10.0f;
-
 public:
 	ABattlemageTheEndlessProjectile();
 

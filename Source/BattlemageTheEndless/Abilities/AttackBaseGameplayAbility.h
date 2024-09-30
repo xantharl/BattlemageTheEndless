@@ -52,7 +52,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true"))
 	TArray<TSubclassOf<UGameplayEffect>> EffectsToApply;
 
-	TObjectPtr<AActor> Owner;
+	TObjectPtr<ABattlemageTheEndlessCharacter> Owner;
 
 	FGameplayTag GetAbilityName();
 	bool HasComboTag();
@@ -73,8 +73,11 @@ public:
 	void SpawnProjectile(const FGameplayAbilityActorInfo* ActorInfo, ABattlemageTheEndlessCharacter* character, UWorld* const world);
 	void UpdateComboState(ABattlemageTheEndlessCharacter* character);
 	virtual void CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility) override;
-	void ResetTimerAndClearEffects(const FGameplayAbilityActorInfo* ActorInfo);
+	void ResetTimerAndClearEffects(const FGameplayAbilityActorInfo* ActorInfo, bool wasCancelled = false);
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
+
+	UFUNCTION()
+	virtual void OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
 	/// <summary>
 	/// Play the animation used for a pause between combo stages if present
@@ -90,6 +93,8 @@ public:
 
 	UFUNCTION()
 	void OnMontageCompleted();
+
+	bool WillCancelAbility(FGameplayAbilitySpec* OtherAbility);
 
 protected:
 	FTimerHandle EndTimerHandle;
