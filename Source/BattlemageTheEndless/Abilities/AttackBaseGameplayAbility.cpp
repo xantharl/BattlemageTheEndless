@@ -165,26 +165,6 @@ void UAttackBaseGameplayAbility::SpawnProjectile(const FGameplayAbilityActorInfo
 	}
 }
 
-// deprecated in favor of combomanager
-// TODO: Remove once we are sure we don't need this
-void UAttackBaseGameplayAbility::UpdateComboState(ABattlemageTheEndlessCharacter* character)
-{
-	// if this ability has the State.Combo tag set or update ExplicitTags to include the State.Combo tag
-	FGameplayTagContainer ComboTags;
-	ComboTags.AddTag(FGameplayTag::RequestGameplayTag(FName("State.Combo")));
-
-	FGameplayTagContainer ownedComboTags = AbilityTags.Filter(ComboTags);
-	if (ownedComboTags.Num() > 1)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Ability has more than one State.Combo.# tag"));
-	}
-	else if (ownedComboTags.Num() == 1)
-	{
-		FGameplayTag StateComboTag = ownedComboTags.GetByIndex(0);
-		character->AbilitySystemComponent->UpdateTagMap(StateComboTag, 1);
-	}
-}
-
 void UAttackBaseGameplayAbility::CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility)
 {
 	ResetTimerAndClearEffects(ActorInfo, true);

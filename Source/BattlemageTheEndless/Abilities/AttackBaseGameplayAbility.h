@@ -61,7 +61,15 @@ public:
 
 	FGameplayTagContainer GetComboTags();
 
+	/// <summary>
+	/// override of the ActivateAbility method to apply effects and spawn projectiles
+	/// </summary>
+	/// <param name="Handle"></param>
+	/// <param name="ActorInfo"></param>
+	/// <param name="ActivationInfo"></param>
+	/// <param name="TriggerEventData"></param>
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData);
+
 	/// <summary>
 	/// Helper to apply any effects owned by this ability to the target, which can be the same as the character if applying to self
 	/// </summary>
@@ -70,9 +78,29 @@ public:
 	/// <param name="effectCauser">EffectCauser is the actor that is the physical source of the effect</param>
 	/// <param name="durationEffectsApplied">Out bool indicating whether duration effects were applied</param>
 	void ApplyEffects(ABattlemageTheEndlessCharacter* character, ABattlemageTheEndlessCharacter* target, bool& durationEffectsApplied, AActor* effectCauser = nullptr);
+
+	/// <summary>
+	/// Spawns a projectile without checking if one is configured (caller's responsibility)
+	/// </summary>
+	/// <param name="ActorInfo"></param>
+	/// <param name="character"></param>
+	/// <param name="world"></param>
 	void SpawnProjectile(const FGameplayAbilityActorInfo* ActorInfo, ABattlemageTheEndlessCharacter* character, UWorld* const world);
-	void UpdateComboState(ABattlemageTheEndlessCharacter* character);
+
+	/// <summary>
+	/// Override of the CancelAbility method to clear effects (even if they still have duration) and reset the Combo Continuation timer
+	/// </summary>
+	/// <param name="Handle"></param>
+	/// <param name="ActorInfo"></param>
+	/// <param name="ActivationInfo"></param>
+	/// <param name="bReplicateCancelAbility"></param>
 	virtual void CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility) override;
+
+	/// <summary>
+	/// Clears all effects caused by this ability and resets the Combo Continuation timer
+	/// </summary>
+	/// <param name="ActorInfo"></param>
+	/// <param name="wasCancelled"></param>
 	void ResetTimerAndClearEffects(const FGameplayAbilityActorInfo* ActorInfo, bool wasCancelled = false);
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 

@@ -23,13 +23,17 @@ class ABattlemageTheEndlessProjectile : public AActor
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	UProjectileMovementComponent* ProjectileMovement;
 
-	// TODO: Migrate to gameplay effect
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Damage, meta = (AllowPrivateAccess = "true"))
-	float Damage = 10.0f;
 public:
 	ABattlemageTheEndlessProjectile();
 
-	/** called when projectile hits something */
+	/// <summary>
+	/// Called when the projectile hits something, damage is handled by the spawning gameplay ability
+	/// </summary>
+	/// <param name="HitComp"></param>
+	/// <param name="OtherActor"></param>
+	/// <param name="OtherComp"></param>
+	/// <param name="NormalImpulse"></param>
+	/// <param name="Hit"></param>
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
