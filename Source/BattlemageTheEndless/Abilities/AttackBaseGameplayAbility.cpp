@@ -47,15 +47,10 @@ FGameplayTagContainer UAttackBaseGameplayAbility::GetComboTags()
 void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	UWorld* const world = GetWorld();
-	ABattlemageTheEndlessCharacter* character = Cast<ABattlemageTheEndlessCharacter>(ActorInfo->OwnerActor);
+	auto character = Cast<ACharacter>(ActorInfo->OwnerActor);
 	if (!world || !character)
 	{
 		return;
-	}
-
-	if (ProjectileConfiguration.ProjectileClass)
-	{
-		SpawnProjectiles(ActorInfo, character, world);
 	}
 
 	// Try and play a firing animation if specified
@@ -85,7 +80,7 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	bool durationEffectsApplied = false;
 
 	// Apply effects to the character, these will in turn spawn any configured cues (Particles and/or sound)
-	ApplyEffects(character, character, durationEffectsApplied, ActorInfo->AvatarActor.Get());
+	ApplyEffects(character, character, durationEffectsApplied, ActorInfo->AbilitySystemComponent.Get(), ActorInfo->AvatarActor.Get());
 
 	// If any effects were applied, don't set an end timer, let the effect tasks handle the end
 	if (durationEffectsApplied)
@@ -103,19 +98,19 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	world->GetTimerManager().SetTimer(EndTimerHandle, TimerDelegate, montageDuration, false);
 }
 
-void UAttackBaseGameplayAbility::ApplyEffects(ABattlemageTheEndlessCharacter* instigator, ABattlemageTheEndlessCharacter* target, bool& durationEffectsApplied, AActor* effectCauser)
+void UAttackBaseGameplayAbility::ApplyEffects(AActor* instigator, AActor* target, bool& durationEffectsApplied, UAbilitySystemComponent* targetAsc, AActor* effectCauser)
 {
 	for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
 	{
-		FGameplayEffectContextHandle context = target->AbilitySystemComponent->MakeEffectContext();
+		FGameplayEffectContextHandle context = targetAsc->MakeEffectContext();
 		context.AddSourceObject(instigator);
 		context.AddInstigator(instigator, effectCauser ? effectCauser : instigator);
 		context.AddActors({ instigator });
 
-		FGameplayEffectSpecHandle specHandle = target->AbilitySystemComponent->MakeOutgoingSpec(effect, 1.f, context);
+		FGameplayEffectSpecHandle specHandle = targetAsc->MakeOutgoingSpec(effect, 1.f, context);
 		if (specHandle.IsValid())
 		{
-			auto handle = target->AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
+			auto handle = targetAsc->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
 			ActiveEffectHandles.Add(handle);
 
 			// TODO: Figure out what to do with infinite effects (keep alive?)
@@ -127,36 +122,6 @@ void UAttackBaseGameplayAbility::ApplyEffects(ABattlemageTheEndlessCharacter* in
 			task->ReadyForActivation();
 			durationEffectsApplied = true;
 		}
-	}
-}
-
-void UAttackBaseGameplayAbility::SpawnProjectiles(const FGameplayAbilityActorInfo* ActorInfo, ABattlemageTheEndlessCharacter* character, UWorld* const world)
-{
-	const FRotator SpawnRotation = ActorInfo->PlayerController->PlayerCameraManager->GetCameraRotation();
-	// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-	// Spells are always in the off hand for now, so get the offhand socket
-	FName socketName = character->LeftHanded ? FName("GripRight") : FName("GripLeft");
-
-	// Spawn the projectile at the attachment point of the weapon with respect for offsets
-	const FVector SpawnLocation = character->GetMesh()->GetSocketLocation(socketName) + SpawnRotation.RotateVector(character->CurrentGripOffset(socketName));
-
-	//Set Spawn Collision Handling Override
-	FActorSpawnParameters ActorSpawnParams;
-	ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	// Spawn the projectile at the muzzle
-	auto newActor = world->SpawnActor<ABattlemageTheEndlessProjectile>(ProjectileConfiguration.ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
-	newActor->GetCollisionComp()->IgnoreActorWhenMoving(character, true);
-
-	// Handle the projectile's collision, applying any effects to the target
-	newActor->GetCollisionComp()->OnComponentHit.AddDynamic(this, &UAttackBaseGameplayAbility::OnProjectileHit);
-
-	// get all actors attached to the character and ignore them
-	TArray<AActor*> attachedActors;
-	character->GetAttachedActors(attachedActors);
-	for (AActor* actor : attachedActors)
-	{
-		newActor->GetCollisionComp()->IgnoreActorWhenMoving(actor, true);
 	}
 }
 
@@ -174,22 +139,6 @@ void UAttackBaseGameplayAbility::ResetTimerAndClearEffects(const FGameplayAbilit
 	{
 		world->GetTimerManager().ClearTimer(EndTimerHandle);
 	}
-
-	// TODO: Handle this unsafe cast (OwnerActor can be null)
-	ABattlemageTheEndlessCharacter* character = Cast<ABattlemageTheEndlessCharacter>(ActorInfo->OwnerActor);
-
-	// no need to remove effect manually if the ability ended normally
-	if (!wasCancelled)
-		return;
-
-	// remove any active effects to kill their cues
-	for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
-	{
-		if (effect->GetDefaultObject<UGameplayEffect>()->DurationPolicy != EGameplayEffectDurationType::HasDuration)
-			continue;
-
-		character->AbilitySystemComponent->RemoveActiveGameplayEffectBySourceEffect(effect, character->AbilitySystemComponent, 1);
-	}
 }
 
 void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
@@ -199,24 +148,24 @@ void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Han
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UAttackBaseGameplayAbility::OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
-{
-	// if OtherActor is a BattlemageTheEndlessCharacter, apply effects
-	if (ABattlemageTheEndlessCharacter* otherCharacter = Cast<ABattlemageTheEndlessCharacter>(OtherActor))
-	{
-		bool durationEffectsApplied = false;
-		ApplyEffects(Owner, otherCharacter, durationEffectsApplied);
-	}
-}
+//void UAttackBaseGameplayAbility::OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+//{
+//	// if OtherActor is a BattlemageTheEndlessCharacter, apply effects
+//	if (ABattlemageTheEndlessCharacter* otherCharacter = Cast<ABattlemageTheEndlessCharacter>(OtherActor))
+//	{
+//		bool durationEffectsApplied = false;
+//		ApplyEffects(Owner, otherCharacter, durationEffectsApplied);
+//	}
+//}
 
 void UAttackBaseGameplayAbility::TryPlayComboPause(const FGameplayAbilityActorInfo* ActorInfo)
 {
-	Owner = Cast<ABattlemageTheEndlessCharacter>(ActorInfo->OwnerActor);
-	if (!Owner)
+	auto owner = Cast<ACharacter>(ActorInfo->OwnerActor);
+	if (!owner)
 	{
 		return;
 	}
-	auto animInstance = Owner->GetMesh()->GetAnimInstance();
+	auto animInstance = owner->GetMesh()->GetAnimInstance();
 	// only play the pause animation if the combo pause animation is set and nothing is playing in the slot
 	if (animInstance && ComboPauseAnimation && !animInstance->IsSlotActive(ComboPauseAnimation->SlotAnimTracks[0].SlotName))
 	{

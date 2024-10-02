@@ -3,18 +3,24 @@
 
 #include "ProjectileManager.h"
 
-TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::SpawnProjectiles_Actor(FProjectileConfiguration& configuration, AActor* actor)
+TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::SpawnProjectiles_Actor(const FProjectileConfiguration& configuration, const AActor* actor)
 {
 	auto returnArray = TArray<ABattlemageTheEndlessProjectile*>();
-	// get the spawn locations and rotations
-	auto spawnLocations = GetSpawnLocations(configuration);
+	auto spawnLocations = GetSpawnLocations(configuration, actor->GetTransform());
 	/*auto newActor = GetWorld()->SpawnActor<ABattlemageTheEndlessProjectile>(
 		configuration.ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);*/
 
 	return returnArray;
 }
 
-TArray<FTransform> UProjectileManager::GetSpawnLocations(FProjectileConfiguration& configuration)
+TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::SpawnProjectiles_Transform(const FProjectileConfiguration& configuration, const FTransform& transform)
+{
+	auto returnArray = TArray<ABattlemageTheEndlessProjectile*>();
+	auto spawnLocations = GetSpawnLocations(configuration, transform);
+	return returnArray;
+}
+
+TArray<FTransform> UProjectileManager::GetSpawnLocations(const FProjectileConfiguration& configuration, const FTransform& rootTransform)
 {
 	return TArray<FTransform>();
 }

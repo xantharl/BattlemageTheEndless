@@ -43,7 +43,7 @@ void UAbilityComboManager::AddAbilityToCombo(APickupActor* PickupActor, UAttackB
 	}
 }
 
-void UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType AttackType)
+FGameplayAbilitySpecHandle UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType AttackType)
 {
 	// ignore input if there is a queued action and we are requesting the same combo
 	bool activeComboContainsRequestedAttack = Combos.Contains(PickupActor) && Combos[PickupActor].ActiveCombo
@@ -54,15 +54,14 @@ void UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType A
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, TEXT("Ignoring input, requested action already queued"));
 		}
-		return;
+		return FGameplayAbilitySpecHandle();
 	}
 
 	// If we aren't aware of any combos for this pickup or the weapon's active ability has no combos, delegate to the weapon
 	if (!Combos.Contains(PickupActor) || PickupActor->Weapon->ActiveAbility 
 		&& !PickupActor->Weapon->ActiveAbility->GetDefaultObject<UAttackBaseGameplayAbility>()->HasComboTag())
 	{
-		DelegateToWeapon(PickupActor, AttackType);
-		return;
+		return DelegateToWeapon(PickupActor, AttackType);
 	}
 
 	// if the active ability does not have a combo, delegate to the weapon's input handler
@@ -86,8 +85,7 @@ void UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType A
 		// If the current attack isn't part of any combo, delegate to the weapon's input handler
 		if (matches.Num() == 0)
 		{
-			DelegateToWeapon(PickupActor, AttackType);
-			return;
+			return DelegateToWeapon(PickupActor, AttackType);
 		}
 		else if (matches.Num() > 1)
 		{
@@ -114,7 +112,7 @@ void UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType A
 		toActivate = combo->StartCombo();
 	
 	if (!toActivate)
-		return;
+		return FGameplayAbilitySpecHandle();
 
 	// we've only gotten this far if we're in a combo, so we can assume the ability is part of a combo
 	// if there is an ongoing ability, queue the next one and subscribe to the end event
@@ -135,7 +133,7 @@ void UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType A
 			NextAbilityHandle = toActivate;
 			instances[0]->OnGameplayAbilityEnded.AddLambda([this, toActivate](UGameplayAbility* ability) {
 				ActivateAbilityAndResetTimer(*toActivate);
-				});
+			});
 		}
 		else
 		{
@@ -146,10 +144,12 @@ void UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType A
 	{
 		ActivateAbilityAndResetTimer(*toActivate);
 	}
+
+	return *toActivate;
 }
 
 // TODO: Separate the logic for spell and melee
-void UAbilityComboManager::DelegateToWeapon(APickupActor* PickupActor, EAttackType AttackType)
+FGameplayAbilitySpecHandle UAbilityComboManager::DelegateToWeapon(APickupActor* PickupActor, EAttackType AttackType)
 {
 	TSubclassOf<UGameplayAbility> abilityClass;
 	if (PickupActor->Weapon->SlotType == EquipSlot::Secondary)
@@ -158,10 +158,13 @@ void UAbilityComboManager::DelegateToWeapon(APickupActor* PickupActor, EAttackTy
 		abilityClass = PickupActor->Weapon->GetAbilityByAttackType(AttackType);
 	
 	if (!abilityClass)
-		return;
+		return FGameplayAbilitySpecHandle();
 
-	AbilitySystemComponent->TryActivateAbility(
-		AbilitySystemComponent->FindAbilitySpecFromClass(abilityClass)->Handle, true);
+	if (AbilitySystemComponent->TryActivateAbility(
+		AbilitySystemComponent->FindAbilitySpecFromClass(abilityClass)->Handle, true))
+		return AbilitySystemComponent->FindAbilitySpecFromClass(abilityClass)->Handle;
+
+	return FGameplayAbilitySpecHandle();
 }
 
 void UAbilityComboManager::ActivateAbilityAndResetTimer(struct FGameplayAbilitySpecHandle& Ability)
@@ -198,7 +201,7 @@ void UAbilityComboManager::ActivateAbilityAndResetTimer(struct FGameplayAbilityS
 	}
 
 	if (!activated)
- 		return;
+		return;
 
 	// intentionally overwrite the timer handle each time we advance the combo
 	GetWorld()->GetTimerManager().SetTimer(ComboTimerHandle, [&] {EndComboHandler(); }, ComboExpiryTime, false);

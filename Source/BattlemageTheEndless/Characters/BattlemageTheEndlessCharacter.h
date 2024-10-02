@@ -29,6 +29,7 @@
 #include "../BMageJumpAbility.h"
 #include <BattlemageTheEndless/Abilities/Combos/AbilityComboManager.h>
 #include <BattlemageTheEndless/Abilities/BaseAttributeSet.h>
+#include "../Abilities/ProjectileManager.h"
 
 #include "BattlemageTheEndlessCharacter.generated.h"
 
@@ -240,6 +241,11 @@ protected:
 	ACheckPoint* LastCheckPoint;
 
 	FDelegateHandle HealthChangedDelegateHandle;
+
+	/// <summary>
+	/// Manages projectile spawn and hit for abilities
+	/// </summary>
+	UProjectileManager* ProjectileManager;
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UAbilityComboManager* ComboManager;
@@ -320,5 +326,7 @@ protected:
 	void ToggleMenu();
 
 	virtual void HealthChanged(const FOnAttributeChangeData& Data);
+
+	virtual void ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType);
 };
 

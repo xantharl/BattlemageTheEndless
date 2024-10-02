@@ -63,9 +63,9 @@ public:
 	// Adds a single ability to a combo, or creates a new combo if the ability is the first in a combo
 	void AddAbilityToCombo(APickupActor* PickupActor, UAttackBaseGameplayAbility* Ability, FGameplayAbilitySpecHandle Handle);
 
-	void ProcessInput(APickupActor* PickupActor, EAttackType AttackType);
+	FGameplayAbilitySpecHandle ProcessInput(APickupActor* PickupActor, EAttackType AttackType);
 
-	void DelegateToWeapon(APickupActor* PickupActor, EAttackType AttackType);
+	FGameplayAbilitySpecHandle DelegateToWeapon(APickupActor* PickupActor, EAttackType AttackType);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Combo, meta = (AllowPrivateAccess = "true"))
 	// one second in std::chrono::milliseconds

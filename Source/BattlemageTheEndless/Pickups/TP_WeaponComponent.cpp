@@ -204,5 +204,5 @@ void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 	bool durationEffectsApplied = false;
 
 	// apply any on hit effects from the weapon attack, all effects on a weapon are assumed to be on hit
-	abilitySpec->ApplyEffects(attacker, hitActor, durationEffectsApplied);
+	abilitySpec->ApplyEffects(attacker, hitActor, durationEffectsApplied, hitActor->AbilitySystemComponent);
 }

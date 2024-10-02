@@ -5,16 +5,16 @@
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
 #include "GameplayEffect.h"
-#include "../Pickups/BattlemageTheEndlessProjectile.h"
 #include "Kismet/GameplayStatics.h"
-#include "../Characters/BattlemageTheEndlessCharacter.h"
 #include "GameFramework/Actor.h"
 #include "Engine/EngineTypes.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEffectRemoved.h"
-#include "ProjectileManager.h"
+#include "GameFramework/Character.h"
+#include "../Pickups/BattlemageTheEndlessProjectile.h"
+#include "GameplayAbilities/Public/AbilitySystemComponent.h"
 #include "AttackBaseGameplayAbility.generated.h"
 
 class UNiagaraSystem;
@@ -50,8 +50,6 @@ public:
 	{
 		InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 		NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
-		if (ProjectileConfiguration.ProjectileClass)
-			ProjectileManager = CreateDefaultSubobject<UProjectileManager>(TEXT("ProjectileManager"));
 	}
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Hit)
 	HitType HitType = HitType::None;
@@ -59,9 +57,6 @@ public:
 	/** Projectile class to spawn */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectiles)
 	FProjectileConfiguration ProjectileConfiguration;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectiles)
-	UProjectileManager* ProjectileManager;
 
 	/** AnimMontage to play each time we use the ability */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
@@ -73,8 +68,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true"))
 	TArray<TSubclassOf<UGameplayEffect>> EffectsToApply;
-
-	TObjectPtr<ABattlemageTheEndlessCharacter> Owner;
 
 	FGameplayTag GetAbilityName();
 	bool HasComboTag();
@@ -99,15 +92,7 @@ public:
 	/// <param name="target">Target of the effect(s)</param>
 	/// <param name="effectCauser">EffectCauser is the actor that is the physical source of the effect</param>
 	/// <param name="durationEffectsApplied">Out bool indicating whether duration effects were applied</param>
-	void ApplyEffects(ABattlemageTheEndlessCharacter* character, ABattlemageTheEndlessCharacter* target, bool& durationEffectsApplied, AActor* effectCauser = nullptr);
-
-	/// <summary>
-	/// Spawns a projectile without checking if one is configured (caller's responsibility)
-	/// </summary>
-	/// <param name="ActorInfo"></param>
-	/// <param name="character"></param>
-	/// <param name="world"></param>
-	void SpawnProjectiles(const FGameplayAbilityActorInfo* ActorInfo, ABattlemageTheEndlessCharacter* character, UWorld* const world);
+	void ApplyEffects(AActor* character, AActor* target, bool& durationEffectsApplied, UAbilitySystemComponent* targetAsc, AActor* effectCauser = nullptr);
 
 	/// <summary>
 	/// Override of the CancelAbility method to clear effects (even if they still have duration) and reset the Combo Continuation timer
@@ -126,8 +111,8 @@ public:
 	void ResetTimerAndClearEffects(const FGameplayAbilityActorInfo* ActorInfo, bool wasCancelled = false);
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
-	UFUNCTION()
-	virtual void OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+	//UFUNCTION()
+	//virtual void OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
 	/// <summary>
 	/// Play the animation used for a pause between combo stages if present

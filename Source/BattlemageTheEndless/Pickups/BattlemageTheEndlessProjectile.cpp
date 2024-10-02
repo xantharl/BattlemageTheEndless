@@ -3,7 +3,6 @@
 #include "BattlemageTheEndlessProjectile.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
-#include "../Characters/BattlemageTheEndlessCharacter.h"
 
 ABattlemageTheEndlessProjectile::ABattlemageTheEndlessProjectile() 
 {
