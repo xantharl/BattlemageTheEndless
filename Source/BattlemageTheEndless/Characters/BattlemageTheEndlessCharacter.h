@@ -328,5 +328,7 @@ protected:
 	virtual void HealthChanged(const FOnAttributeChangeData& Data);
 
 	virtual void ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType);
+
+	void OnAbilityCancelled(const FAbilityEndedData& endData);
 };
 

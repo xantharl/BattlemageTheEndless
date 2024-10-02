@@ -792,21 +792,28 @@ void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickup
 	// if the ability activated, check if we need to bind the cancel event
 	if (abilityHandle.IsValid())
 	{
-		auto spec = Cast<UAttackBaseGameplayAbility>(AbilitySystemComponent->FindAbilitySpecFromHandle(abilityHandle)->Ability);
+		auto spec = AbilitySystemComponent->FindAbilitySpecFromHandle(abilityHandle);
+		auto ability = Cast<UAttackBaseGameplayAbility>(AbilitySystemComponent->FindAbilitySpecFromHandle(abilityHandle)->Ability);
 		// If there are no effects, we have no need for a cancel callback
-		if (spec->EffectsToApply.Num() == 0)
+		if (ability->EffectsToApply.Num() == 0)
 			return;
 
 		// Otherwise bind the cancel event to remove the active effects immediately
-		//spec->OnGameplayAbilityCancelled.AddLambda([this](UAttackBaseGameplayAbility* ability) {
-		//	// remove any active effects to kill their cues
-		//	for (TSubclassOf<UGameplayEffect> effect : ability->EffectsToApply)
-		//	{
-		//		if (effect->GetDefaultObject<UGameplayEffect>()->DurationPolicy != EGameplayEffectDurationType::HasDuration)
-		//			continue;
+		AbilitySystemComponent->OnAbilityEnded.AddUObject(this, &ABattlemageTheEndlessCharacter::OnAbilityCancelled);
+	}
+}
 
-		//		AbilitySystemComponent->RemoveActiveGameplayEffectBySourceEffect(effect, AbilitySystemComponent, 1);
-		//	}
-		//});
+void ABattlemageTheEndlessCharacter::OnAbilityCancelled(const FAbilityEndedData& endData)
+{
+	if (!endData.bWasCancelled)
+		return;
+
+	auto ability = Cast<UAttackBaseGameplayAbility>(AbilitySystemComponent->FindAbilitySpecFromHandle(endData.AbilitySpecHandle)->Ability);
+	for (TSubclassOf<UGameplayEffect> effect : ability->EffectsToApply)
+	{
+		if (effect->GetDefaultObject<UGameplayEffect>()->DurationPolicy != EGameplayEffectDurationType::HasDuration)
+			continue;
+
+		AbilitySystemComponent->RemoveActiveGameplayEffectBySourceEffect(effect, AbilitySystemComponent, 1);
 	}
 }
