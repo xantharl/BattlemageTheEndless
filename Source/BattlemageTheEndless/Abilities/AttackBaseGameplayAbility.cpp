@@ -53,15 +53,10 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		return;
 	}
 
-	if (ProjectileClass)
+	if (ProjectileConfiguration.ProjectileClass)
 	{
-		SpawnProjectile(ActorInfo, character, world);
+		SpawnProjectiles(ActorInfo, character, world);
 	}
-
-	// Try and play the sound if specified
-	// TODO: Migrate to GameplayCue
-	if (FireSound)
-		UGameplayStatics::PlaySoundAtLocation(this, FireSound, character->GetActorLocation());
 
 	// Try and play a firing animation if specified
 	auto animInstance = character->GetMesh()->GetAnimInstance();
@@ -135,7 +130,7 @@ void UAttackBaseGameplayAbility::ApplyEffects(ABattlemageTheEndlessCharacter* in
 	}
 }
 
-void UAttackBaseGameplayAbility::SpawnProjectile(const FGameplayAbilityActorInfo* ActorInfo, ABattlemageTheEndlessCharacter* character, UWorld* const world)
+void UAttackBaseGameplayAbility::SpawnProjectiles(const FGameplayAbilityActorInfo* ActorInfo, ABattlemageTheEndlessCharacter* character, UWorld* const world)
 {
 	const FRotator SpawnRotation = ActorInfo->PlayerController->PlayerCameraManager->GetCameraRotation();
 	// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
@@ -150,7 +145,7 @@ void UAttackBaseGameplayAbility::SpawnProjectile(const FGameplayAbilityActorInfo
 	ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
 	// Spawn the projectile at the muzzle
-	auto newActor = world->SpawnActor<ABattlemageTheEndlessProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+	auto newActor = world->SpawnActor<ABattlemageTheEndlessProjectile>(ProjectileConfiguration.ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
 	newActor->GetCollisionComp()->IgnoreActorWhenMoving(character, true);
 
 	// Handle the projectile's collision, applying any effects to the target

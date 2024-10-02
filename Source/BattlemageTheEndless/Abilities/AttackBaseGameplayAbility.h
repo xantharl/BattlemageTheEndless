@@ -14,9 +14,28 @@
 #include "NiagaraComponent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEffectRemoved.h"
+#include "ProjectileManager.h"
 #include "AttackBaseGameplayAbility.generated.h"
 
 class UNiagaraSystem;
+
+/// <summary>
+/// Enum of possible spell hit types
+/// </summary>
+UENUM(BlueprintType)
+enum class HitType : uint8
+{
+	// For abilities that don't hit anything
+	None UMETA(DisplayName = "None"),
+	// Buffs or other effects that only affect the caster
+	Self UMETA(DisplayName = "Self"),
+	// Uses an AnimTrace notify to determine hit
+	Melee UMETA(DisplayName = "Melee"),
+	// Uses a line trace to determine hit
+	HitScan UMETA(DisplayName = "HitScan"),
+	// Uses one or more projectiles to determine hit
+	Projectile UMETA(DisplayName = "Projectile")
+};
 
 /**
  * 
@@ -31,17 +50,20 @@ public:
 	{
 		InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 		NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
+		if (ProjectileConfiguration.ProjectileClass)
+			ProjectileManager = CreateDefaultSubobject<UProjectileManager>(TEXT("ProjectileManager"));
 	}
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Hit)
+	HitType HitType = HitType::None;
 
 	/** Projectile class to spawn */
-	UPROPERTY(EditDefaultsOnly, Category = Projectile)
-	TSubclassOf<class ABattlemageTheEndlessProjectile> ProjectileClass;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectiles)
+	FProjectileConfiguration ProjectileConfiguration;
 
-	/** Sound to play each time we fire */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
-	USoundBase* FireSound;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectiles)
+	UProjectileManager* ProjectileManager;
 
-	/** AnimMontage to play each time we fire */
+	/** AnimMontage to play each time we use the ability */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	UAnimMontage* FireAnimation;
 
@@ -85,7 +107,7 @@ public:
 	/// <param name="ActorInfo"></param>
 	/// <param name="character"></param>
 	/// <param name="world"></param>
-	void SpawnProjectile(const FGameplayAbilityActorInfo* ActorInfo, ABattlemageTheEndlessCharacter* character, UWorld* const world);
+	void SpawnProjectiles(const FGameplayAbilityActorInfo* ActorInfo, ABattlemageTheEndlessCharacter* character, UWorld* const world);
 
 	/// <summary>
 	/// Override of the CancelAbility method to clear effects (even if they still have duration) and reset the Combo Continuation timer
