@@ -23,6 +23,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
 	FProjectileConfiguration Configuration;
 
+	// TODO: Can we just use AActor?
 	/** Array of spawned projectiles */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
 	TArray<ABattlemageTheEndlessProjectile*> Projectiles;
@@ -39,17 +40,26 @@ class BATTLEMAGETHEENDLESS_API UProjectileManager : public UObject
 {
 	GENERATED_BODY()
 
-	// Spawns projectiles based on the provided configuration and actor location
-	TArray<ABattlemageTheEndlessProjectile*> SpawnProjectiles_Actor(const FProjectileConfiguration& configuration, const AActor* actor);
+public:
+	// Spawns projectiles entry point based on the provided configuration and actor location
+	TArray<ABattlemageTheEndlessProjectile*> SpawnProjectiles_Actor(TSubclassOf<class UGameplayAbility> spawningAbilityClass, const FProjectileConfiguration& configuration, const AActor* actor);
 
-	// Spawns projectiles based on the provided configuration and specific transform, used for "previous ability" spawn location
-	TArray<ABattlemageTheEndlessProjectile*> SpawnProjectiles_Transform(const FProjectileConfiguration& configuration, const FTransform& transform);
+	// Spawns projectiles entry point based on the provided configuration and specific transform, used for "previous ability" spawn location
+	TArray<ABattlemageTheEndlessProjectile*> SpawnProjectiles_Transform(TSubclassOf<class UGameplayAbility> spawningAbilityClass, const FProjectileConfiguration& configuration, const FTransform& transform);
 
 private:
+	// Actual spawner
+	TArray<ABattlemageTheEndlessProjectile*> HandleSpawn(FTransformArrayA2& spawnLocations, const FProjectileConfiguration& configuration);
+
 	// Produces spawn locations and rotations (relative) based on the provided configuration
 	TArray<FTransform> GetSpawnLocations(const FProjectileConfiguration& configuration, const FTransform& rootTransform);
 
 	TArray<FAbilityInstanceProjectiles> ActiveProjectiles;
+
+	void StoreProjectileInstance(FAbilityInstanceProjectiles instance);
+
+	// Delegate for projectile destruction
+	void OnProjectileDestroyed(AActor* destroyedActor);
 
 	// TODO: Subscribe to projectile destruction events to remove instances from the active list
 };

@@ -70,9 +70,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
 	uint8 Amount = 1;
 
-	/** Time to let the projectile(s) live (seconds) */
+	/** Time to let the projectile(s) live (seconds), 0 = unlimited */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
-	float Lifetime = 1.0;
+	float Lifetime = 0.0;
 
 	/** Distance to let the projectile(s) live, 0 = unlimited */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
@@ -84,7 +84,7 @@ public:
 
 	/** Location to spawn Projectiles at */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
-	FSpawnLocation Location = FSpawnLocation::SpellFocus;
+	FSpawnLocation SpawnLocation = FSpawnLocation::SpellFocus;
 
 	/** Projectile speed override to allow reuse of simple projectile instances */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
@@ -97,6 +97,10 @@ public:
 	/** Total spread of projectiles in degrees, only applicable for Cone and Fan shapes */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
 	float Spread = 0.f;
+
+	/** Additional offset to add when spawning the projectile, this is taken into account before any shape decisions */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
+	FVector SpawnOffset = FVector::ZeroVector;
 
 	/** Total radius of projectiles, only applicable for Erruption and Rain shapes */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))

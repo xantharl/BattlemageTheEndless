@@ -717,67 +717,6 @@ void ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap(UPrimitiveCompone
 		LastCheckPoint = checkpoint;
 }
 
-// This is handled in BP now
-void ABattlemageTheEndlessCharacter::ToggleMenu()
-{
-	//if (ContainerWidget) 
-	//{
-	//	ContainerWidget->RemoveFromParent();
-	//	delete(ContainerWidget);
-	//	ContainerWidget = nullptr;
-	//}
-	//else
-	//{
-	//	ContainerWidget = CreateWidget<UMenuContainerActivatableWidget>(this, UMenuContainerActivatableWidget::StaticClass());
-	//	FInputModeGameAndUI Mode;
-	//	Mode.SetLockMouseToViewportBehavior(EMouseLockMode::LockInFullscreen);
-	//	Mode.SetHideCursorDuringCapture(false);
-	//	Cast<ABattlemageTheEndlessPlayerController>(Controller)->SetInputMode(Mode);
-	//	ContainerWidget->AddToViewport(9999); // Z-order, this just makes it render on the very top.
-	//}
-	// get the viewport
-	//UGameViewportClient* Viewport = GetWorld()->GetGameViewport();
-	//if (!Viewport)
-	//	return;
-
-	//// Get Content
-	//TSharedPtr<SWidget> content = Viewport->GetGameViewportWidget()->GetContent();
-	//if (!content)
-	//	return;
-
-	//FChildren* children = content->GetAllChildren();
-	//children->ForEachWidget([](SWidget& widget) {
-	//	if (widget.GetType() == FName("UMenuContainerActivatableWidget"))
-	//	{
-	//		UCommonActivatableWidget* ActivatableWidget = Cast<UMenuContainerActivatableWidget>(StaticCastSharedPtr<SObjectWidget>(widget.AsWeak().Pin())->GetWidgetObject());
-	//		ActivatableWidget->IsActivated() ? ActivatableWidget->DeactivateWidget() : ActivatableWidget->ActivateWidget();
-	//	}
-	//});
-	//if (children->Num() > 0 && children->GetChildAt(0)->GetType() == FName("UCommonActivatableWidget"))
-	//{
-	//	auto attempt = children->GetChildAt(0).Get().AsWeak().Pin();
-	//	UCommonActivatableWidget* ActivatableWidget = Cast<UCommonActivatableWidget>(StaticCastSharedPtr<SObjectWidget>(attempt)->GetWidgetObject());
-	//	ActivatableWidget->IsActivated() ? ActivatableWidget->DeactivateWidget() : ActivatableWidget->ActivateWidget();
-	//}
-	//if (!ContainerWidget)
-	//	return;
-
-	//if (ContainerWidget->IsActivated())
-	//{
-	//	ContainerWidget->RemoveFromViewport();
-	//	ContainerWidget->DeactivateWidget();
-	//}
-	//else
-	//{
-	//	// try constructing with the widget's class
-	//	UMenuContainerActivatableWidget::StaticClass();
-	//	ContainerWidget = CreateWidget<UMenuContainerActivatableWidget>(GetWorld(), TSubclassOf<UMenuContainerActivatableWidget>());
-	//	ContainerWidget->AddToViewport();
-	//	ContainerWidget->ActivateWidget();
-	//	ContainerWidget->MainMenuStack->GetWidgetList()[0]->ActivateWidget();
-	//}
-}
-
 void ABattlemageTheEndlessCharacter::HealthChanged(const FOnAttributeChangeData& Data)
 {
 	// If health isn't set up, exit
@@ -785,6 +724,7 @@ void ABattlemageTheEndlessCharacter::HealthChanged(const FOnAttributeChangeData&
 		return;
 }
 
+// TODO: Clean up this excessive amount of nesting
 void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType)
 {
 	auto abilityHandle = ComboManager->ProcessInput(PickupActor, EAttackType::Light);
@@ -794,6 +734,28 @@ void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickup
 	{
 		auto spec = AbilitySystemComponent->FindAbilitySpecFromHandle(abilityHandle);
 		auto ability = Cast<UAttackBaseGameplayAbility>(AbilitySystemComponent->FindAbilitySpecFromHandle(abilityHandle)->Ability);
+
+		// If the ability has projectiles to spawn, spawn them and exit
+		//	Currently an ability can apply effects either on hit or to self, but not both
+		if (ability->ProjectileConfiguration.ProjectileClass)
+		{
+			// if the projectiles are spawned from an actor, use that entry point
+			if (ability->ProjectileConfiguration.SpawnLocation != FSpawnLocation::PreviousAbility)
+			{
+				AActor* actor = ability->ProjectileConfiguration.SpawnLocation == FSpawnLocation::Player ? (AActor*)this : ActiveSpellClass;
+				ProjectileManager->SpawnProjectiles_Actor(ability->StaticClass(), ability->ProjectileConfiguration, actor);
+			}
+			// We can only spawn at last ability location if we have a niagara instance
+			//  TODO: support spawning projectiles based on a previous ability's actor(s) as well
+			else if (ComboManager->LastAbilityNiagaraInstance)
+			{
+				// We are making the potentially dangerous assumption that there is only 1 instance
+				ProjectileManager->SpawnProjectiles_Transform(ability->StaticClass(), ability->ProjectileConfiguration, ComboManager->LastAbilityNiagaraInstance->GetComponentTransform());
+			}
+			// otherwise use the previous ability entry point
+			return;
+		}
+
 		// If there are no effects, we have no need for a cancel callback
 		if (ability->EffectsToApply.Num() == 0)
 			return;

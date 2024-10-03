@@ -42,8 +42,6 @@ protected:
 
 	FGameplayAbilitySpecHandle* SwitchAndAdvanceCombo(APickupActor* PickupActor, UAbilityCombo* Combo);
 
-	TObjectPtr<UNiagaraComponent> LastAbilityNiagaraInstance;
-
 	/// <summary>
 	/// The combo manager allows for an action queue of 1, this is used in the event that input
 	///  is received for an ability while one is ongoing
@@ -54,6 +52,8 @@ protected:
 
 public:
 	FGameplayAbilitySpecHandle LastActivatedAbilityHandle;
+
+	TObjectPtr<UNiagaraComponent> LastAbilityNiagaraInstance;
 
 	void OnAbilityFailed(const UGameplayAbility* ability, const FGameplayTagContainer& reason);
 
