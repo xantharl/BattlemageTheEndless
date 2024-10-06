@@ -105,6 +105,15 @@ void ABattlemageTheEndlessCharacter::CallRestartPlayer()
 	//Destroy the Player.   
 	Destroy();
 
+	//Destroy the Player's equipment
+	for (auto& slot : Equipment)
+	{
+		for (auto& pickup : slot.Value.Pickups)
+		{
+			pickup->Destroy();
+		}
+	}
+
 	//Get the World and GameMode in the world to invoke its restart player function.
 	if (UWorld* World = GetWorld())
 	{
@@ -149,90 +158,101 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 	{
 		movement->InitAbilities(this, GetMesh());
 	}
-
-	// Add Input Mapping Context and equipment, only do this for controlled players
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
-		if (!AbilitySystemComponent)
-			return;
 
-		// add default abilities
-		for (TSubclassOf<UGameplayAbility>& Ability : DefaultAbilities)
-		{
-			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
-		}
-
-		// init equipment map
-		if (Equipment.Num() == 0)
-		{
-			Equipment.Add(EquipSlot::Primary, FPickups());
-			Equipment.Add(EquipSlot::Secondary, FPickups());
-		}
-
-		// init equipment abiltiy handles
-		if (EquipmentAbilityHandles.Num() == 0)
-		{
-			EquipmentAbilityHandles.Add(EquipSlot::Primary, FAbilityHandles());
-			EquipmentAbilityHandles.Add(EquipSlot::Secondary, FAbilityHandles());
-		}
-
-		// add abilities given by Weapons
-		for (const TSubclassOf<class APickupActor> PickupType : DefaultEquipment)
-		{
-			// create the actor
-			APickupActor* pickup = GetWorld()->SpawnActor<APickupActor>(PickupType, GetActorLocation(), GetActorRotation());
-
-			if (!pickup || !pickup->Weapon)
-				continue;
-
-			// disable collision so we won't block the player
-			pickup->BaseCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			pickup->BaseCapsule->OnComponentBeginOverlap.RemoveAll(this);
-
-			// Attach the weapon to the appropriate socket
-			bool isRightHand = pickup->Weapon->SlotType == EquipSlot::Primary != LeftHanded;
-			FName socketName = isRightHand ? FName("GripRight") : FName("GripLeft");
-			pickup->Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), socketName);
-
-			// offset the weapon from the socket if needed
-			if (pickup->Weapon->AttachmentOffset != FVector::ZeroVector && pickup->Weapon->GetRelativeLocation() == FVector::ZeroVector)
-				pickup->Weapon->AddLocalOffset(pickup->Weapon->AttachmentOffset);
-
-			// hide if this isn't the first item (since the first item is equipped by default)
-			if (Equipment[pickup->Weapon->SlotType].Pickups.Num() > 0)
-			{
-				pickup->SetHidden(true);
-				pickup->Weapon->SetHiddenInGame(true);
-			}
-
-			// add the pickup to the appropriate slot in the equipment map
-			Equipment[pickup->Weapon->SlotType].Pickups.Add(pickup);
-
-			// track active spell class if this is a spell, this is used later to switch between spell classes
-			if (pickup->Weapon->SlotType == EquipSlot::Secondary && !ActiveSpellClass)
-				ActiveSpellClass = pickup;
-		}
-
-		// assign abilities and attach the first pickup from each slot
-		auto pickups = TArray<TObjectPtr<APickupActor>>();
-		if (Equipment[EquipSlot::Primary].Pickups.Num() > 0)
-			pickups.Add(Equipment[EquipSlot::Primary].Pickups[0]);
-		if (Equipment[EquipSlot::Secondary].Pickups.Num() > 0)
-			pickups.Add(Equipment[EquipSlot::Secondary].Pickups[0]);
-
-		for (auto pickup : pickups)
-		{
-			// Assign the weapon to the appropriate slot
-			SetActivePickup(pickup);
-		}
+		GiveDefaultAbilities();
+		GiveStartingEquipment();
 	}
 
 	HealthChangedDelegateHandle = AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute())
 		.AddUObject(this, &ABattlemageTheEndlessCharacter::HealthChanged);
+}
+
+void ABattlemageTheEndlessCharacter::GiveStartingEquipment()
+{
+	// init equipment map
+	if (Equipment.Num() == 0)
+	{
+		Equipment.Add(EquipSlot::Primary, FPickups());
+		Equipment.Add(EquipSlot::Secondary, FPickups());
+	}
+
+	// init equipment abiltiy handles
+	if (EquipmentAbilityHandles.Num() == 0)
+	{
+		EquipmentAbilityHandles.Add(EquipSlot::Primary, FAbilityHandles());
+		EquipmentAbilityHandles.Add(EquipSlot::Secondary, FAbilityHandles());
+	}
+
+	// add abilities given by Weapons
+	for (const TSubclassOf<class APickupActor> PickupType : DefaultEquipment)
+	{
+		// create the actor
+		APickupActor* pickup = GetWorld()->SpawnActor<APickupActor>(PickupType, GetActorLocation(), GetActorRotation());
+
+		if (!pickup || !pickup->Weapon)
+			continue;
+
+		// disable collision so we won't block the player
+		pickup->BaseCapsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		pickup->BaseCapsule->OnComponentBeginOverlap.RemoveAll(this);
+
+		// Attach the weapon to the appropriate socket
+		bool isRightHand = pickup->Weapon->SlotType == EquipSlot::Primary != LeftHanded;
+		FName socketName = isRightHand ? FName("GripRight") : FName("GripLeft");
+		pickup->Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), socketName);
+
+		// offset the weapon from the socket if needed
+		if (pickup->Weapon->AttachmentOffset != FVector::ZeroVector && pickup->Weapon->GetRelativeLocation() == FVector::ZeroVector)
+			pickup->Weapon->AddLocalOffset(pickup->Weapon->AttachmentOffset);
+
+		// hide if this isn't the first item (since the first item is equipped by default)
+		if (Equipment[pickup->Weapon->SlotType].Pickups.Num() > 0)
+		{
+			pickup->SetHidden(true);
+			pickup->Weapon->SetHiddenInGame(true);
+		}
+
+		// add the pickup to the appropriate slot in the equipment map
+		Equipment[pickup->Weapon->SlotType].Pickups.Add(pickup);
+
+		// track active spell class if this is a spell, this is used later to switch between spell classes
+		if (pickup->Weapon->SlotType == EquipSlot::Secondary && !ActiveSpellClass)
+			ActiveSpellClass = pickup;
+	}
+
+	// assign abilities and attach the first pickup from each slot
+	auto pickups = TArray<TObjectPtr<APickupActor>>();
+	if (Equipment[EquipSlot::Primary].Pickups.Num() > 0)
+		pickups.Add(Equipment[EquipSlot::Primary].Pickups[0]);
+	if (Equipment[EquipSlot::Secondary].Pickups.Num() > 0)
+		pickups.Add(Equipment[EquipSlot::Secondary].Pickups[0]);
+
+	for (auto pickup : pickups)
+	{
+		// Assign the weapon to the appropriate slot
+		SetActivePickup(pickup);
+	}
+}
+
+void ABattlemageTheEndlessCharacter::GiveDefaultAbilities()
+{
+	if (!AbilitySystemComponent)
+	{
+		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Ability System Component!"), *GetNameSafe(this));
+		return;
+	}
+
+	// add default abilities
+	for (TSubclassOf<UGameplayAbility>& Ability : DefaultAbilities)
+	{
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
+	}
 }
 
 void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -425,6 +445,19 @@ bool ABattlemageTheEndlessCharacter::TryRemovePreviousAbilityEffect(AGameplayCue
 	//AbilitySystemComponent->RemoveActiveGameplayEffect(ActiveEffects[0]);
 
 	return true;
+}
+
+void ABattlemageTheEndlessCharacter::PawnClientRestart()
+{
+	// Add Input Mapping Context and equipment, only do this for controlled players
+	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	{
+		GiveDefaultAbilities();
+		GiveStartingEquipment();
+	}
+
+	// turns out if you forget to call this, your input doesn't get set up
+	Super::PawnClientRestart();
 }
 
 void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)

@@ -228,6 +228,8 @@ public:
 
 protected:
 	virtual void BeginPlay();
+	void GiveStartingEquipment();
+	void GiveDefaultAbilities();
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0);
 
 	void SetupCameras();
@@ -288,6 +290,8 @@ public:
 
 	// Method called by Niagara specific impl of actor gameplay cue
 	bool TryRemovePreviousAbilityEffect(AGameplayCueNotify_Actor* Notify);
+
+	virtual void PawnClientRestart();
 
 protected:
 	/** Called for movement input */
