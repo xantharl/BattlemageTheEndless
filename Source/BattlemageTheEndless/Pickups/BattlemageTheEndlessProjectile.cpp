@@ -33,6 +33,13 @@ ABattlemageTheEndlessProjectile::ABattlemageTheEndlessProjectile()
 
 void ABattlemageTheEndlessProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	// this shouldn't be possible since we're ignoring the owner, yet we're hitting it
+	if (OtherActor == OwnerActor)
+		return;
+
+	if (GEngine) {
+		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Projectile hit %s"), *OtherActor->GetName()));
+	}
 	Destroy();
 
 	// Only add impulse and destroy projectile if we hit a physics

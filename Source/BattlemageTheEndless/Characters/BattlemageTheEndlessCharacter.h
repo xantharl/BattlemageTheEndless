@@ -323,12 +323,15 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "CheckPoint")
 	void OnBaseCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
-	void ToggleMenu();
-
 	virtual void HealthChanged(const FOnAttributeChangeData& Data);
 
 	virtual void ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType);
 
+	void HandleProjectileSpawn(UAttackBaseGameplayAbility* ability);
+
 	void OnAbilityCancelled(const FAbilityEndedData& endData);
+
+	UFUNCTION(BlueprintCallable, Category = "Projectile")
+	void OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 };
 

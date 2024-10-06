@@ -4,39 +4,60 @@
 #include "ProjectileManager.h"
 
 TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::SpawnProjectiles_Actor(
-	TSubclassOf<class UGameplayAbility> spawningAbilityClass, const FProjectileConfiguration& configuration, const AActor* actor)
+	UAttackBaseGameplayAbility* spawningAbility, const FProjectileConfiguration& configuration, AActor* actor)
 {
 	auto returnArray = TArray<ABattlemageTheEndlessProjectile*>();
 	auto spawnLocations = GetSpawnLocations(configuration, actor->GetTransform());
-	return HandleSpawn(spawnLocations, configuration);
+	TArray<ABattlemageTheEndlessProjectile*> projectiles = HandleSpawn(spawnLocations, configuration, spawningAbility, actor);
+	return projectiles;
 }
 
-TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::SpawnProjectiles_Transform(
-	TSubclassOf<class UGameplayAbility> spawningAbilityClass, const FProjectileConfiguration& configuration, const FTransform& transform)
+TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::SpawnProjectiles_Location(
+	UAttackBaseGameplayAbility* spawningAbility, const FProjectileConfiguration& configuration, const FRotator rotation,
+	const FVector translation, const FVector scale, AActor* ignoreActor)
 {
 	auto returnArray = TArray<ABattlemageTheEndlessProjectile*>();
-	auto spawnLocations = GetSpawnLocations(configuration, transform);
-	return HandleSpawn(spawnLocations, configuration);
+	auto spawnLocations = GetSpawnLocations(configuration, FTransform(rotation, translation, scale));
+	TArray<ABattlemageTheEndlessProjectile*> projectiles = HandleSpawn(spawnLocations, configuration, spawningAbility, ignoreActor);
+	return projectiles;
 }
 
-TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::HandleSpawn(FTransformArrayA2& spawnLocations, const FProjectileConfiguration& configuration)
+TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::HandleSpawn(FTransformArrayA2& spawnLocations, const FProjectileConfiguration& configuration, 
+	UAttackBaseGameplayAbility* spawningAbility, AActor* ignoreActor)
 {
 	TArray<ABattlemageTheEndlessProjectile*> returnArray = TArray<ABattlemageTheEndlessProjectile*>();
 	auto world = GetWorld();
+	FActorSpawnParameters ActorSpawnParams = FActorSpawnParameters();
+	ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	if (!world)
 	{
 		UE_LOG(LogTemp, Error, TEXT("No world found for projectile spawning"));
 		return returnArray;
 	}
-	for (auto location : spawnLocations)
+
+	TArray<AActor*> attachedActors;
+	if (OwnerCharacter)
+	{
+		attachedActors.Add(OwnerCharacter);
+		OwnerCharacter->GetAttachedActors(attachedActors);
+	}
+
+	for (const FTransform& location : spawnLocations)
 	{
 		const FVector SpawnLocation = location.GetLocation();
 		const FRotator SpawnRotation = location.GetRotation().Rotator();
-		FActorSpawnParameters ActorSpawnParams = FActorSpawnParameters();
-		ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		returnArray.Add(world->SpawnActor<ABattlemageTheEndlessProjectile>(
-			configuration.ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams));
+		auto newActor = world->SpawnActor<ABattlemageTheEndlessProjectile>(
+			configuration.ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+
+		newActor->SpawningAbility = spawningAbility;
+		newActor->OwnerActor = OwnerCharacter;
+
+		// get all actors attached to the OwnerCharacter and ignore them
+		for (AActor* actor : attachedActors)
+			newActor->GetCollisionComp()->IgnoreActorWhenMoving(actor, true);
+
+		returnArray.Add(newActor);
 	}
 
 	return returnArray;
@@ -48,9 +69,10 @@ TArray<FTransform> UProjectileManager::GetSpawnLocations(const FProjectileConfig
 
 	// For one projectile, we really only care about the offset
 	if(configuration.Amount == 1)
-	{
-		rootTransform.GetTranslation() + configuration.SpawnOffset.RotateAngleAxis(rootTransform.GetRotation().Z, FVector::ZAxisVector);
-		return TArray<FTransform>{rootTransform};
+	{		
+		auto spawnTranslation = rootTransform.GetTranslation() + configuration.SpawnOffset.RotateAngleAxis(rootTransform.Rotator().Yaw, FVector::ZAxisVector);
+		auto spawnTransform = FTransform(rootTransform.GetRotation(), spawnTranslation, 	rootTransform.GetScale3D());
+		return TArray<FTransform>{spawnTransform};
 	}
 
 	// TODO: Implement shapes
@@ -58,33 +80,7 @@ TArray<FTransform> UProjectileManager::GetSpawnLocations(const FProjectileConfig
 	return TArray<FTransform>();
 }
 
-void UProjectileManager::StoreProjectileInstance(FAbilityInstanceProjectiles instance)
-{
-	for (auto projectile : instance.Projectiles)
-	{
-		projectile->OnDestroyed.AddDynamic(this, &UProjectileManager::OnProjectileDestroyed);
-	}
-	ActiveProjectiles.Add(instance);
-}
-
 void UProjectileManager::OnProjectileDestroyed(AActor* destroyedActor)
 {
-	// TODO: This isn't a terribly efficient way to do this, refine later
-	for (int i = 0; i < ActiveProjectiles.Num(); i++)
-	{
-		// If we're not dealing with the same projectile class, skip
-		if (ActiveProjectiles[i].Configuration.ProjectileClass != destroyedActor->StaticClass())
-			continue;
-
-		// Call remove, if it finds any to remove, we're done
-		auto projectile = Cast<ABattlemageTheEndlessProjectile>(destroyedActor);
-		if (ActiveProjectiles[i].Projectiles.Remove(projectile) > 0)
-		{
-			// if this instance has no more projectiles, remove it from the active list
-			if (ActiveProjectiles[i].Projectiles.Num() == 0)
-				ActiveProjectiles.RemoveAt(i);
-
-			break;
-		}
-	}
+	//destroyedActor->Destroy();
 }

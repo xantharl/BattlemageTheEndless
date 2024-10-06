@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/SphereComponent.h"
+#include "Abilities/GameplayAbility.h"
 #include "BattlemageTheEndlessProjectile.generated.h"
 
 class USphereComponent;
@@ -120,6 +121,7 @@ class ABattlemageTheEndlessProjectile : public AActor
 {
 	GENERATED_BODY()
 
+public:
 	/** Sphere collision component */
 	UPROPERTY(VisibleDefaultsOnly, Category=Projectile)
 	USphereComponent* CollisionComp;
@@ -128,7 +130,9 @@ class ABattlemageTheEndlessProjectile : public AActor
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	UProjectileMovementComponent* ProjectileMovement;
 
-public:
+	UGameplayAbility* SpawningAbility;
+	AActor* OwnerActor;
+
 	ABattlemageTheEndlessProjectile();
 
 	/// <summary>

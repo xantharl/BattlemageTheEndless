@@ -7,6 +7,7 @@
 #include "Abilities/GameplayAbility.h"
 #include "../Pickups/BattlemageTheEndlessProjectile.h"
 #include "../Abilities/PersistentAreaEffect.h"
+#include "../Abilities/AttackBaseGameplayAbility.h"
 #include "ProjectileManager.generated.h"
 
 USTRUCT(BlueprintType)
@@ -17,7 +18,7 @@ struct FAbilityInstanceProjectiles
 public:
 	/** Ability class which spawned these projectiles */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class UGameplayAbility> SpawningAbilityClass;
+	UAttackBaseGameplayAbility* SpawningAbility;
 
 	/** Configuration definining how to spawn projectiles */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
@@ -41,24 +42,27 @@ class BATTLEMAGETHEENDLESS_API UProjectileManager : public UObject
 	GENERATED_BODY()
 
 public:
+	void Initialize(ACharacter* character) { OwnerCharacter = character; }
+
 	// Spawns projectiles entry point based on the provided configuration and actor location
-	TArray<ABattlemageTheEndlessProjectile*> SpawnProjectiles_Actor(TSubclassOf<class UGameplayAbility> spawningAbilityClass, const FProjectileConfiguration& configuration, const AActor* actor);
+	TArray<ABattlemageTheEndlessProjectile*> SpawnProjectiles_Actor(UAttackBaseGameplayAbility* spawningAbility, const FProjectileConfiguration& configuration, AActor* actor);
 
 	// Spawns projectiles entry point based on the provided configuration and specific transform, used for "previous ability" spawn location
-	TArray<ABattlemageTheEndlessProjectile*> SpawnProjectiles_Transform(TSubclassOf<class UGameplayAbility> spawningAbilityClass, const FProjectileConfiguration& configuration, const FTransform& transform);
+	TArray<ABattlemageTheEndlessProjectile*> SpawnProjectiles_Location(UAttackBaseGameplayAbility* spawningAbility, const FProjectileConfiguration& configuration,
+		const FRotator rotation, const FVector translation, const FVector scale = FVector::OneVector, AActor* ignoreActor = nullptr);
 
 private:
 	// Actual spawner
-	TArray<ABattlemageTheEndlessProjectile*> HandleSpawn(FTransformArrayA2& spawnLocations, const FProjectileConfiguration& configuration);
+	TArray<ABattlemageTheEndlessProjectile*> HandleSpawn(FTransformArrayA2& spawnLocations, const FProjectileConfiguration& configuration, 
+		UAttackBaseGameplayAbility* spawningAbility, AActor* ignoreActor = nullptr);
 
 	// Produces spawn locations and rotations (relative) based on the provided configuration
 	TArray<FTransform> GetSpawnLocations(const FProjectileConfiguration& configuration, const FTransform& rootTransform);
 
-	TArray<FAbilityInstanceProjectiles> ActiveProjectiles;
-
-	void StoreProjectileInstance(FAbilityInstanceProjectiles instance);
+	ACharacter* OwnerCharacter;
 
 	// Delegate for projectile destruction
+	UFUNCTION()
 	void OnProjectileDestroyed(AActor* destroyedActor);
 
 	// TODO: Subscribe to projectile destruction events to remove instances from the active list

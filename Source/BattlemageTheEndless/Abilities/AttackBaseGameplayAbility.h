@@ -88,11 +88,11 @@ public:
 	/// <summary>
 	/// Helper to apply any effects owned by this ability to the target, which can be the same as the character if applying to self
 	/// </summary>
-	/// <param name="character">Character causing the effect(s)</param>
+	/// <param name="instigator">Character causing the effect(s)</param>
 	/// <param name="target">Target of the effect(s)</param>
 	/// <param name="effectCauser">EffectCauser is the actor that is the physical source of the effect</param>
 	/// <param name="durationEffectsApplied">Out bool indicating whether duration effects were applied</param>
-	void ApplyEffects(AActor* character, AActor* target, bool& durationEffectsApplied, UAbilitySystemComponent* targetAsc, AActor* effectCauser = nullptr);
+	void ApplyEffects(AActor* target, bool& durationEffectsApplied, UAbilitySystemComponent* targetAsc, AActor* instigator = nullptr, AActor* effectCauser = nullptr);
 
 	/// <summary>
 	/// Override of the CancelAbility method to clear effects (even if they still have duration) and reset the Combo Continuation timer
@@ -110,9 +110,6 @@ public:
 	/// <param name="wasCancelled"></param>
 	void ResetTimerAndClearEffects(const FGameplayAbilityActorInfo* ActorInfo, bool wasCancelled = false);
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
-
-	//UFUNCTION()
-	//virtual void OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
 	/// <summary>
 	/// Play the animation used for a pause between combo stages if present

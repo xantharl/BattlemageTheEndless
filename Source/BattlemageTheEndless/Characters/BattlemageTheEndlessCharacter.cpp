@@ -56,6 +56,7 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 	ComboManager->AbilitySystemComponent = AbilitySystemComponent;
 
 	ProjectileManager = CreateDefaultSubobject<UProjectileManager>(TEXT("ProjectileManager"));
+	ProjectileManager->Initialize(this);
 }
 
 void ABattlemageTheEndlessCharacter::PossessedBy(AController* NewController)
@@ -76,6 +77,8 @@ void ABattlemageTheEndlessCharacter::SetupCapsule()
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap);
+	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnProjectileHit);
+
 }
 
 void ABattlemageTheEndlessCharacter::Destroyed()
@@ -210,7 +213,7 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 			Equipment[pickup->Weapon->SlotType].Pickups.Add(pickup);
 
 			// track active spell class if this is a spell, this is used later to switch between spell classes
-			if (pickup->Weapon->SlotType == EquipSlot::Secondary)
+			if (pickup->Weapon->SlotType == EquipSlot::Secondary && !ActiveSpellClass)
 				ActiveSpellClass = pickup;
 		}
 
@@ -739,20 +742,7 @@ void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickup
 		//	Currently an ability can apply effects either on hit or to self, but not both
 		if (ability->ProjectileConfiguration.ProjectileClass)
 		{
-			// if the projectiles are spawned from an actor, use that entry point
-			if (ability->ProjectileConfiguration.SpawnLocation != FSpawnLocation::PreviousAbility)
-			{
-				AActor* actor = ability->ProjectileConfiguration.SpawnLocation == FSpawnLocation::Player ? (AActor*)this : ActiveSpellClass;
-				ProjectileManager->SpawnProjectiles_Actor(ability->StaticClass(), ability->ProjectileConfiguration, actor);
-			}
-			// We can only spawn at last ability location if we have a niagara instance
-			//  TODO: support spawning projectiles based on a previous ability's actor(s) as well
-			else if (ComboManager->LastAbilityNiagaraInstance)
-			{
-				// We are making the potentially dangerous assumption that there is only 1 instance
-				ProjectileManager->SpawnProjectiles_Transform(ability->StaticClass(), ability->ProjectileConfiguration, ComboManager->LastAbilityNiagaraInstance->GetComponentTransform());
-			}
-			// otherwise use the previous ability entry point
+			HandleProjectileSpawn(ability);
 			return;
 		}
 
@@ -763,6 +753,47 @@ void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickup
 		// Otherwise bind the cancel event to remove the active effects immediately
 		AbilitySystemComponent->OnAbilityEnded.AddUObject(this, &ABattlemageTheEndlessCharacter::OnAbilityCancelled);
 	}
+}
+
+void ABattlemageTheEndlessCharacter::HandleProjectileSpawn(UAttackBaseGameplayAbility* ability)
+{
+	// TODO: Remove the return value if we end up not needing it
+	TArray<ABattlemageTheEndlessProjectile*> projectiles;
+
+	// if the projectiles are spawned from an actor, use that entry point
+	if (ability->ProjectileConfiguration.SpawnLocation == FSpawnLocation::Player)
+	{
+		projectiles = ProjectileManager->SpawnProjectiles_Actor(ability, ability->ProjectileConfiguration, this);
+	}
+	// We can only spawn at last ability location if we have a niagara instance
+	//  TODO: support spawning projectiles based on a previous ability's actor(s) as well
+	else if (ability->ProjectileConfiguration.SpawnLocation == FSpawnLocation::SpellFocus)
+	{
+		const FRotator spawnRotation = Cast<APlayerController>(Controller)->PlayerCameraManager->GetCameraRotation();
+		auto socketName = LeftHanded ? FName("gripRight") : FName("gripLeft");
+		auto spawnLocation = GetMesh()->GetSocketLocation(socketName) + spawnRotation.RotateVector(CurrentGripOffset(socketName));
+
+		// We are making the potentially dangerous assumption that there is only 1 instance
+		projectiles = ProjectileManager->SpawnProjectiles_Location(ability, ability->ProjectileConfiguration,
+			spawnRotation, spawnLocation, FVector::OneVector, ActiveSpellClass);
+	}
+	else if (ability->ProjectileConfiguration.SpawnLocation == FSpawnLocation::PreviousAbility)
+	{
+		if (ComboManager->LastAbilityNiagaraInstance)
+		{
+			// We are making the potentially dangerous assumption that there is only 1 instance
+			projectiles = ProjectileManager->SpawnProjectiles_Location(
+				ability, ability->ProjectileConfiguration, ComboManager->LastAbilityNiagaraInstance->GetComponentRotation(),
+				ComboManager->LastAbilityNiagaraInstance->GetComponentLocation());
+		}
+	}
+	else
+	{
+		UE_LOG(LogExec, Error, TEXT("'%s' Attempted to spawn projectiles from an invalid location!"), *GetNameSafe(this));
+	}
+
+	for (auto projectile : projectiles)
+		GetCapsuleComponent()->IgnoreActorWhenMoving(projectile, true);
 }
 
 void ABattlemageTheEndlessCharacter::OnAbilityCancelled(const FAbilityEndedData& endData)
@@ -778,4 +809,22 @@ void ABattlemageTheEndlessCharacter::OnAbilityCancelled(const FAbilityEndedData&
 
 		AbilitySystemComponent->RemoveActiveGameplayEffectBySourceEffect(effect, AbilitySystemComponent, 1);
 	}
+}
+
+void ABattlemageTheEndlessCharacter::OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	ABattlemageTheEndlessProjectile* projectile = Cast<ABattlemageTheEndlessProjectile>(OtherActor);
+	if (!projectile)
+		return;
+	
+	UAttackBaseGameplayAbility* ability = Cast<UAttackBaseGameplayAbility>(projectile->SpawningAbility);
+	if (!ability)
+		return;
+
+	// Not used currently
+	bool durationEffectsApplied = false;
+
+	// apply effects to the hit actor (this character)
+	// TODO: maybe package instigator with the ability so we can trace back to the source of the ability
+	ability->ApplyEffects(this, durationEffectsApplied, AbilitySystemComponent);
 }

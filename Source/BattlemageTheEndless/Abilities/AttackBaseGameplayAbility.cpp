@@ -80,7 +80,7 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	bool durationEffectsApplied = false;
 
 	// Apply effects to the character, these will in turn spawn any configured cues (Particles and/or sound)
-	ApplyEffects(character, character, durationEffectsApplied, ActorInfo->AbilitySystemComponent.Get(), ActorInfo->AvatarActor.Get());
+	ApplyEffects(character, durationEffectsApplied, ActorInfo->AbilitySystemComponent.Get(), character, ActorInfo->AvatarActor.Get());
 
 	// If any effects were applied, don't set an end timer, let the effect tasks handle the end
 	if (durationEffectsApplied)
@@ -98,14 +98,17 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	world->GetTimerManager().SetTimer(EndTimerHandle, TimerDelegate, montageDuration, false);
 }
 
-void UAttackBaseGameplayAbility::ApplyEffects(AActor* instigator, AActor* target, bool& durationEffectsApplied, UAbilitySystemComponent* targetAsc, AActor* effectCauser)
+void UAttackBaseGameplayAbility::ApplyEffects(AActor* target, bool& durationEffectsApplied, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser)
 {
 	for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
 	{
 		FGameplayEffectContextHandle context = targetAsc->MakeEffectContext();
-		context.AddSourceObject(instigator);
-		context.AddInstigator(instigator, effectCauser ? effectCauser : instigator);
-		context.AddActors({ instigator });
+		if(instigator)
+		{
+			context.AddSourceObject(instigator);
+			context.AddInstigator(instigator, effectCauser ? effectCauser : instigator);
+			context.AddActors({ instigator });
+		}
 
 		FGameplayEffectSpecHandle specHandle = targetAsc->MakeOutgoingSpec(effect, 1.f, context);
 		if (specHandle.IsValid())
@@ -147,16 +150,6 @@ void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Han
 	TryPlayComboPause(ActorInfo);
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
-
-//void UAttackBaseGameplayAbility::OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
-//{
-//	// if OtherActor is a BattlemageTheEndlessCharacter, apply effects
-//	if (ABattlemageTheEndlessCharacter* otherCharacter = Cast<ABattlemageTheEndlessCharacter>(OtherActor))
-//	{
-//		bool durationEffectsApplied = false;
-//		ApplyEffects(Owner, otherCharacter, durationEffectsApplied);
-//	}
-//}
 
 void UAttackBaseGameplayAbility::TryPlayComboPause(const FGameplayAbilityActorInfo* ActorInfo)
 {
