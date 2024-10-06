@@ -25,22 +25,27 @@ TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::SpawnProjectiles_Lo
 TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::HandleSpawn(FTransformArrayA2& spawnLocations, const FProjectileConfiguration& configuration, 
 	UAttackBaseGameplayAbility* spawningAbility, AActor* ignoreActor)
 {
+	if (!OwnerCharacter)
+	{
+		UE_LOG(LogTemp, Error, TEXT("OwnerCharacter not set for projectile manager, projectiles will not spawn"));
+		return TArray<ABattlemageTheEndlessProjectile*>();
+	
+	}
 	TArray<ABattlemageTheEndlessProjectile*> returnArray = TArray<ABattlemageTheEndlessProjectile*>();
-	auto world = GetWorld();
-	FActorSpawnParameters ActorSpawnParams = FActorSpawnParameters();
-	ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	auto world = OwnerCharacter->GetWorld();
+
 	if (!world)
 	{
 		UE_LOG(LogTemp, Error, TEXT("No world found for projectile spawning"));
 		return returnArray;
 	}
 
+	FActorSpawnParameters ActorSpawnParams = FActorSpawnParameters();
+	ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
 	TArray<AActor*> attachedActors;
-	if (OwnerCharacter)
-	{
-		attachedActors.Add(OwnerCharacter);
-		OwnerCharacter->GetAttachedActors(attachedActors);
-	}
+	attachedActors.Add(OwnerCharacter);
+	OwnerCharacter->GetAttachedActors(attachedActors);
 
 	for (const FTransform& location : spawnLocations)
 	{
