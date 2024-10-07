@@ -175,12 +175,13 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 
 void ABattlemageTheEndlessCharacter::GiveStartingEquipment()
 {
+	// This shouldn't be run if the character already has equipment
+	if (Equipment.Num() > 0)
+		return;
+
 	// init equipment map
-	if (Equipment.Num() == 0)
-	{
-		Equipment.Add(EquipSlot::Primary, FPickups());
-		Equipment.Add(EquipSlot::Secondary, FPickups());
-	}
+	Equipment.Add(EquipSlot::Primary, FPickups());
+	Equipment.Add(EquipSlot::Secondary, FPickups());
 
 	// init equipment abiltiy handles
 	if (EquipmentAbilityHandles.Num() == 0)
