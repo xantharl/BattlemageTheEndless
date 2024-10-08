@@ -52,6 +52,9 @@ public:
 		const FRotator rotation, const FVector translation, const FVector scale = FVector::OneVector, AActor* ignoreActor = nullptr);
 
 private:
+	const float ConeStartSize = 50.f;
+	const int ConeOuterPoints = 8;
+
 	// Actual spawner
 	TArray<ABattlemageTheEndlessProjectile*> HandleSpawn(FTransformArrayA2& spawnLocations, const FProjectileConfiguration& configuration, 
 		UAttackBaseGameplayAbility* spawningAbility, AActor* ignoreActor = nullptr);

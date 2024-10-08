@@ -24,11 +24,13 @@ enum class FTargetType : uint8
 
 /// <summary>
 /// Enum of possible shapes for spawning projectiles
+/// Note: Some shapes will override projectile count as required to make sense
 /// </summary>
 UENUM(BlueprintType)
 enum class FSpawnShape : uint8
 {
 	None UMETA(DisplayName = "None"),
+	// This shape ignores the Amount property and determines the number of projectiles based on the spread
 	Cone UMETA(DisplayName = "Cone"),
 	// Differs from Cone by being a flat shape
 	Fan UMETA(DisplayName = "Fan"),
@@ -62,7 +64,6 @@ struct FProjectileConfiguration
 	GENERATED_BODY()
 
 public:
-
 	/** Projectile class to spawn */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class ABattlemageTheEndlessProjectile> ProjectileClass;

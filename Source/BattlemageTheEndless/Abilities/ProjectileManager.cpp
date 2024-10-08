@@ -67,24 +67,97 @@ TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::HandleSpawn(FTransf
 		returnArray.Add(newActor);
 	}
 
+	// if we only have 1 projectile, we're done
+	if (returnArray.Num() <= 1)
+		return returnArray;
+
+	// TODO: Figure out how to do this better than N^2 timing
+	// If we have multiple, make them ignore eachother
+	for (ABattlemageTheEndlessProjectile* base : returnArray)
+	{
+		for (ABattlemageTheEndlessProjectile* target : returnArray)
+		{
+			if (target == base)
+				continue;
+
+			base->GetCollisionComp()->IgnoreActorWhenMoving(target, true);
+		}
+	}
+
 	return returnArray;
 }
 
 TArray<FTransform> UProjectileManager::GetSpawnLocations(const FProjectileConfiguration& configuration, const FTransform& rootTransform)
 {
 	// Some day we'll make this smarter but for now it's basically a bunch of if statements checking on the shape and location
+	auto rootPlusOffset = rootTransform.GetTranslation() + configuration.SpawnOffset.RotateAngleAxis(rootTransform.Rotator().Yaw, FVector::ZAxisVector);
+	auto returnArray = TArray<FTransform>();
 
-	// For one projectile, we really only care about the offset
-	if(configuration.Amount == 1)
+	// For shape None we will use an NGon, but that's not implemented yet
+	if(configuration.Shape == FSpawnShape::None)
 	{		
-		auto spawnTranslation = rootTransform.GetTranslation() + configuration.SpawnOffset.RotateAngleAxis(rootTransform.Rotator().Yaw, FVector::ZAxisVector);
-		auto spawnTransform = FTransform(rootTransform.GetRotation(), spawnTranslation, 	rootTransform.GetScale3D());
-		return TArray<FTransform>{spawnTransform};
+		auto spawnTransform = FTransform(rootTransform.GetRotation(), rootPlusOffset, rootTransform.GetScale3D());
+		returnArray.Add(spawnTransform);
 	}
 
-	// TODO: Implement shapes
+	// For our purposes a cone starts as a fixed sized octagon where each projectile angles out at Spread degrees.
+	//    We also add interpolated projectiles between the outside and center
+	else if (configuration.Shape == FSpawnShape::Cone)
+	{
+		// first create a projectile at the center
+		auto const spawnTransform = FTransform(rootTransform.GetRotation(), rootPlusOffset, rootTransform.GetScale3D());
+		returnArray.Add(spawnTransform);
 
-	return TArray<FTransform>();
+		const FVector relativeLocation = FVector(0.f, ConeStartSize/2.f, 0.f);
+		const auto controlRotation = OwnerCharacter->GetControlRotation();
+
+		// use the Spread to determine the rotation of the projectile
+		float halfSpread = configuration.Spread / 2.f;
+		FRotator spawnRotation = FRotator(halfSpread, 0.f, 0.f);
+
+		for (int pointNum = 0; pointNum < ConeOuterPoints; pointNum++)
+		{
+			// Using the center as the basis for the cone, we'll rotate the points around the center
+			auto rotatedLocation = relativeLocation.RotateAngleAxis(pointNum * (360.f / (float)ConeOuterPoints), FVector::XAxisVector);
+
+			// doing this mathematically is escaping me so we're doing it the lazy way
+			auto quadrant = (pointNum / 2) + 1;
+			auto firstPointInQuad = pointNum % 2 == 0;
+
+			FRotator rotator = FRotator(0.f, 0.f, 0.f);
+			if (quadrant == 1)
+			{
+				rotator.Pitch += halfSpread;
+				if (!firstPointInQuad)
+					rotator.Yaw += halfSpread;
+			}
+			else if (quadrant == 2)
+			{
+				rotator.Yaw += halfSpread;
+				if (!firstPointInQuad)
+					rotator.Pitch -= halfSpread;
+			}
+			else if (quadrant == 3)
+			{
+				rotator.Pitch -= halfSpread;
+				if (!firstPointInQuad)
+					rotator.Yaw -= halfSpread;
+			}
+			else if (quadrant == 4)
+			{
+				rotator.Yaw -= halfSpread;
+				if (firstPointInQuad)
+					rotator.Pitch += halfSpread;
+			}
+
+			auto thisSpawnTransform = FTransform(spawnTransform); 
+			thisSpawnTransform.ConcatenateRotation(rotator.Quaternion());
+
+			returnArray.Add(thisSpawnTransform);
+		}
+	}
+
+	return returnArray;
 }
 
 void UProjectileManager::OnProjectileDestroyed(AActor* destroyedActor)
