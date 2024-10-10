@@ -92,11 +92,11 @@ TArray<FTransform> UProjectileManager::GetSpawnLocations(const FProjectileConfig
 	// Some day we'll make this smarter but for now it's basically a bunch of if statements checking on the shape and location
 	auto rootPlusOffset = rootTransform.GetTranslation() + configuration.SpawnOffset.RotateAngleAxis(rootTransform.Rotator().Yaw, FVector::ZAxisVector);
 	auto returnArray = TArray<FTransform>();
+	auto spawnTransform = FTransform(rootTransform.GetRotation(), rootPlusOffset, rootTransform.GetScale3D());
 
 	// For shape None we will use an NGon, but that's not implemented yet
 	if(configuration.Shape == FSpawnShape::None)
 	{		
-		auto spawnTransform = FTransform(rootTransform.GetRotation(), rootPlusOffset, rootTransform.GetScale3D());
 		returnArray.Add(spawnTransform);
 	}
 
@@ -105,11 +105,9 @@ TArray<FTransform> UProjectileManager::GetSpawnLocations(const FProjectileConfig
 	else if (configuration.Shape == FSpawnShape::Cone)
 	{
 		// first create a projectile at the center
-		auto const spawnTransform = FTransform(rootTransform.GetRotation(), rootPlusOffset, rootTransform.GetScale3D());
 		returnArray.Add(spawnTransform);
 
 		const FVector relativeLocation = FVector(0.f, ConeStartSize/2.f, 0.f);
-		const auto controlRotation = OwnerCharacter->GetControlRotation();
 
 		// use the Spread to determine the rotation of the projectile
 		float halfSpread = configuration.Spread / 2.f;
@@ -156,8 +154,86 @@ TArray<FTransform> UProjectileManager::GetSpawnLocations(const FProjectileConfig
 			returnArray.Add(thisSpawnTransform);
 		}
 	}
+	else if (configuration.Shape == FSpawnShape::Line)
+	{
+		GetLinePoints(configuration, returnArray, spawnTransform);
+	}
+	else if (configuration.Shape == FSpawnShape::Fan)
+	{
+		// use the line points function for the base points
+		GetLinePoints(configuration, returnArray, spawnTransform);
+
+		// add rotation to the points to fan them out
+		auto const bEvenAmount = configuration.Amount % 2 == 0;
+		int skipIndex = bEvenAmount ? 0 : 1;
+		int steps = (configuration.Amount - skipIndex) / 2;
+
+		for (int i = 0; i < configuration.Amount / 2; i++)
+		{
+			int firstElementIndex = i * 2 + skipIndex;
+			int SecondElementIndex = (i * 2) + 1 + skipIndex;
+			const float targetYaw = ((configuration.Spread / 2.f) / steps) * (i + 1);
+			
+			returnArray[firstElementIndex].ConcatenateRotation(FRotator(0.f, targetYaw, 0.f).Quaternion());
+			returnArray[SecondElementIndex].ConcatenateRotation(FRotator(0.f, -targetYaw, 0.f).Quaternion());
+		}
+	}
+	else if (configuration.Shape == FSpawnShape::InwardRing)
+	{
+		GetRingPoints(configuration, spawnTransform, returnArray, true);
+	}
+	else if (configuration.Shape == FSpawnShape::OutwardRing)
+	{
+		GetRingPoints(configuration, spawnTransform, returnArray, false);
+	}
 
 	return returnArray;
+}
+
+void UProjectileManager::GetRingPoints(const FProjectileConfiguration& configuration, const FTransform& spawnTransform, FTransformArrayA2& returnArray, bool bInwards)
+{
+	FVector relativeLocation = FVector(RingDiameter / 2.f, 0.f, 0.f);
+	auto stepSize = 360.f / configuration.Amount;
+
+	float rotationToAdd = bInwards ? 180.f : 0.f;
+	for (int i = 0; i < configuration.Amount; i++)
+	{
+		auto rotatedLocation = relativeLocation.RotateAngleAxis(i * stepSize, FVector::ZAxisVector);
+		auto thisSpawnTransform = FTransform(spawnTransform);
+		thisSpawnTransform.AddToTranslation(rotatedLocation);
+		thisSpawnTransform.ConcatenateRotation(FRotator(0.f, i * stepSize + rotationToAdd, 0.f).Quaternion());
+
+		returnArray.Add(thisSpawnTransform);
+	}
+}
+
+void UProjectileManager::GetLinePoints(const FProjectileConfiguration& configuration, FTransformArrayA2& returnArray, FTransform& spawnTransform)
+{
+	auto const bEvenAmount = configuration.Amount % 2 == 0;
+
+	// if it's odd, put one right in the middle
+	if (!bEvenAmount)
+		returnArray.Add(spawnTransform);
+
+	const float centerOffset = bEvenAmount ? LineSpacing / 2.f : 0.f;
+
+	for (int i = 0; i < configuration.Amount / 2; i++)
+	{
+		auto offset = FVector(0.f, LineSpacing * (i + 1) + centerOffset, 0.f);
+		offset = offset.RotateAngleAxis(spawnTransform.Rotator().Yaw, FVector::ZAxisVector);
+
+		// create a spawn for both sides of center
+		auto spawnTransform1 = FTransform(spawnTransform);
+		auto spawnTransform2 = FTransform(spawnTransform);
+
+		// offset them accordingly
+		spawnTransform1.AddToTranslation(offset);
+		spawnTransform2.AddToTranslation(offset * -1.0f);
+
+		// add them to the return array
+		returnArray.Add(spawnTransform1);
+		returnArray.Add(spawnTransform2);
+	}
 }
 
 void UProjectileManager::OnProjectileDestroyed(AActor* destroyedActor)

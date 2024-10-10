@@ -36,9 +36,10 @@ enum class FSpawnShape : uint8
 	Fan UMETA(DisplayName = "Fan"),
 	Line UMETA(DisplayName = "Line"),
 	InwardRing UMETA(DisplayName = "InwardRing"),
-	OutwardRing UMETA(DisplayName = "OutwardRing"),
-	Rain UMETA(DisplayName = "Rain"),
-	Erruption UMETA(DisplayName = "Erruption")
+	OutwardRing UMETA(DisplayName = "OutwardRing")
+	// TODO: Implement these types as persistent effects with collision volumes rather than projectiles
+	//Rain UMETA(DisplayName = "Rain"),
+	//Erruption UMETA(DisplayName = "Erruption")
 };
 
 /// <summary>

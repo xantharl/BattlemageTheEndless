@@ -51,9 +51,18 @@ public:
 	TArray<ABattlemageTheEndlessProjectile*> SpawnProjectiles_Location(UAttackBaseGameplayAbility* spawningAbility, const FProjectileConfiguration& configuration,
 		const FRotator rotation, const FVector translation, const FVector scale = FVector::OneVector, AActor* ignoreActor = nullptr);
 
+	// TODO: Make these all members of the theoretical shapes classes
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ProjectileConstants, meta = (AllowPrivateAccess = "true"))
+	float ConeStartSize = 50.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ProjectileConstants, meta = (AllowPrivateAccess = "true"))
+	int ConeOuterPoints = 8;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ProjectileConstants, meta = (AllowPrivateAccess = "true"))
+	float LineSpacing = 50.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ProjectileConstants, meta = (AllowPrivateAccess = "true"))
+	float RingDiameter = 50.f;
+
+	ACharacter* OwnerCharacter;
 private:
-	const float ConeStartSize = 50.f;
-	const int ConeOuterPoints = 8;
 
 	// Actual spawner
 	TArray<ABattlemageTheEndlessProjectile*> HandleSpawn(FTransformArrayA2& spawnLocations, const FProjectileConfiguration& configuration, 
@@ -62,7 +71,9 @@ private:
 	// Produces spawn locations and rotations (relative) based on the provided configuration
 	TArray<FTransform> GetSpawnLocations(const FProjectileConfiguration& configuration, const FTransform& rootTransform);
 
-	ACharacter* OwnerCharacter;
+	void GetRingPoints(const FProjectileConfiguration& configuration, const FTransform& spawnTransform, FTransformArrayA2& returnArray, bool bInwards);
+
+	void GetLinePoints(const FProjectileConfiguration& configuration, FTransformArrayA2& returnArray, FTransform& spawnTransform);
 
 	// Delegate for projectile destruction
 	UFUNCTION()

@@ -791,6 +791,10 @@ void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickup
 
 void ABattlemageTheEndlessCharacter::HandleProjectileSpawn(UAttackBaseGameplayAbility* ability)
 {
+	// I'm unclear on why, but the address of the character seems to change at times
+	if (ProjectileManager->OwnerCharacter != this)
+		ProjectileManager->OwnerCharacter = this;
+
 	// TODO: Remove the return value if we end up not needing it
 	TArray<ABattlemageTheEndlessProjectile*> projectiles;
 
