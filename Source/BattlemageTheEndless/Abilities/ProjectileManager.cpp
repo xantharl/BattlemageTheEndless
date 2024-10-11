@@ -59,9 +59,12 @@ TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::HandleSpawn(FTransf
 		newActor->OwnerActor = OwnerCharacter;
 
 		// get all actors attached to the OwnerCharacter and ignore them
-		for (AActor* actor : attachedActors)
+		if (configuration.Shape != FSpawnShape::InwardRing)
 		{
-			newActor->GetCollisionComp()->IgnoreActorWhenMoving(actor, true);
+			for (AActor* actor : attachedActors)
+			{
+				newActor->GetCollisionComp()->IgnoreActorWhenMoving(actor, true);
+			}
 		}
 
 		returnArray.Add(newActor);

@@ -795,7 +795,6 @@ void ABattlemageTheEndlessCharacter::HandleProjectileSpawn(UAttackBaseGameplayAb
 	if (ProjectileManager->OwnerCharacter != this)
 		ProjectileManager->OwnerCharacter = this;
 
-	// TODO: Remove the return value if we end up not needing it
 	TArray<ABattlemageTheEndlessProjectile*> projectiles;
 
 	// if the projectiles are spawned from an actor, use that entry point
