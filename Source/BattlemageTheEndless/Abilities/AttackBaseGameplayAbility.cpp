@@ -77,15 +77,16 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 
 	CommitAbility(Handle, ActorInfo, ActivationInfo);
 
-	bool durationEffectsApplied = false;
-
 	// Apply effects to the character, these will in turn spawn any configured cues (Particles and/or sound)
 	if(HitType == HitType::Self)
 	{
-		ApplyEffects(character, durationEffectsApplied, ActorInfo->AbilitySystemComponent.Get(), character, ActorInfo->AvatarActor.Get());
+		ApplyEffects(character, ActorInfo->AbilitySystemComponent.Get(), character, ActorInfo->AvatarActor.Get());
 
 		// If any duration effects were applied, don't set an end timer, let the effect tasks handle the end
-		if (durationEffectsApplied)
+		auto durationEffects = EffectsToApply.FilterByPredicate([](TSubclassOf<UGameplayEffect> effect) {
+			return effect.GetDefaultObject()->DurationPolicy == EGameplayEffectDurationType::HasDuration;
+		});
+		if (durationEffects.Num() > 0)
 			return;
 	}
 
@@ -101,7 +102,7 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	world->GetTimerManager().SetTimer(EndTimerHandle, TimerDelegate, montageDuration, false);
 }
 
-void UAttackBaseGameplayAbility::ApplyEffects(AActor* target, bool& durationEffectsApplied, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser)
+void UAttackBaseGameplayAbility::ApplyEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser)
 {
 	for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
 	{
@@ -126,7 +127,6 @@ void UAttackBaseGameplayAbility::ApplyEffects(AActor* target, bool& durationEffe
 				auto task = UAbilityTask_WaitGameplayEffectRemoved::WaitForGameplayEffectRemoved(this, handle);
 				task->OnRemoved.AddDynamic(this, &UAttackBaseGameplayAbility::OnEffectRemoved);
 				task->ReadyForActivation();
-				durationEffectsApplied = true;
 			}
 			else if (durationPolicy == EGameplayEffectDurationType::Instant)
 			{

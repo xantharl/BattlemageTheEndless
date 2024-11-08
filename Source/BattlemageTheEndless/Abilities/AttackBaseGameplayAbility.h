@@ -61,13 +61,17 @@ public:
 	FProjectileConfiguration ProjectileConfiguration;
 
 	/** Amount of times an ability can chain, 0 = no chaining **/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HitBehavior)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ChainBehavior)
 	int NumberOfChains = 0;
 
 	// Might make this decrease per chain in the future, for now keep it simple
 	/** Amount of times an ability can chain, 0 = no chaining **/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HitBehavior)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ChainBehavior)
 	float ChainDistance = 0;
+
+	/** Time in seconds to wait before applying the next chain **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ChainBehavior)
+	float ChainDelay = 0;
 
 	/** Actor(s) to spawn on hit (e.g. fire surface, explosion, ice wall, etc.) **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HitBehavior)
@@ -111,8 +115,7 @@ public:
 	/// <param name="instigator">Character causing the effect(s)</param>
 	/// <param name="target">Target of the effect(s)</param>
 	/// <param name="effectCauser">EffectCauser is the actor that is the physical source of the effect</param>
-	/// <param name="durationEffectsApplied">Out bool indicating whether duration effects were applied</param>
-	void ApplyEffects(AActor* target, bool& durationEffectsApplied, UAbilitySystemComponent* targetAsc, AActor* instigator = nullptr, AActor* effectCauser = nullptr);
+	void ApplyEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator = nullptr, AActor* effectCauser = nullptr);
 
 	/// <summary>
 	/// Override of the CancelAbility method to clear effects (even if they still have duration) and reset the Combo Continuation timer
@@ -148,9 +151,28 @@ public:
 
 	bool WillCancelAbility(FGameplayAbilitySpec* OtherAbility);
 
+	UFUNCTION(BlueprintCallable, Category="ChainBehavior")
+	TArray<FTimerHandle>& GetChainTimerHandles() 
+	{
+		if (chainTimerHandles.Num() == 0)
+		{
+			for (int i = 0; i < NumberOfChains; i++)
+			{
+				chainTimerHandles.Add(FTimerHandle());
+			}
+		}
+
+		return chainTimerHandles; 
+	}
+
 protected:
 	FTimerHandle EndTimerHandle;
 
 	TArray<FActiveGameplayEffectHandle> ActiveEffectHandles;
+
+private:
+	/** Timer handles for chained abilities, do not reference directly without ensuring it is initialized
+		See GetChainTimerHandles **/
+	TArray<FTimerHandle> chainTimerHandles;
 
 };

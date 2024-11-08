@@ -863,10 +863,35 @@ void ABattlemageTheEndlessCharacter::HandleHitScan(UAttackBaseGameplayAbility* a
 		if (ability->EffectsToApply.Num() == 0)
 			return;
 		
-		// Not used currently
-		bool durationEffectsApplied = false;
-		for (auto applyTo : hitCharacters)
-			ability->ApplyEffects(applyTo, durationEffectsApplied, applyTo->AbilitySystemComponent);
+		// floating point precision, woo
+		if (FMath::Abs(ability->ChainDelay) < 0.00001f)
+		{
+			for (auto applyTo : hitCharacters)
+				ability->ApplyEffects(applyTo, applyTo->AbilitySystemComponent);
+		}
+		else
+		{
+			for (int i = 0; i < hitCharacters.Num(); ++i)
+			{
+				if (i == 0)
+				{
+					ability->ApplyEffects(hitCharacters[i], hitCharacters[i]->AbilitySystemComponent);
+					continue;
+				}
+
+				// NOTE: Apparently this binding is not smart enough to handle default params, automatic casting of nullptrs, or downcasting so we need to do all of those manually
+				FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(
+					ability, 
+					&UAttackBaseGameplayAbility::ApplyEffects, 
+					(AActor*)hitCharacters[i], 
+					(UAbilitySystemComponent*)hitCharacters[i]->AbilitySystemComponent, 
+					(AActor*)nullptr, 
+					(AActor*)nullptr
+				);
+
+				GetWorld()->GetTimerManager().SetTimer(ability->GetChainTimerHandles()[i - 1], TimerDelegate, ability->ChainDelay * i, false);
+			}
+		}
 	}
 }
 
@@ -960,10 +985,7 @@ void ABattlemageTheEndlessCharacter::OnProjectileHit(UPrimitiveComponent* HitCom
 	if (!ability)
 		return;
 
-	// Not used currently
-	bool durationEffectsApplied = false;
-
 	// apply effects to the hit actor (this character)
 	// TODO: maybe package instigator with the ability so we can trace back to the source of the ability
-	ability->ApplyEffects(this, durationEffectsApplied, AbilitySystemComponent);
+	ability->ApplyEffects(this, AbilitySystemComponent);
 }

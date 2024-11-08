@@ -200,9 +200,6 @@ void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 	auto abilitySpec = Cast<UAttackBaseGameplayAbility>(
 		attacker->AbilitySystemComponent->FindAbilitySpecFromHandle(attacker->ComboManager->LastActivatedAbilityHandle)->Ability);
 
-	// Not used currently
-	bool durationEffectsApplied = false;
-
 	// apply any on hit effects from the weapon attack, all effects on a weapon are assumed to be on hit
-	abilitySpec->ApplyEffects(hitActor, durationEffectsApplied, hitActor->AbilitySystemComponent, attacker);
+	abilitySpec->ApplyEffects(hitActor, hitActor->AbilitySystemComponent, attacker);
 }
