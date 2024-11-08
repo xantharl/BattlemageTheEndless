@@ -21,5 +21,5 @@ public:
 	/// <param name="start"></param>
 	/// <param name="end"></param>
 	/// <returns></returns>
-	static FHitResult LineTraceGeneric(ACharacter* character, FVector start, FVector end);
+	static FHitResult LineTraceGeneric(AActor* character, FVector start, FVector end);
 };

@@ -774,9 +774,14 @@ void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickup
 
 		// If the ability has projectiles to spawn, spawn them and exit
 		//	Currently an ability can apply effects either on hit or to self, but not both
-		if (ability->ProjectileConfiguration.ProjectileClass)
+		if (ability->HitType == HitType::Projectile && ability->ProjectileConfiguration.ProjectileClass)
 		{
 			HandleProjectileSpawn(ability);
+			return;
+		}
+		else if (ability->HitType == HitType::HitScan)
+		{
+			HandleHitScan(ability);
 			return;
 		}
 
@@ -789,6 +794,7 @@ void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickup
 	}
 }
 
+// TODO: Why is this in character instead of the ability?
 void ABattlemageTheEndlessCharacter::HandleProjectileSpawn(UAttackBaseGameplayAbility* ability)
 {
 	// I'm unclear on why, but the address of the character seems to change at times
@@ -831,6 +837,100 @@ void ABattlemageTheEndlessCharacter::HandleProjectileSpawn(UAttackBaseGameplayAb
 
 	for (auto projectile : projectiles)
 		GetCapsuleComponent()->IgnoreActorWhenMoving(projectile, true);
+}
+
+void ABattlemageTheEndlessCharacter::HandleHitScan(UAttackBaseGameplayAbility* ability)
+{
+	// perform a line trace to determine if the ability hits anything
+	// Uses camera socket as the start location
+	FVector startLocation = GetMesh()->GetSocketLocation(FName("cameraSocket"));
+	FVector endLocation = startLocation + (GetMesh()->GetSocketRotation(FName("cameraSocket")).Vector() * ability->MaxRange);
+	FHitResult hit = Traces::LineTraceGeneric(this, startLocation, endLocation);
+
+	// If we've hit a character, handle it
+	if (ABattlemageTheEndlessCharacter* hitCharacter = Cast<ABattlemageTheEndlessCharacter>(hit.GetActor()))
+	{
+		TArray<ABattlemageTheEndlessCharacter*> hitCharacters = { hitCharacter };
+		if (ability->NumberOfChains > 0)
+		{
+			hitCharacters.Append(GetChainTargets(ability->NumberOfChains, ability->ChainDistance, hitCharacter));
+		}
+
+		if (ability->EffectsToApply.Num() == 0)
+			return;
+		
+		// Not used currently
+		bool durationEffectsApplied = false;
+		for (auto applyTo : hitCharacters)
+			ability->ApplyEffects(applyTo, durationEffectsApplied, applyTo->AbilitySystemComponent);
+	}
+}
+
+TArray<ABattlemageTheEndlessCharacter*> ABattlemageTheEndlessCharacter::GetChainTargets(int NumberOfChains, float ChainDistance, AActor* HitActor)
+{
+	auto allBMages = TArray<AActor*>();
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABattlemageTheEndlessCharacter::StaticClass(), allBMages);
+	
+	auto theoreticalMaxDistance = NumberOfChains * ChainDistance;
+
+	// Filter down to only the BMages within the theoreticalMaxDistance
+	allBMages = allBMages.FilterByPredicate(
+		[&HitActor, theoreticalMaxDistance, this](const AActor* a) {
+			return a != this && a->GetDistanceTo(HitActor) <= theoreticalMaxDistance;
+		});
+
+	// If there's nothing to chain to, return an empty array
+	if (allBMages.Num() == 0)
+		return TArray<ABattlemageTheEndlessCharacter*>();
+
+	int remainingChains = NumberOfChains;
+	auto chainTargets = TArray<ABattlemageTheEndlessCharacter*>();
+	ABattlemageTheEndlessCharacter* nextChainTarget = nullptr;
+	while (remainingChains > 0)
+	{
+		auto baseActor = NumberOfChains ? HitActor : nextChainTarget;
+		nextChainTarget = GetNextChainTarget(ChainDistance, baseActor, allBMages);
+		// If we couldn't find another eligible target, break
+		if (!nextChainTarget)
+			break;
+
+		// Otherwise add it to the list of chain targets, this cast is safe since we started from a list of BMages
+		chainTargets.Add(Cast<ABattlemageTheEndlessCharacter>(nextChainTarget));
+
+		--remainingChains;
+	}
+
+	return chainTargets;
+}
+
+ABattlemageTheEndlessCharacter* ABattlemageTheEndlessCharacter::GetNextChainTarget(float ChainDistance, AActor* ChainActor, TArray<AActor*> Candidates)
+{
+	// If it's 0 we shouldn't have gotten here, if it's 1 then only ChainActor was passed
+	if (Candidates.Num() <= 1)
+		return nullptr;
+
+	Candidates.Sort([ChainActor](const AActor& a, const AActor& b) {
+		return a.GetDistanceTo(ChainActor) > b.GetDistanceTo(ChainActor);
+	});
+
+	for (auto actor : Candidates)
+	{
+		if (actor == ChainActor)
+			continue;
+
+		// check for line of sight
+		// TODO: Use a specific trace channel rather than all of them
+		auto hitResult = Traces::LineTraceGeneric(ChainActor, ChainActor->GetActorLocation(), actor->GetActorLocation());
+		auto hitActor = hitResult.GetActor();
+		if (!hitActor || hitActor != actor)
+			continue;
+
+		// If we've passed the checks, this is the best candidate
+		return Cast<ABattlemageTheEndlessCharacter>(actor);
+	}
+
+	// we will only hit this if none of the candidates are in line of sight
+	return nullptr;
 }
 
 void ABattlemageTheEndlessCharacter::OnAbilityCancelled(const FAbilityEndedData& endData)

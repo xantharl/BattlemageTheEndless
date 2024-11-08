@@ -46,6 +46,8 @@ class BATTLEMAGETHEENDLESS_API UAttackBaseGameplayAbility : public UGameplayAbil
 	GENERATED_BODY()
 
 public:
+	const float DEFAULT_MAX_DISTANCE = 10000.f;
+
 	UAttackBaseGameplayAbility()
 	{
 		InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
@@ -58,14 +60,32 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectiles)
 	FProjectileConfiguration ProjectileConfiguration;
 
+	/** Amount of times an ability can chain, 0 = no chaining **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HitBehavior)
+	int NumberOfChains = 0;
+
+	// Might make this decrease per chain in the future, for now keep it simple
+	/** Amount of times an ability can chain, 0 = no chaining **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HitBehavior)
+	float ChainDistance = 0;
+
+	/** Actor(s) to spawn on hit (e.g. fire surface, explosion, ice wall, etc.) **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HitBehavior)
+	TSubclassOf<AActor> HitEffectActors;
+
+	/** Maximum distance for the ability, 0 = unlimited */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
+	float MaxRange = DEFAULT_MAX_DISTANCE;
+
 	/** AnimMontage to play each time we use the ability */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	UAnimMontage* FireAnimation;
 
 	/** Plays between combo stages if needed (next attack not requested yet) */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	UAnimMontage* ComboPauseAnimation;
 
+	/** GameplayEffects to apply, target depends on HitType **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true"))
 	TArray<TSubclassOf<UGameplayEffect>> EffectsToApply;
 

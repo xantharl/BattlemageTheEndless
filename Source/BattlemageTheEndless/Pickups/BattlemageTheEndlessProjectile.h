@@ -77,10 +77,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
 	float Lifetime = 0.0;
 
-	/** Distance to let the projectile(s) live, 0 = unlimited */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
-	float MaxRange = 0.f;
-
 	/** Shape to spawn Projectiles in, ignored if amount is 1 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
 	FSpawnShape Shape = FSpawnShape::None;

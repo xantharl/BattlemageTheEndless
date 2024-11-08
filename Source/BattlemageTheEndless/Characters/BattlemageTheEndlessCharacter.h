@@ -332,6 +332,9 @@ protected:
 	virtual void ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType);
 
 	void HandleProjectileSpawn(UAttackBaseGameplayAbility* ability);
+	void HandleHitScan(UAttackBaseGameplayAbility* ability);
+	TArray<ABattlemageTheEndlessCharacter*> GetChainTargets(int NumberOfChains, float ChainDistance, AActor* HitActor);
+	ABattlemageTheEndlessCharacter* GetNextChainTarget(float ChainDistance, AActor* ChainActor, TArray<AActor*> Candidates);
 
 	void OnAbilityCancelled(const FAbilityEndedData& endData);
 

@@ -18,13 +18,13 @@ FHitResult Traces::LineTraceMovementVector(ACharacter* character, UCharacterMove
 	return hit;
 }
 
-FHitResult Traces::LineTraceGeneric(ACharacter* character, FVector start, FVector end)
+FHitResult Traces::LineTraceGeneric(AActor* actor, FVector start, FVector end)
 {
 	// Perform the raycast
 	FHitResult hit;
 	FCollisionQueryParams params;
 	FCollisionObjectQueryParams objectParams;
-	params.AddIgnoredActor(character);
-	character->GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
+	params.AddIgnoredActor(actor);
+	actor->GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
 	return hit;
 }
