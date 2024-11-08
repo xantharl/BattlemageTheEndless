@@ -333,7 +333,7 @@ protected:
 
 	void HandleProjectileSpawn(UAttackBaseGameplayAbility* ability);
 	void HandleHitScan(UAttackBaseGameplayAbility* ability);
-	TArray<ABattlemageTheEndlessCharacter*> GetChainTargets(int NumberOfChains, float ChainDistance, AActor* HitActor);
+	TArray<ABattlemageTheEndlessCharacter*> GetChainTargets(int NumberOfChains, float ChainDistance, ABattlemageTheEndlessCharacter* HitActor);
 	ABattlemageTheEndlessCharacter* GetNextChainTarget(float ChainDistance, AActor* ChainActor, TArray<AActor*> Candidates);
 
 	void OnAbilityCancelled(const FAbilityEndedData& endData);

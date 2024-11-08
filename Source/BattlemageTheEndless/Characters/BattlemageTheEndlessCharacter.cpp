@@ -844,7 +844,11 @@ void ABattlemageTheEndlessCharacter::HandleHitScan(UAttackBaseGameplayAbility* a
 	// perform a line trace to determine if the ability hits anything
 	// Uses camera socket as the start location
 	FVector startLocation = GetMesh()->GetSocketLocation(FName("cameraSocket"));
-	FVector endLocation = startLocation + (GetMesh()->GetSocketRotation(FName("cameraSocket")).Vector() * ability->MaxRange);
+	UCharacterMovementComponent* movement = GetCharacterMovement();
+	FVector endLocation = startLocation + (movement->GetLastUpdateRotation().Vector() * ability->MaxRange);
+
+	DrawDebugLine(GetWorld(), startLocation, endLocation, FColor::Red, false, 5.0f, 0, 1.0f);
+
 	FHitResult hit = Traces::LineTraceGeneric(this, startLocation, endLocation);
 
 	// If we've hit a character, handle it
@@ -866,7 +870,7 @@ void ABattlemageTheEndlessCharacter::HandleHitScan(UAttackBaseGameplayAbility* a
 	}
 }
 
-TArray<ABattlemageTheEndlessCharacter*> ABattlemageTheEndlessCharacter::GetChainTargets(int NumberOfChains, float ChainDistance, AActor* HitActor)
+TArray<ABattlemageTheEndlessCharacter*> ABattlemageTheEndlessCharacter::GetChainTargets(int NumberOfChains, float ChainDistance, ABattlemageTheEndlessCharacter* HitActor)
 {
 	auto allBMages = TArray<AActor*>();
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABattlemageTheEndlessCharacter::StaticClass(), allBMages);
@@ -885,17 +889,15 @@ TArray<ABattlemageTheEndlessCharacter*> ABattlemageTheEndlessCharacter::GetChain
 
 	int remainingChains = NumberOfChains;
 	auto chainTargets = TArray<ABattlemageTheEndlessCharacter*>();
-	ABattlemageTheEndlessCharacter* nextChainTarget = nullptr;
+	ABattlemageTheEndlessCharacter* nextChainTarget = HitActor;
 	while (remainingChains > 0)
 	{
-		auto baseActor = NumberOfChains ? HitActor : nextChainTarget;
-		nextChainTarget = GetNextChainTarget(ChainDistance, baseActor, allBMages);
+		nextChainTarget = GetNextChainTarget(ChainDistance, nextChainTarget, allBMages);
 		// If we couldn't find another eligible target, break
 		if (!nextChainTarget)
 			break;
 
-		// Otherwise add it to the list of chain targets, this cast is safe since we started from a list of BMages
-		chainTargets.Add(Cast<ABattlemageTheEndlessCharacter>(nextChainTarget));
+		chainTargets.Add(nextChainTarget);
 
 		--remainingChains;
 	}
@@ -910,7 +912,7 @@ ABattlemageTheEndlessCharacter* ABattlemageTheEndlessCharacter::GetNextChainTarg
 		return nullptr;
 
 	Candidates.Sort([ChainActor](const AActor& a, const AActor& b) {
-		return a.GetDistanceTo(ChainActor) > b.GetDistanceTo(ChainActor);
+		return a.GetDistanceTo(ChainActor) < b.GetDistanceTo(ChainActor);
 	});
 
 	for (auto actor : Candidates)

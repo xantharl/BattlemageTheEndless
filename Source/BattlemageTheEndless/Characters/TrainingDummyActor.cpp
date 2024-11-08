@@ -24,6 +24,10 @@ void ATrainingDummyActor::ResetHealth()
 {
 	AttributeSet->Health.SetCurrentValue(AttributeSet->MaxHealth.GetBaseValue());
 	GetWorldTimerManager().ClearTimer(ResetHealthTimer);
+	
+	// Passing an empty tag container is pretty hacky but let's see if matching no tags works to fetch all effects
+	FGameplayEffectQuery allEffectsQuery = FGameplayEffectQuery::MakeQuery_MatchNoOwningTags(FGameplayTagContainer());
+	AbilitySystemComponent->RemoveActiveEffects(allEffectsQuery);
 }
 
 // Called every frame

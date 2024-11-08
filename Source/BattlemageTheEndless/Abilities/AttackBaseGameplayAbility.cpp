@@ -80,11 +80,14 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	bool durationEffectsApplied = false;
 
 	// Apply effects to the character, these will in turn spawn any configured cues (Particles and/or sound)
-	ApplyEffects(character, durationEffectsApplied, ActorInfo->AbilitySystemComponent.Get(), character, ActorInfo->AvatarActor.Get());
+	if(HitType == HitType::Self)
+	{
+		ApplyEffects(character, durationEffectsApplied, ActorInfo->AbilitySystemComponent.Get(), character, ActorInfo->AvatarActor.Get());
 
-	// If any effects were applied, don't set an end timer, let the effect tasks handle the end
-	if (durationEffectsApplied)
-		return;
+		// If any duration effects were applied, don't set an end timer, let the effect tasks handle the end
+		if (durationEffectsApplied)
+			return;
+	}
 
 	// If we have no montage and no effects, end the ability immediately
 	if (montageDuration < 0.001f)
@@ -117,13 +120,20 @@ void UAttackBaseGameplayAbility::ApplyEffects(AActor* target, bool& durationEffe
 			ActiveEffectHandles.Add(handle);
 
 			// TODO: Figure out what to do with infinite effects (keep alive?)
-			if (effect.GetDefaultObject()->DurationPolicy != EGameplayEffectDurationType::HasDuration)
-				continue;
-
-			auto task = UAbilityTask_WaitGameplayEffectRemoved::WaitForGameplayEffectRemoved(this, handle);
-			task->OnRemoved.AddDynamic(this, &UAttackBaseGameplayAbility::OnEffectRemoved);
-			task->ReadyForActivation();
-			durationEffectsApplied = true;
+			auto durationPolicy = effect.GetDefaultObject()->DurationPolicy;
+			if (durationPolicy == EGameplayEffectDurationType::HasDuration)
+			{
+				auto task = UAbilityTask_WaitGameplayEffectRemoved::WaitForGameplayEffectRemoved(this, handle);
+				task->OnRemoved.AddDynamic(this, &UAttackBaseGameplayAbility::OnEffectRemoved);
+				task->ReadyForActivation();
+				durationEffectsApplied = true;
+			}
+			else if (durationPolicy == EGameplayEffectDurationType::Instant)
+			{
+				// if the effect is instant, remove it immediately
+				targetAsc->RemoveActiveGameplayEffect(handle);
+				ActiveEffectHandles.Remove(handle);
+			}
 		}
 	}
 }
