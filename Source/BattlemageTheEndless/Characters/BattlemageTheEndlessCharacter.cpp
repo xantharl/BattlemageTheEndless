@@ -38,7 +38,8 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 	AbilitySystemComponent = CreateDefaultSubobject<UBMageAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
 
-	// Minimal Mode means that no GameplayEffects will replicate. They will only live on the Server. Attributes, GameplayTags, and GameplayCues will still replicate to us.
+	// See details of replication modes https://github.com/tranek/GASDocumentation?tab=readme-ov-file#concepts-asc-rm
+	// Defaulting to minimal, updates to Mixed on possession (which indicates this is a player character)
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 
 	// Create the attribute set, this replicates by default
@@ -66,6 +67,9 @@ void ABattlemageTheEndlessCharacter::PossessedBy(AController* NewController)
 	if (AbilitySystemComponent)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+		// See details of replication modes https://github.com/tranek/GASDocumentation?tab=readme-ov-file#concepts-asc-rm
+		// Update to mixed since this is a player character
+		AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 	}
 
 	// ASC MixedMode replication requires that the ASC Owner's Owner be the Controller.
@@ -873,6 +877,7 @@ void ABattlemageTheEndlessCharacter::HandleHitScan(UAttackBaseGameplayAbility* a
 		{
 			for (int i = 0; i < hitCharacters.Num(); ++i)
 			{
+				// No delay for the first target
 				if (i == 0)
 				{
 					ability->ApplyEffects(hitCharacters[i], hitCharacters[i]->AbilitySystemComponent);

@@ -53,8 +53,10 @@ public:
 		InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 		NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 	}
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Hit)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HitBehavior)
 	HitType HitType = HitType::None;
+
+	/** Hit Scan only particle effect **/
 
 	/** Projectile class to spawn */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectiles)
