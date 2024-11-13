@@ -851,7 +851,7 @@ void ABattlemageTheEndlessCharacter::HandleHitScan(UAttackBaseGameplayAbility* a
 	UCharacterMovementComponent* movement = GetCharacterMovement();
 	FVector endLocation = startLocation + (movement->GetLastUpdateRotation().Vector() * ability->MaxRange);
 
-	DrawDebugLine(GetWorld(), startLocation, endLocation, FColor::Red, false, 5.0f, 0, 1.0f);
+	//DrawDebugLine(GetWorld(), startLocation, endLocation, FColor::Red, false, 5.0f, 0, 1.0f);
 
 	FHitResult hit = Traces::LineTraceGeneric(this, startLocation, endLocation);
 
@@ -867,11 +867,12 @@ void ABattlemageTheEndlessCharacter::HandleHitScan(UAttackBaseGameplayAbility* a
 		if (ability->EffectsToApply.Num() == 0)
 			return;
 		
+		// Handle chain delay if needed
 		// floating point precision, woo
 		if (FMath::Abs(ability->ChainDelay) < 0.00001f)
 		{
 			for (auto applyTo : hitCharacters)
-				ability->ApplyEffects(applyTo, applyTo->AbilitySystemComponent);
+				ability->ApplyEffects(applyTo, applyTo->AbilitySystemComponent, this);
 		}
 		else
 		{
@@ -880,7 +881,7 @@ void ABattlemageTheEndlessCharacter::HandleHitScan(UAttackBaseGameplayAbility* a
 				// No delay for the first target
 				if (i == 0)
 				{
-					ability->ApplyEffects(hitCharacters[i], hitCharacters[i]->AbilitySystemComponent);
+					ability->ApplyEffects(hitCharacters[i], hitCharacters[i]->AbilitySystemComponent, this);
 					continue;
 				}
 
@@ -890,7 +891,7 @@ void ABattlemageTheEndlessCharacter::HandleHitScan(UAttackBaseGameplayAbility* a
 					&UAttackBaseGameplayAbility::ApplyEffects, 
 					(AActor*)hitCharacters[i], 
 					(UAbilitySystemComponent*)hitCharacters[i]->AbilitySystemComponent, 
-					(AActor*)nullptr, 
+					(AActor*)hitCharacters[i-1],
 					(AActor*)nullptr
 				);
 

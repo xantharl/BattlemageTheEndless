@@ -104,6 +104,13 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 
 void UAttackBaseGameplayAbility::ApplyEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser)
 {
+	if (ChainSystem && instigator)
+	{
+		// We don't need to keep the reference, UE will handle disposing when it is destroyed
+		auto chainEffectActor = instigator->GetWorld()->SpawnActor<AHitScanChainEffect>(AHitScanChainEffect::StaticClass(), instigator->GetActorLocation(), FRotator::ZeroRotator);
+		chainEffectActor->Init(instigator, target, ChainSystem);
+	}
+
 	for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
 	{
 		FGameplayEffectContextHandle context = targetAsc->MakeEffectContext();

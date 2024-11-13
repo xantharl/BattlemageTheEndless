@@ -15,6 +15,7 @@
 #include "GameFramework/Character.h"
 #include "../Pickups/BattlemageTheEndlessProjectile.h"
 #include "GameplayAbilities/Public/AbilitySystemComponent.h"
+#include "HitScanChainEffect.h"
 #include "AttackBaseGameplayAbility.generated.h"
 
 class UNiagaraSystem;
@@ -74,6 +75,10 @@ public:
 	/** Time in seconds to wait before applying the next chain **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ChainBehavior)
 	float ChainDelay = 0;
+
+	/** Time in seconds to wait before applying the next chain **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ChainBehavior)
+	TObjectPtr<UNiagaraSystem> ChainSystem;
 
 	/** Actor(s) to spawn on hit (e.g. fire surface, explosion, ice wall, etc.) **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HitBehavior)
