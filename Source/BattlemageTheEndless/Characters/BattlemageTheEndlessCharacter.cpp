@@ -848,8 +848,14 @@ void ABattlemageTheEndlessCharacter::HandleHitScan(UAttackBaseGameplayAbility* a
 	// perform a line trace to determine if the ability hits anything
 	// Uses camera socket as the start location
 	FVector startLocation = GetMesh()->GetSocketLocation(FName("cameraSocket"));
+
+	// Figure out the end location based on the ability's max range and current look direction
 	UCharacterMovementComponent* movement = GetCharacterMovement();
-	FVector endLocation = startLocation + (movement->GetLastUpdateRotation().Vector() * ability->MaxRange);
+	auto rotation = movement->GetLastUpdateRotation();
+
+	// always use first person camera for the pitch since it's tied to the character's look direction
+	rotation.Pitch = FirstPersonCamera->GetComponentRotation().Pitch;
+	FVector endLocation = startLocation + (rotation.Vector() * ability->MaxRange);
 
 	//DrawDebugLine(GetWorld(), startLocation, endLocation, FColor::Red, false, 5.0f, 0, 1.0f);
 
