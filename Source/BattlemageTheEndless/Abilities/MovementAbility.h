@@ -6,6 +6,7 @@
 #include "MovementAbilityInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
+#include <chrono>
 #include "GameFramework/CharacterMovementComponent.h"
 #include "MovementAbility.generated.h"
 
@@ -21,6 +22,8 @@ enum class MovementAbilityType: uint8
 	Dodge UMETA(DisplayName = "Dodge")
 };
 
+using namespace std::chrono;
+
 /**
  * This class is intended to be used as a base class for all movement abilities which have a ticking element
  */
@@ -34,6 +37,17 @@ protected:
 	ACharacter* Character;
 	USkeletalMeshComponent* Mesh;
 	UCharacterMovementComponent* Movement;
+
+	bool isTransitioningIn = false;
+	bool shouldTransitionOut = false;
+
+	milliseconds startTime;
+	milliseconds elapsed;
+
+	FTimerHandle transitionOutTimerHandle;
+
+	void onEndTransitionIn();
+	void onEndTransitionOut();
 
 public:
 	UMovementAbility(const FObjectInitializer& X);
@@ -58,8 +72,20 @@ public:
 	virtual bool ShouldEnd() { return true; }
 	virtual void Begin();
 	virtual void End();
-	virtual void Tick(float DeltaTime) {}
+	virtual void Tick(float DeltaTime);
 
+	/** Time till transition in animation is done **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float TransitionInDuration = 0.0f;
+
+	/** Time till transition out animation is done **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float TransitionOutDuration = 0.0f;
+
+	UFUNCTION(BlueprintCallable, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	virtual bool IsTransitioningIn() { return isTransitioningIn; }
+	UFUNCTION(BlueprintCallable, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	virtual bool ShouldTransitionOut() { return shouldTransitionOut; }
 
 	FMovementAbilityBeginSignature OnMovementAbilityBegin;
 	FMovementAbilityEndSignature OnMovementAbilityEnd;

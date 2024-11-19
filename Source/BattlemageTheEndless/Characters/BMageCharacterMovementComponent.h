@@ -107,6 +107,7 @@ public:
 	/// <returns></returns>
 	bool IsAbilityActive(MovementAbilityType abilityType) { return MovementAbilities[abilityType]->IsActive; }
 
+	UPROPERTY(BlueprintReadOnly, Category = CharacterMovement)
 	UMovementAbility* MostImportantActiveAbility;
 
 	/// <summary>
