@@ -79,6 +79,8 @@ bool UBMageCharacterMovementComponent::TryStartAbility(MovementAbilityType abili
 	// handle ability interactions
 	if (abilityType == MovementAbilityType::Sprint && IsCrouching())
 		CharacterOwner->UnCrouch();
+	if (abilityType == MovementAbilityType::Sprint && IsAbilityActive(MovementAbilityType::Slide))
+		ForceEndAbility(MovementAbilityType::Slide);
 	else if (abilityType == MovementAbilityType::Launch)
 	{
 		CharacterOwner->UnCrouch();		
@@ -136,7 +138,7 @@ void UBMageCharacterMovementComponent::ForceEndAbility(MovementAbilityType abili
 	if (!IsAbilityActive(abilityType))
 		return;
 
-	MovementAbilities[abilityType]->End();
+	MovementAbilities[abilityType]->End(true);
 }
 
 // TODO: Update this with begin/end calls instead of having to iterate every tick

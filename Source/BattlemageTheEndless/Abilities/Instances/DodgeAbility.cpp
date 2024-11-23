@@ -38,13 +38,13 @@ void UDodgeAbility::Begin()
 	Movement->GroundFriction = 0.0f;
 	FVector dodgeVector = FVector(ImpulseToUse.RotateAngleAxis(Movement->GetLastUpdateRotation().Yaw, FVector::ZAxisVector));
 	Character->LaunchCharacter(dodgeVector, true, true);
-	Character->GetWorldTimerManager().SetTimer(DodgeEndTimer, this, &UDodgeAbility::End, DodgeDurationSeconds, false);
+	Character->GetWorldTimerManager().SetTimer(DodgeEndTimer, this, &UDodgeAbility::OnEndTimer, DodgeDurationSeconds, false);
 
 	Super::Begin();
 }
 
-void UDodgeAbility::End()
+void UDodgeAbility::End(bool bForce)
 {
-	Super::End();
+	Super::End(bForce);
 	Movement->GroundFriction = PreviousFriction;
 }

@@ -33,6 +33,6 @@ class BATTLEMAGETHEENDLESS_API UDodgeAbility : public UMovementAbility
 	FVector DodgeImpulseBackward = FVector(-1000.f, 0, 500.f);
 
 	virtual void Begin() override;
-	virtual void End() override;
+	virtual void End(bool bForce = false) override;
 	
 };

@@ -62,10 +62,10 @@ void UVaultAbility::Begin()
 
 	// anim graph handles the actual movement with a root motion animation to put the character in the right place
 	// register a timer to end the vaulting state
-	Character->GetWorldTimerManager().SetTimer(VaultEndTimer, this, &UVaultAbility::End, VaultDurationSeconds, false);
+	Character->GetWorldTimerManager().SetTimer(VaultEndTimer, this, &UVaultAbility::OnEndTimer, VaultDurationSeconds, false);
 }
 
-void UVaultAbility::End()
+void UVaultAbility::End(bool bForce)
 {
 	Character->EnableInput(Cast<APlayerController>(Character->Controller));
 	Movement->SetMovementMode(MOVE_Walking);
@@ -77,7 +77,7 @@ void UVaultAbility::End()
 	Character->GetCapsuleComponent()->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 	Mesh->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
 
-	Super::End();
+	Super::End(bForce);
 }
 
 bool UVaultAbility::ShouldBegin()

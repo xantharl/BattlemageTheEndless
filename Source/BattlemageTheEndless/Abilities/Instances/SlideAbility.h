@@ -37,8 +37,12 @@ class BATTLEMAGETHEENDLESS_API USlideAbility : public UMovementAbility
 	/** Rate at which sliding downhill accelerates the player (cm/s^2) **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float SlideAccelerationRate = 400.f;
+
+	/** Rate at which sliding downhill accelerates the player (cm/s^2) **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float SlideDeccelerationRate = 600.f;
 	
 	void Begin() override;
-	void End() override;
+	void End(bool bForce = false) override;
 	void Tick(float DeltaTime) override;
 };

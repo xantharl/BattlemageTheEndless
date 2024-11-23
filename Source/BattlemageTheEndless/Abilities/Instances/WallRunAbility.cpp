@@ -159,9 +159,9 @@ void UWallRunAbility::Begin()
 	}
 
 	// set a timer to end the wall run
-	Character->GetWorldTimerManager().SetTimer(WallRunTimer, this, &UWallRunAbility::End, WallRunMaxDuration, false);
+	Character->GetWorldTimerManager().SetTimer(WallRunTimer, this, &UWallRunAbility::OnEndTimer, WallRunMaxDuration, false);
 }
-void UWallRunAbility::End()
+void UWallRunAbility::End(bool bForce)
 {
 	Character->bUseControllerRotationYaw = true;
 
@@ -178,7 +178,7 @@ void UWallRunAbility::End()
 	// this is to work around double jump logic in ACharacter which auto increments the jump count if we're falling
 	Character->JumpCurrentCount -= 1;
 
-	Super::End();
+	Super::End(bForce);
 }
 
 bool UWallRunAbility::ObjectIsWallRunnable(AActor* actor, USkeletalMeshComponent* mesh)

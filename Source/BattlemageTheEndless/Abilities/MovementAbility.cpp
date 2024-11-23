@@ -3,10 +3,10 @@
 
 #include "MovementAbility.h"
 
-void UMovementAbility::onEndTransitionIn()
-{
-	isTransitioningIn = false;
-}
+//void UMovementAbility::onEndTransitionIn()
+//{
+//	isTransitioningIn = false;
+//}
 
 void UMovementAbility::onEndTransitionOut()
 {
@@ -29,18 +29,24 @@ void UMovementAbility::Init(UCharacterMovementComponent* movement, ACharacter* c
 
 void UMovementAbility::Begin()
 {
+	elapsed = (milliseconds)0;
 	IsActive = true;
+	shouldTransitionOut = false;
 	startTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 	if (TransitionInDuration > 0.00001f)
+	{
+		if (GEngine)
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Transitioning in"));
 		isTransitioningIn = true;
+	}
 
 	OnMovementAbilityBegin.Broadcast(this);
 }
 
-void UMovementAbility::End()
+void UMovementAbility::End(bool bForce)
 {
 	// If we need to transition out, inform the blueprint with the bool and set a timer to end the ability
-	if (TransitionOutDuration > 0.00001f)
+	if (!bForce && TransitionOutDuration > 0.00001f)
 	{
 		shouldTransitionOut = true;
 		auto endLambda = [this]() {

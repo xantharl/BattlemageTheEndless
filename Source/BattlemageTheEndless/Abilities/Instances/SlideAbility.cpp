@@ -17,15 +17,21 @@ void USlideAbility::Begin()
 	Movement->SetCrouchedHalfHeight(SlideHalfHeight);
 }
 
-void USlideAbility::End()
+void USlideAbility::End(bool bForce)
 {
 	SlideElapsedSeconds = 0.0f;
-	Super::End();
+	Super::End(bForce);
 }
 
 void USlideAbility::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// Don't count time till we're done transitioning in
+	if (isTransitioningIn)
+	{
+		return;
+	}
 
 	// check if we're on a downslope
 	if (Movement->Velocity.Z < SlideAccelerationThreshold)
@@ -48,12 +54,11 @@ void USlideAbility::Tick(float DeltaTime)
 	if (SlideElapsedSeconds >= 0.f)
 	{
 		// Otherwise decrement the slide speed	
-		float newSpeed = SlideSpeed * powf(2.7182818284f, -1.39f * SlideElapsedSeconds);
-		Movement->MaxWalkSpeedCrouched = newSpeed;
+		Movement->MaxWalkSpeedCrouched = SlideSpeed - (SlideElapsedSeconds * SlideDeccelerationRate);
 	}
 	else
 	{
 		// Accelerate the player
-		Movement->MaxWalkSpeedCrouched += SlideAccelerationRate * -SlideElapsedSeconds;
+		Movement->MaxWalkSpeedCrouched = SlideSpeed + (SlideElapsedSeconds * SlideAccelerationRate);
 	}
 }

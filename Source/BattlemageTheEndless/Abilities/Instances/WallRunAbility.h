@@ -60,7 +60,7 @@ public:
 	virtual void Begin() override;
 
 	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
-	virtual void End() override;
+	virtual void End(bool bForce = false) override;
 	bool ObjectIsWallRunnable(AActor* Object, USkeletalMeshComponent* mesh);
 
 	UFUNCTION(BlueprintCallable, Category = CharacterMovement)

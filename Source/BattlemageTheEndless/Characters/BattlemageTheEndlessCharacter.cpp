@@ -360,10 +360,10 @@ void ABattlemageTheEndlessCharacter::RequestUnCrouch()
 void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction)
 {
 	// lots of dependencies on movement in here, just get it since we always need it
-	UCharacterMovementComponent* movement = GetCharacterMovement();
+	UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
 
-	// TODO: See if this needs to be moved
-	if (bShouldUnCrouch)
+	// Uncrouch if requested unless sliding
+	if (bShouldUnCrouch && !movement->IsAbilityActive(MovementAbilityType::Slide))
 		DoUnCrouch(movement);
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(Controller->InputComponent))

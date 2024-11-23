@@ -46,7 +46,7 @@ protected:
 
 	FTimerHandle transitionOutTimerHandle;
 
-	void onEndTransitionIn();
+	//void onEndTransitionIn();
 	void onEndTransitionOut();
 
 public:
@@ -71,7 +71,9 @@ public:
 	virtual bool ShouldBegin() { return true; }
 	virtual bool ShouldEnd() { return true; }
 	virtual void Begin();
-	virtual void End();
+	virtual void End(bool bForce = false);
+	// This is so we have a parameterless function for simple timer invocations
+	virtual void OnEndTimer() { End(); }
 	virtual void Tick(float DeltaTime);
 
 	/** Time till transition in animation is done **/
