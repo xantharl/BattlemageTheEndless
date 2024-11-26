@@ -39,7 +39,7 @@ void UBMageCharacterMovementComponent::ApplyInput()
 	// otherwise set it to WalkSpeed
 	else if (forwardVector.X >= 0 && MaxWalkSpeed == ReverseSpeed)
 	{
-		MaxWalkSpeed = IsAbilityActive(MovementAbilityType::Sprint) ? SprintSpeed() : WalkSpeed;
+		ResetWalkSpeed();
 	}
 }
 
@@ -215,6 +215,12 @@ void UBMageCharacterMovementComponent::OnMovementAbilityEnd(UMovementAbility* ab
 	{
 		MaxWalkSpeedCrouched = IsCrouching() ? CrouchSpeed : WalkSpeed;
 		SetCrouchedHalfHeight(DefaultCrouchedHalfHeight);
+		FRotator rotation = CharacterOwner->GetActorRotation();
+		if (FMath::Abs(rotation.Pitch) > 0.0001f)
+		{
+			rotation.Pitch = 0;
+			CharacterOwner->SetActorRotation(rotation);
+		}
 	}
 }
 
@@ -242,4 +248,9 @@ void UBMageCharacterMovementComponent::SetVaultFootPlanted(bool value)
 float UBMageCharacterMovementComponent::SprintSpeed() const
 {
 	return Cast<USprintAbility>(MovementAbilities[MovementAbilityType::Sprint])->SprintSpeed;
+}
+
+void UBMageCharacterMovementComponent::ResetWalkSpeed()
+{
+	MaxWalkSpeed = IsAbilityActive(MovementAbilityType::Sprint) ? SprintSpeed() : WalkSpeed;
 }

@@ -15,50 +15,79 @@ void USlideAbility::Begin()
 {
 	Super::Begin();
 	Movement->SetCrouchedHalfHeight(SlideHalfHeight);
+	_previousLocation = Movement->GetActorLocation();
 }
 
 void USlideAbility::End(bool bForce)
 {
-	SlideElapsedSeconds = 0.0f;
+	// Conserve momentum if we're going fast enough, will be reset on OnMovementModeChanges in character
+	if (Movement->MaxWalkSpeedCrouched > Movement->MaxWalkSpeed) 
+	{
+		Movement->MaxWalkSpeed = Movement->MaxWalkSpeedCrouched;
+	}
 	Super::End(bForce);
 }
 
 void USlideAbility::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	FVector currentLocation = Movement->GetActorLocation();
 
 	// Don't count time till we're done transitioning in
 	if (isTransitioningIn)
 	{
+		_previousLocation = currentLocation;
 		return;
 	}
 
 	// check if we're on a downslope
-	if (Movement->Velocity.Z < SlideAccelerationThreshold)
+	FVector moved = currentLocation - _previousLocation;
+	moved.Normalize();
+
+	bool decelerating = true;
+	// "refund" elapsed time if sliding downhill
+	if (moved.Z < -0.0001f)
 	{
-		SlideElapsedSeconds -= DeltaTime;
-	}
-	else
-	{
-		SlideElapsedSeconds += DeltaTime;
+		elapsed -= round<milliseconds>(duration<float>{DeltaTime * 1000.f});
+		decelerating = false;
 	}
 
 
-	// If we've reached the slide's full duration, reset speed and slide data
-	if (SlideElapsedSeconds >= SlideDurationSeconds)
+	// If we've reached the slide's full duration, end the slide
+	if (elapsed >= round<milliseconds>(duration<float>{SlideDurationSeconds * 1000.f}))
 	{
+		_previousLocation = currentLocation;
 		End();
 		return;
 	}
 
-	if (SlideElapsedSeconds >= 0.f)
-	{
-		// Otherwise decrement the slide speed	
-		Movement->MaxWalkSpeedCrouched = SlideSpeed - (SlideElapsedSeconds * SlideDeccelerationRate);
-	}
+	// Default the effective angle to 0 to
+	float effectiveAngle = 0.f;
+	float currentPitch = moved.Rotation().Pitch;
+	LastActualAngle = currentPitch;
+
+	// Calculate the correct angle if we're on a slope
+	if (FMath::Abs(currentPitch) > 0.0001f)
+		// Cap the angle to 45 degrees for calculating acceleration
+		effectiveAngle = FMath::Min(AccelerationLimitAngle, FMath::Abs(currentPitch));
+
+	float deltaSpeed;
+	// if we're going uphill, decelerate at a rate of BaseSlideDecelerationRate + appropriate percentage of difference between base and max
+	if (decelerating)
+		deltaSpeed = DeltaTime * -(BaseSlideDecelerationRate + (MaxSlideDecelerationRate - BaseSlideDecelerationRate) * (effectiveAngle / AccelerationLimitAngle));
+	// if we're going downhill, accelerate at a rate of MaxSlideAccelerationRate * appropriate percentage of slope
 	else
+		deltaSpeed = DeltaTime * (MaxSlideAccelerationRate * (effectiveAngle / AccelerationLimitAngle));
+
+
+	Movement->MaxWalkSpeedCrouched = FMath::Max(Movement->MaxWalkSpeedCrouched + deltaSpeed, 0.f);
+	// End if we've hit 0 speed
+	if (FMath::Abs(Movement->MaxWalkSpeedCrouched) < 0.0001f)
 	{
-		// Accelerate the player
-		Movement->MaxWalkSpeedCrouched = SlideSpeed + (SlideElapsedSeconds * SlideAccelerationRate);
+		_previousLocation = currentLocation;
+		End();
+		return;
 	}
+
+	_previousLocation = currentLocation;
 }

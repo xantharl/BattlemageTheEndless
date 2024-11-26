@@ -45,21 +45,21 @@ void UMovementAbility::Begin()
 
 void UMovementAbility::End(bool bForce)
 {
+	// If we're already transitioning out, don't do anything
+	if (shouldTransitionOut)
+		return;
+
 	// If we need to transition out, inform the blueprint with the bool and set a timer to end the ability
 	if (!bForce && TransitionOutDuration > 0.00001f)
 	{
 		shouldTransitionOut = true;
-		auto endLambda = [this]() {
-			this->IsActive = false;
-			this->OnMovementAbilityEnd.Broadcast(this);
-			};
-		GetWorld()->GetTimerManager().SetTimer(transitionOutTimerHandle, endLambda, TransitionOutDuration, false);
+		FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UMovementAbility::DeactivateAndBroadcast);
+		GetWorld()->GetTimerManager().SetTimer(transitionOutTimerHandle, TimerDelegate, TransitionOutDuration, false);
 		return;
 	}
 
 	// Otherwise just end it now
-	IsActive = false;
-	OnMovementAbilityEnd.Broadcast(this);
+	DeactivateAndBroadcast();
 }
 
 void UMovementAbility::Tick(float DeltaTime)
@@ -67,5 +67,12 @@ void UMovementAbility::Tick(float DeltaTime)
 	elapsed += round<milliseconds>(duration<float>{DeltaTime*1000.f});
 	if (isTransitioningIn && elapsed > round<milliseconds>(duration<float>{TransitionInDuration * 1000.f}))
 		isTransitioningIn = false;
+
+}
+
+void UMovementAbility::DeactivateAndBroadcast() {
+	IsActive = false;
+	shouldTransitionOut = false;
+	OnMovementAbilityEnd.Broadcast(this);
 
 }

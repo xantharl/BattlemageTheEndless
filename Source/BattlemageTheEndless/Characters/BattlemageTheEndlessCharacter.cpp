@@ -362,6 +362,14 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 	// lots of dependencies on movement in here, just get it since we always need it
 	UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
 
+	// Adjust character pitch if sliding
+	if (movement->IsAbilityActive(MovementAbilityType::Slide))
+	{
+		FRotator currentRotation = GetActorRotation();
+		currentRotation.Pitch = Cast<USlideAbility>(movement->MovementAbilities[MovementAbilityType::Slide])->LastActualAngle;
+		SetActorRotation(currentRotation);
+	}
+
 	// Uncrouch if requested unless sliding
 	if (bShouldUnCrouch && !movement->IsAbilityActive(MovementAbilityType::Slide))
 		DoUnCrouch(movement);
@@ -389,6 +397,11 @@ void ABattlemageTheEndlessCharacter::DoUnCrouch(UCharacterMovementComponent* mov
 
 void ABattlemageTheEndlessCharacter::EndSlide(UCharacterMovementComponent* movement)
 {
+	// Reset pitch if needed
+	FRotator currentRotation = GetActorRotation();
+	if (currentRotation.Pitch > 0.0001f)
+		SetActorRotation(FRotator(0.f, currentRotation.Yaw, currentRotation.Roll));
+
 	if(UBMageCharacterMovementComponent* mageMovement = Cast<UBMageCharacterMovementComponent>(movement))
 		mageMovement->TryEndAbility(MovementAbilityType::Slide);
 }
@@ -683,6 +696,9 @@ void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMov
 		UGameplayStatics::PlaySoundAtLocation(this,
 			JumpLandingSound,
 			GetActorLocation(), 1.0f);
+
+		if (UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement()))
+			movement->ResetWalkSpeed();
 	}
 
 	ACharacter::OnMovementModeChanged(PrevMovementMode, PreviousCustomMode);

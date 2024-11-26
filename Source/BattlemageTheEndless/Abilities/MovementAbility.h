@@ -76,6 +76,9 @@ public:
 	virtual void OnEndTimer() { End(); }
 	virtual void Tick(float DeltaTime);
 
+	UFUNCTION(BlueprintCallable, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	void DeactivateAndBroadcast();
+
 	/** Time till transition in animation is done **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float TransitionInDuration = 0.0f;

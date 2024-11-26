@@ -146,4 +146,7 @@ public:
 	/// </summary>
 	/// <returns></returns>
 	float SprintSpeed() const;
+
+	/** Called when abilities which preserve gained speed wear off **/
+	void ResetWalkSpeed();
 };
