@@ -150,6 +150,19 @@ void ABattlemageTheEndlessCharacter::SetupCameras()
 	ThirdPersonCamera->bUsePawnControlRotation = true;
 }
 
+void ABattlemageTheEndlessCharacter::ToggleAimMode(ETriggerEvent triggerType)
+{
+	// TODO: Support different zoom levels per spell
+	if (triggerType == ETriggerEvent::Triggered)
+	{
+		FirstPersonCamera->SetFieldOfView(ZoomedFOV);
+	}
+	else
+	{
+		FirstPersonCamera->SetFieldOfView(DefaultFOV);
+	}
+}
+
 void ABattlemageTheEndlessCharacter::BeginPlay()
 {
 	// Call the base class  
@@ -308,6 +321,11 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 		// Casting Related Actions
 		EnhancedInputComponent->BindAction(CastingModeAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::ToggleCastingMode);
 
+		// Aim Mode
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::ToggleAimMode, ETriggerEvent::Triggered);
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::ToggleAimMode, ETriggerEvent::Completed);
+
+		// Bind abilities to input
 		if (AbilitySystemComponent) 
 		{
 			AbilitySystemComponent->BindAbilityActivationToInputComponent(

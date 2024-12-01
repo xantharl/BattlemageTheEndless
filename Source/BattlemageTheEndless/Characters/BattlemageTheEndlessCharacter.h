@@ -170,6 +170,14 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* PreviousSpellAction;
 
+	// Aim mode action
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UInputAction* AimAction;
+
+	// Time to enter or exit aim mode
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	float TimeToAim = 0.2f;
+
 	UPROPERTY(EditAnywhere, Category = Sound)
 	class USoundWave* JumpLandingSound;
 
@@ -187,6 +195,12 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UserInterface, meta = (AllowPrivateAccess = "true"))
 	UMenuContainerActivatableWidget* ContainerWidget;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	float ZoomedFOV = 40.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	float DefaultFOV = 40.0f;
 
 private:
 	milliseconds _lastCameraSwap;
@@ -248,6 +262,9 @@ protected:
 	/// Manages projectile spawn and hit for abilities
 	/// </summary>
 	UProjectileManager* ProjectileManager;
+
+	void ToggleAimMode(ETriggerEvent triggerType);
+
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UAbilityComboManager* ComboManager;
