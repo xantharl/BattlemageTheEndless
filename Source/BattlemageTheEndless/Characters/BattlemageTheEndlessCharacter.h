@@ -257,9 +257,6 @@ public:
 	class UInputAction* LookAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	bool bShouldUnCrouch;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float BaseHalfHeight = 90.0f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
@@ -316,7 +313,7 @@ protected:
 	void LaunchJump();
 	void RequestUnCrouch();
 	void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction);
-	void DoUnCrouch(UCharacterMovementComponent* movement);
+	void DoUnCrouch(UBMageCharacterMovementComponent* movement);
 	void EndSlide(UCharacterMovementComponent* movement);
 	void SwitchCamera();
 	void DodgeInput();

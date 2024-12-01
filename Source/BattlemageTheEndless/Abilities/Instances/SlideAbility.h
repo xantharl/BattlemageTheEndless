@@ -21,6 +21,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float LastActualAngle = 0.f;
 
+	/** Rate at which the character will accelerate on transition out as needed. This is constrained by a cap dependent on whether the player is crouched **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float TransitionOutAccelertaionRate = 1200.f;
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float SlideSpeed = 1200.f;

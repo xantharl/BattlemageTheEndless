@@ -29,6 +29,7 @@ using namespace std::chrono;
  */
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_OneParam(FMovementAbilityBeginSignature, UMovementAbility, OnMovementAbilityBegin, UMovementAbility*, MovementAbility);
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_OneParam(FMovementAbilityEndSignature, UMovementAbility, OnMovementAbilityEnd, UMovementAbility*, MovementAbility);
+DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_OneParam(FMovementAbilityShouldTransitionOutSignature, UMovementAbility, OnMovementAbilityShouldTransitionOut, UMovementAbility*, MovementAbility);
 UCLASS(Abstract)
 class BATTLEMAGETHEENDLESS_API UMovementAbility : public UObject
 {
@@ -94,4 +95,5 @@ public:
 
 	FMovementAbilityBeginSignature OnMovementAbilityBegin;
 	FMovementAbilityEndSignature OnMovementAbilityEnd;
+	FMovementAbilityShouldTransitionOutSignature OnMovementAbilityShouldTransitionOut;
 };

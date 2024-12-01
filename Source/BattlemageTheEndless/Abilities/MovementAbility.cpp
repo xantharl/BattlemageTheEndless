@@ -53,6 +53,7 @@ void UMovementAbility::End(bool bForce)
 	if (!bForce && TransitionOutDuration > 0.00001f)
 	{
 		shouldTransitionOut = true;
+		OnMovementAbilityShouldTransitionOut.Broadcast(this);
 		FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UMovementAbility::DeactivateAndBroadcast);
 		GetWorld()->GetTimerManager().SetTimer(transitionOutTimerHandle, TimerDelegate, TransitionOutDuration, false);
 		return;

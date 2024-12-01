@@ -23,6 +23,7 @@ void UBMageCharacterMovementComponent::InitAbilities(ACharacter* Character, USke
 		ability.Value->Init(this, Character, Mesh);
 		ability.Value->OnMovementAbilityBegin.AddDynamic(this, &UBMageCharacterMovementComponent::OnMovementAbilityBegin);
 		ability.Value->OnMovementAbilityEnd.AddDynamic(this, &UBMageCharacterMovementComponent::OnMovementAbilityEnd);
+		ability.Value->OnMovementAbilityShouldTransitionOut.AddDynamic(this, &UBMageCharacterMovementComponent::OnMovementAbilityShouldTransitionOut);
 	}
 }
 
@@ -47,7 +48,17 @@ void UBMageCharacterMovementComponent::TickComponent(float DeltaTime, enum ELeve
 {
 	// TODO: determine these based on priority
 	if (IsAbilityActive(MovementAbilityType::Slide))
+	{
 		MovementAbilities[MovementAbilityType::Slide]->Tick(DeltaTime);
+		if (MovementAbilities[MovementAbilityType::Slide]->ShouldTransitionOut()) {
+			// determine the appropriate speed cap
+			// TODO: Figure out how to determine whether player wants to crouch at end of slide
+			float speedLimit = MovementAbilities[MovementAbilityType::Sprint]->IsActive ? SprintSpeed() : WalkSpeed;
+			auto slideAbility = Cast<USlideAbility>(MovementAbilities[MovementAbilityType::Slide]);
+			// This is kind of a hack but we're still crouched during the transition out, so we need to set the crouched speed
+			MaxWalkSpeedCrouched = FMath::Min(MaxWalkSpeedCrouched + slideAbility->TransitionOutAccelertaionRate*DeltaTime, speedLimit);
+		}
+	}
 
 	if (IsAbilityActive(MovementAbilityType::Launch))
 		MovementAbilities[MovementAbilityType::Launch]->Tick(DeltaTime);
@@ -213,7 +224,7 @@ void UBMageCharacterMovementComponent::OnMovementAbilityEnd(UMovementAbility* ab
 
 	if (USlideAbility* slideAbility = Cast<USlideAbility>(ability))
 	{
-		MaxWalkSpeedCrouched = IsCrouching() ? CrouchSpeed : WalkSpeed;
+		MaxWalkSpeedCrouched = CrouchSpeed;
 		SetCrouchedHalfHeight(DefaultCrouchedHalfHeight);
 		FRotator rotation = CharacterOwner->GetActorRotation();
 		if (FMath::Abs(rotation.Pitch) > 0.0001f)
@@ -221,6 +232,29 @@ void UBMageCharacterMovementComponent::OnMovementAbilityEnd(UMovementAbility* ab
 			rotation.Pitch = 0;
 			CharacterOwner->SetActorRotation(rotation);
 		}
+		if (!bWantsToCrouch)
+		{
+			UnCrouch();
+			ShouldUnCrouch = false;
+		}
+	}
+}
+
+void UBMageCharacterMovementComponent::RequestUnCrouch()
+{
+	if (!IsCrouching())
+		return;
+
+	ShouldUnCrouch = true;
+}
+
+void UBMageCharacterMovementComponent::OnMovementAbilityShouldTransitionOut(UMovementAbility* ability)
+{
+	if (USlideAbility* slideAbility = Cast<USlideAbility>(ability))
+	{
+		// this is toggled by control press and release
+		if (!bWantsToCrouch)
+			RequestUnCrouch();
 	}
 }
 

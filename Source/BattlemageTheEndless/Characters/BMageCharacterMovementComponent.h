@@ -72,6 +72,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float DefaultCrouchedHalfHeight = 65.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	bool ShouldUnCrouch = false;
+
+	void RequestUnCrouch();
+
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	/// <summary>
@@ -131,6 +136,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
 	virtual void OnMovementAbilityEnd(UMovementAbility* ability);
+
+	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
+	virtual void OnMovementAbilityShouldTransitionOut(UMovementAbility* ability);
 
 	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
 

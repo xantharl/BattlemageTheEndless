@@ -23,8 +23,6 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer.SetDefaultSubobjectClass<UBMageCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
-	bShouldUnCrouch = false;
-
 	SetupCameras();
 	SetupCapsule();
 
@@ -327,16 +325,16 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 
 void ABattlemageTheEndlessCharacter::Crouch() 
 {
+	// nothing to do if we're already crouching
+	if (bIsCrouched)
+		return;
+
 	UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
 	if (!movement)
 	{
 		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find a Movement Component!"), *GetNameSafe(this));
 		return;
 	}
-
-	// nothing to do if we're already crouching and can't crouch in the air
-	if (bIsCrouched || movement->MovementMode == EMovementMode::MOVE_Falling)
-		return;
 
 	ACharacter::Crouch(false);
 
@@ -347,14 +345,6 @@ void ABattlemageTheEndlessCharacter::Crouch()
 
 	// Start a slide if we've made it this far
 	movement->TryStartAbility(MovementAbilityType::Slide);
-}
-
-void ABattlemageTheEndlessCharacter::RequestUnCrouch()
-{
-	if (!bIsCrouched)
-		return;
-
-	bShouldUnCrouch = true;
 }
 
 void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction)
@@ -371,7 +361,7 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 	}
 
 	// Uncrouch if requested unless sliding
-	if (bShouldUnCrouch && !movement->IsAbilityActive(MovementAbilityType::Slide))
+	if (movement->ShouldUnCrouch && !movement->IsAbilityActive(MovementAbilityType::Slide))
 		DoUnCrouch(movement);
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(Controller->InputComponent))
@@ -384,10 +374,10 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 	AActor::TickActor(DeltaTime, TickType, ThisTickFunction);
 }
 
-void ABattlemageTheEndlessCharacter::DoUnCrouch(UCharacterMovementComponent* movement)
+void ABattlemageTheEndlessCharacter::DoUnCrouch(UBMageCharacterMovementComponent* movement)
 {
 	UnCrouch(false);
-	bShouldUnCrouch = false;
+	movement->ShouldUnCrouch = false;
 
 	// get movement component as BMageCharacterMovementComponent
 	UBMageCharacterMovementComponent* mageMovement = Cast<UBMageCharacterMovementComponent>(movement);
@@ -428,6 +418,12 @@ void ABattlemageTheEndlessCharacter::LaunchJump()
 	// get movement component as BMageCharacterMovementComponent
 	if (UBMageCharacterMovementComponent* mageMovement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement()))
 		mageMovement->TryStartAbility(MovementAbilityType::Launch);
+}
+
+void ABattlemageTheEndlessCharacter::RequestUnCrouch()
+{
+	if (UBMageCharacterMovementComponent* mageMovement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement()))
+		mageMovement->RequestUnCrouch();
 }
 
 FVector ABattlemageTheEndlessCharacter::CurrentGripOffset(FName SocketName)
@@ -697,7 +693,12 @@ void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMov
 			JumpLandingSound,
 			GetActorLocation(), 1.0f);
 
-		if (UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement()))
+		UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
+		if (movement->bWantsToCrouch && movement->IsAbilityActive(MovementAbilityType::Sprint))
+		{
+			movement->TryStartAbility(MovementAbilityType::Slide);
+		}
+		else
 			movement->ResetWalkSpeed();
 	}
 
