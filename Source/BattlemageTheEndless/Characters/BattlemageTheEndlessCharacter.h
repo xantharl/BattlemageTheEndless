@@ -175,8 +175,18 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	UInputAction* AimAction;
 
 	// Time to enter or exit aim mode
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AimMode, meta = (AllowPrivateAccess = "true"))
 	float TimeToAim = 0.2f;
+
+	// Time to enter or exit aim mode
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AimMode, meta = (AllowPrivateAccess = "true"))
+	float FovUpdateInterval = 0.01f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AimMode, meta = (AllowPrivateAccess = "true"))
+	float ZoomedFOV = 40.0f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AimMode, meta = (AllowPrivateAccess = "true"))
+	float DefaultFOV = 40.0f;
 
 	UPROPERTY(EditAnywhere, Category = Sound)
 	class USoundWave* JumpLandingSound;
@@ -195,12 +205,6 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UserInterface, meta = (AllowPrivateAccess = "true"))
 	UMenuContainerActivatableWidget* ContainerWidget;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	float ZoomedFOV = 40.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	float DefaultFOV = 40.0f;
 
 private:
 	milliseconds _lastCameraSwap;
@@ -264,6 +268,10 @@ protected:
 	UProjectileManager* ProjectileManager;
 
 	void ToggleAimMode(ETriggerEvent triggerType);
+	void AdjustAimModeFov(float DeltaTime);
+
+	bool IsAiming = false;
+	FTimerHandle AimModeTimerHandle;
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))

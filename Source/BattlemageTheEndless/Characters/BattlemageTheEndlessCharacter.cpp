@@ -155,11 +155,39 @@ void ABattlemageTheEndlessCharacter::ToggleAimMode(ETriggerEvent triggerType)
 	// TODO: Support different zoom levels per spell
 	if (triggerType == ETriggerEvent::Triggered)
 	{
-		FirstPersonCamera->SetFieldOfView(ZoomedFOV);
+		IsAiming = true;
 	}
 	else
 	{
+		IsAiming = false;
+	}
+
+	// Set the timer to adjust the FOV to target if it's not already active
+	FTimerManager& timerManager = GetWorld()->GetTimerManager();
+	if (!timerManager.IsTimerActive(AimModeTimerHandle))
+	{
+		FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &ABattlemageTheEndlessCharacter::AdjustAimModeFov, 1.f);
+		timerManager.SetTimer(AimModeTimerHandle, TimerDelegate, FovUpdateInterval, true);
+	}
+}
+
+void ABattlemageTheEndlessCharacter::AdjustAimModeFov(float DeltaTime)
+{
+	float zoomDifference = IsAiming ?  ZoomedFOV - DefaultFOV : DefaultFOV - ZoomedFOV;
+	float amountToAdjust = zoomDifference / (TimeToAim / FovUpdateInterval);
+ 	FirstPersonCamera->SetFieldOfView(FirstPersonCamera->FieldOfView + amountToAdjust);
+
+	if (IsAiming && FirstPersonCamera->FieldOfView <= ZoomedFOV)
+	{
+		// probably redundant but want to make sure we clamp to exactly the target value
+		FirstPersonCamera->SetFieldOfView(ZoomedFOV);
+		GetWorld()->GetTimerManager().ClearTimer(AimModeTimerHandle);
+	}
+	else if (!IsAiming && FirstPersonCamera->FieldOfView >= DefaultFOV)
+	{
+		// probably redundant but want to make sure we clamp to exactly the target value
 		FirstPersonCamera->SetFieldOfView(DefaultFOV);
+		GetWorld()->GetTimerManager().ClearTimer(AimModeTimerHandle);
 	}
 }
 
