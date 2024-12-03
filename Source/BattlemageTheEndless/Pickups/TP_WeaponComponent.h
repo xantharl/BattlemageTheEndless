@@ -52,7 +52,7 @@ public:
 
 	// used for weapons which have multiple primary abilities (spells)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<class UAttackBaseGameplayAbility> ActiveAbility;
+	TSubclassOf<class UAttackBaseGameplayAbility> SelectedAbility;
 
 	/** Delegate to whom anyone can subscribe to receive this event */
 	UPROPERTY(BlueprintAssignable, Category = "Interaction")

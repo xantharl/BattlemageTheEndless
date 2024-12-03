@@ -58,8 +58,8 @@ FGameplayAbilitySpecHandle UAbilityComboManager::ProcessInput(APickupActor* Pick
 	}
 
 	// If we aren't aware of any combos for this pickup or the weapon's active ability has no combos, delegate to the weapon
-	if (!Combos.Contains(PickupActor) || PickupActor->Weapon->ActiveAbility 
-		&& !PickupActor->Weapon->ActiveAbility->GetDefaultObject<UAttackBaseGameplayAbility>()->HasComboTag())
+	if (!Combos.Contains(PickupActor) || PickupActor->Weapon->SelectedAbility 
+		&& !PickupActor->Weapon->SelectedAbility->GetDefaultObject<UAttackBaseGameplayAbility>()->HasComboTag())
 	{
 		return DelegateToWeapon(PickupActor, AttackType);
 	}
@@ -131,18 +131,18 @@ FGameplayAbilitySpecHandle UAbilityComboManager::ProcessInput(APickupActor* Pick
 		if (!willCancelPrevious && instances.Num() > 0 && instances[0]->IsActive())
 		{
 			NextAbilityHandle = toActivate;
-			instances[0]->OnGameplayAbilityEnded.AddLambda([this, toActivate](UGameplayAbility* ability) {
-				ActivateAbilityAndResetTimer(*toActivate);
+			instances[0]->OnGameplayAbilityEnded.AddLambda([this, toActivateSpec](UGameplayAbility* ability) {
+				ActivateAbilityAndResetTimer(*toActivateSpec);
 			});
 		}
 		else
 		{
-			ActivateAbilityAndResetTimer(*toActivate);
+			ActivateAbilityAndResetTimer(*toActivateSpec);
 		}
 	}
 	else
 	{
-		ActivateAbilityAndResetTimer(*toActivate);
+		ActivateAbilityAndResetTimer(*AbilitySystemComponent->FindAbilitySpecFromHandle(*toActivate));
 	}
 
 	return *toActivate;
@@ -153,21 +153,21 @@ FGameplayAbilitySpecHandle UAbilityComboManager::DelegateToWeapon(APickupActor* 
 {
 	TSubclassOf<UGameplayAbility> abilityClass;
 	if (PickupActor->Weapon->SlotType == EquipSlot::Secondary)
-		abilityClass = PickupActor->Weapon->ActiveAbility;
+		abilityClass = PickupActor->Weapon->SelectedAbility;
 	else
 		abilityClass = PickupActor->Weapon->GetAbilityByAttackType(AttackType);
 	
 	if (!abilityClass)
 		return FGameplayAbilitySpecHandle();
 
-	if (AbilitySystemComponent->TryActivateAbility(
-		AbilitySystemComponent->FindAbilitySpecFromClass(abilityClass)->Handle, true))
-		return AbilitySystemComponent->FindAbilitySpecFromClass(abilityClass)->Handle;
+	auto spec = AbilitySystemComponent->FindAbilitySpecFromClass(abilityClass);
+	if (CheckCooldownAndTryActivate(*spec))
+		return spec->Handle;
 
 	return FGameplayAbilitySpecHandle();
 }
 
-void UAbilityComboManager::ActivateAbilityAndResetTimer(struct FGameplayAbilitySpecHandle& Ability)
+void UAbilityComboManager::ActivateAbilityAndResetTimer(FGameplayAbilitySpec abilitySpec)
 {
 	// This is for the case where we entered this function via the queued ability timer
 	if (NextAbilityHandle)
@@ -187,15 +187,13 @@ void UAbilityComboManager::ActivateAbilityAndResetTimer(struct FGameplayAbilityS
 		}
 	}
 
-
-	bool activated = AbilitySystemComponent->TryActivateAbility(Ability, true);
-	auto spec = AbilitySystemComponent->FindAbilitySpecFromHandle(Ability);
+	bool activated = CheckCooldownAndTryActivate(abilitySpec);
 	if (activated)
-		LastActivatedAbilityHandle = Ability;
+		LastActivatedAbilityHandle = abilitySpec.Handle;
 
-	if (GEngine && spec && spec->Ability)
+	if (GEngine && abilitySpec.Ability)
 	{
-		FString abilityName = spec->Ability->GetName();
+		FString abilityName = abilitySpec.Ability->GetName();
 		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("Ability %s activated? %s"), 
 			*abilityName, *FString(activated ? "true": "false")));
 	}
@@ -230,8 +228,19 @@ void UAbilityComboManager::EndComboHandler()
 		GetWorld()->GetTimerManager().ClearTimer(ComboTimerHandle);
 }
 
+FGameplayAbilityActorInfo UAbilityComboManager::GetOwnerActorInfo()
+{
+	if (_ownerActorInfo.AvatarActor == nullptr)
+	{
+		auto owner = AbilitySystemComponent->GetOwnerActor();
+		_ownerActorInfo.InitFromActor(owner, owner, AbilitySystemComponent);
+	}
+	return _ownerActorInfo;
+}
+
 void UAbilityComboManager::OnAbilityFailed(const UGameplayAbility* ability, const FGameplayTagContainer& reason)
 {
+	// if there's a non-cooldown failure, we want to know why
 	if(GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Red,
@@ -245,4 +254,14 @@ FGameplayAbilitySpecHandle* UAbilityComboManager::SwitchAndAdvanceCombo(APickupA
 	Combos[PickupActor].ActiveCombo->EndCombo();
 	Combos[PickupActor].ActiveCombo = Combo;
 	return Combo->StartCombo(startFrom);
+}
+
+bool UAbilityComboManager::CheckCooldownAndTryActivate(FGameplayAbilitySpec abilitySpec)
+{
+	// only activate if we're not on CD to avoid spamming the ASC
+	const FGameplayAbilityActorInfo& actorInfo = GetOwnerActorInfo();
+	if (abilitySpec.Ability->CheckCooldown(abilitySpec.Handle, &actorInfo))
+		return AbilitySystemComponent->TryActivateAbility(abilitySpec.Handle, true);
+
+	return false;
 }

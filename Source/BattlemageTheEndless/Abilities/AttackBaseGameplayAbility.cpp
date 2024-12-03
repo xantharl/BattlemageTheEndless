@@ -232,15 +232,37 @@ bool UAttackBaseGameplayAbility::WillCancelAbility(FGameplayAbilitySpec* OtherAb
 void UAttackBaseGameplayAbility::HandleTriggerEvent(ETriggerEvent triggerEvent)
 {
 	// accepted events ETriggerEvent::Completed, ETriggerEvent::Canceled, ETriggerEvent::Ongoing
-	throw "Not implemented";
-	/*switch(triggerEvent)
+	switch(triggerEvent)
 	{
-		
-		
-	}*/
+		case ETriggerEvent::Ongoing:
+			HandleChargeProgress();
+			break;
+		default:
+			break;
+	}
 }
 
 bool UAttackBaseGameplayAbility::IsCharged()
 {
-	return duration_cast<milliseconds>(system_clock::now().time_since_epoch()) - ActivationTime >= (ChargeDuration * 1000ms);
+	return _bIsCharged;
+}
+
+void UAttackBaseGameplayAbility::HandleChargeProgress()
+{
+	if (IsCharged())
+	{
+		// if we're charged, do nothing
+		return;
+	}
+	// otherwise update the charge progress
+	CurrentChargeDuration = duration_cast<milliseconds>(system_clock::now().time_since_epoch()) - ActivationTime;
+	
+	// calculate the current charge damage multiplier, it will never be below 1
+	CurrentChargeDamageMultiplier = 1.f + (CurrentChargeDuration / (ChargeDuration * 1000ms)) * (FullChargeDamageMultiplier - 1.f);
+	if (CurrentChargeDuration - ActivationTime >= (ChargeDuration * 1000ms))
+	{
+		_bIsCharged = true;
+		if (GEngine)
+			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is now charged"), *GetName()));
+	}
 }

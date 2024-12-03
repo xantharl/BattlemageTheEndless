@@ -358,7 +358,11 @@ protected:
 
 	virtual void HealthChanged(const FOnAttributeChangeData& Data);
 
+	/** Handles attack input for pickups using GAS abilities **/
 	virtual void ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
+
+	/** Spell specific handler which decides whether to call ProcessInputAndBindAbilityCancelled or do nothing **/
+	void ProcessSpellInput(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
 
 	void HandleProjectileSpawn(UAttackBaseGameplayAbility* ability);
 	void HandleHitScan(UAttackBaseGameplayAbility* ability);

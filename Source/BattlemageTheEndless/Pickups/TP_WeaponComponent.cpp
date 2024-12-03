@@ -63,7 +63,7 @@ void UTP_WeaponComponent::NextOrPreviousSpell(bool nextOrPrevious)
 	}
 
 	// find the index of the current ActiveAbility in GrantedAbilities
-	int ActiveAbilityIndex = GrantedAbilities.Find((TSubclassOf<UGameplayAbility>)ActiveAbility);
+	int ActiveAbilityIndex = GrantedAbilities.Find((TSubclassOf<UGameplayAbility>)SelectedAbility);
 	if (ActiveAbilityIndex == INDEX_NONE)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("ActiveAbility not found in GrantedAbilities"));
@@ -84,13 +84,13 @@ void UTP_WeaponComponent::NextOrPreviousSpell(bool nextOrPrevious)
 		{
 			ActiveAbilityIndex = 0;
 		}
-		ActiveAbility = GrantedAbilities[ActiveAbilityIndex];
-		abilityDefaultObject = ActiveAbility->GetDefaultObject<UAttackBaseGameplayAbility>();
+		SelectedAbility = GrantedAbilities[ActiveAbilityIndex];
+		abilityDefaultObject = SelectedAbility->GetDefaultObject<UAttackBaseGameplayAbility>();
 	} while (abilityDefaultObject->HasComboTag() && !abilityDefaultObject->IsFirstInCombo());
 
 	if (GEngine)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("Switched to %s"), *ActiveAbility->GetName()));
+		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("Switched to %s"), *SelectedAbility->GetName()));
 	}
 }
 

@@ -68,6 +68,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CastBehavior)
 	float ChargeDuration = 0.f;
 
+	/** Current charge duration **/
+	milliseconds CurrentChargeDuration;
+
+	/** Currently Active Multiplier at full charge **/
+	UPROPERTY(BlueprintReadOnly, Category = CastBehavior)
+	float CurrentChargeDamageMultiplier = 0.f;
+
+	/** Damage Multiplier at full charge **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CastBehavior)
+	float FullChargeDamageMultiplier = 3.f;
+
 	milliseconds ActivationTime;
 
 	/** Amount of times an ability can chain, 0 = no chaining **/
@@ -183,6 +194,8 @@ public:
 
 	bool IsCharged();
 
+	virtual void HandleChargeProgress();
+
 protected:
 	FTimerHandle EndTimerHandle;
 
@@ -193,4 +206,5 @@ private:
 		See GetChainTimerHandles **/
 	TArray<FTimerHandle> chainTimerHandles;
 
+	bool _bIsCharged = false;
 };

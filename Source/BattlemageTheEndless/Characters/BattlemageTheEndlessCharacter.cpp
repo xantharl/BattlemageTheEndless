@@ -677,9 +677,9 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 	}
 
 	// Set the active spell to the first granted ability if it is not already set and the item is a spell focus
-	if (pickup->Weapon->SlotType == EquipSlot::Secondary && pickup->Weapon->GrantedAbilities.Num() > 0 && !pickup->Weapon->ActiveAbility)
+	if (pickup->Weapon->SlotType == EquipSlot::Secondary && pickup->Weapon->GrantedAbilities.Num() > 0 && !pickup->Weapon->SelectedAbility)
 	{
-		pickup->Weapon->ActiveAbility = pickup->Weapon->GrantedAbilities[0];
+		pickup->Weapon->SelectedAbility = pickup->Weapon->GrantedAbilities[0];
 	}
 
 	// add the mapping context and bindings if applicable
@@ -696,14 +696,21 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 	// track key bindings for the new weapon
 	if (EnhancedInputComponent)
 	{
-		auto handlesRef = &EquipmentBindingHandles[pickup].Handles;
+		auto bindingHandles = FBindingHandles();
 		for (ETriggerEvent triggerEvent : TEnumRange<ETriggerEvent>())
 		{
-			handlesRef->Add(
-				EnhancedInputComponent->BindAction(pickup->Weapon->FireAction, ETriggerEvent::Triggered,
-					this, &ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled, pickup, EAttackType::Light, triggerEvent)
+			bindingHandles.Handles.Add(
+				EnhancedInputComponent->BindAction(
+					pickup->Weapon->FireAction, 
+					triggerEvent,
+					this, 
+					pickup->PickupType == EPickupType::Weapon ? &ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled : & ABattlemageTheEndlessCharacter::ProcessSpellInput,
+					pickup, 
+					EAttackType::Light, 
+					triggerEvent)
 				.GetHandle());
 		}
+		EquipmentBindingHandles.Add(pickup, bindingHandles);
 	}
 	// todo: make this work
 	// Grant abilities, but only on the server	
@@ -832,13 +839,73 @@ void ABattlemageTheEndlessCharacter::HealthChanged(const FOnAttributeChangeData&
 		return;
 }
 
+void ABattlemageTheEndlessCharacter::ProcessSpellInput(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)
+{
+	auto selectedAbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(ActiveSpellClass->Weapon->SelectedAbility);
+	auto selectedAbility = Cast<UAttackBaseGameplayAbility>(AbilitySystemComponent->FindAbilitySpecFromClass(ActiveSpellClass->Weapon->SelectedAbility)->Ability);
+
+	// Instant abilities only care about their triggered condition
+	if (selectedAbility->ChargeDuration <= 0.001f && triggerEvent != ETriggerEvent::Triggered)
+	{
+		return;
+	}
+
+	// If we have a charge duration, and the ability has already been started, find the ability instance
+	if (selectedAbility && selectedAbility->ChargeDuration > 0.001f && triggerEvent != ETriggerEvent::Started)
+	{
+		// make sure the trigger event is relevant
+		auto acceptedChargeTriggers = TArray<ETriggerEvent>({ ETriggerEvent::Completed, ETriggerEvent::Canceled, ETriggerEvent::Ongoing });
+		if (!acceptedChargeTriggers.Contains(triggerEvent))
+			return;
+
+		// find the ability instance from the last activated abilities
+		FGameplayAbilitySpecHandle specHandle = FGameplayAbilitySpecHandle();
+		if (LastActivatedAbilities.Contains(PickupActor))
+		{
+			if (LastActivatedAbilities[PickupActor].IsValid())
+				specHandle = LastActivatedAbilities[PickupActor];
+			// if the ability is no longer valid, that implies we completed or canceled it in the last frame, so we have nothing to do here
+			else
+			{
+				LastActivatedAbilities.Remove(PickupActor);
+				return;
+			}
+
+			auto abilitySpec = AbilitySystemComponent->FindAbilitySpecFromHandle(specHandle);
+			auto ability = Cast<UAttackBaseGameplayAbility>(abilitySpec->Ability);
+			// safety check
+			if (!abilitySpec->IsActive())
+				return;
+
+			// handle the trigger event, then determine if we should continue
+			ability->HandleTriggerEvent(triggerEvent);
+
+			// If the ability is not charged, we do not want to continue to hit handling
+			if (!ability->IsCharged())
+				return;
+		}
+		// If we haven't activated any abilities, we need to handle the start and return
+		else
+		{
+			AbilitySystemComponent->TryActivateAbility(selectedAbilitySpec->Handle, true);
+			LastActivatedAbilities.Add(PickupActor, selectedAbilitySpec->Handle);
+			if (GEngine)
+				GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is charging"), *GetName()));
+			return;
+		}
+	}
+
+	ProcessInputAndBindAbilityCancelled(PickupActor, AttackType, triggerEvent);
+}
+
 void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)
 {
 	// Check if the last activated ability exists and is still active
 	FGameplayAbilitySpecHandle specHandle = FGameplayAbilitySpecHandle();
 	if (LastActivatedAbilities.Contains(PickupActor))
 	{
-		if (LastActivatedAbilities[PickupActor].IsValid())
+		auto abilitySpec = AbilitySystemComponent->FindAbilitySpecFromHandle(LastActivatedAbilities[PickupActor]);
+		if (abilitySpec->IsActive())
 			specHandle = LastActivatedAbilities[PickupActor];
 		// if an ability exists but has ended, clear it out
 		else
@@ -851,23 +918,16 @@ void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickup
 		specHandle = ComboManager->ProcessInput(PickupActor, EAttackType::Light);
 		if (!specHandle.IsValid())
 			return;
+		
+		LastActivatedAbilities.Add(PickupActor, specHandle);
 	}
 
 	// find the ability instance
 	auto ability = Cast<UAttackBaseGameplayAbility>(AbilitySystemComponent->FindAbilitySpecFromHandle(specHandle)->Ability);
 
-	// If we have a charge duration, check if the triggerEvent is of a relevant type
-	auto acceptedChargeTriggers = TArray<ETriggerEvent>({ ETriggerEvent::Completed, ETriggerEvent::Canceled, ETriggerEvent::Ongoing });
-	if (ability->ChargeDuration > 0.001f && !acceptedChargeTriggers.Contains(triggerEvent))
-	{
-		if(GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%s' starting to charge!"), *GetNameSafe(ability)));
-		ability->HandleTriggerEvent(triggerEvent);
-
-		// If we're charging, there's nothing else to do right now
-		if (!ability->IsCharged())
-			return;
-	}
+	// if this is a charge ability and we've just started it, return so that the spell handler can continue to charge
+	if (ability->ChargeDuration > 0.001f && triggerEvent == ETriggerEvent::Started)
+		return;
 
 	// If the ability has projectiles to spawn, spawn them and exit
 	//	Currently an ability can apply effects either on hit or to self, but not both

@@ -36,11 +36,13 @@ protected:
 	int CurrentComboNumber = 0;
 
 	UFUNCTION()
-	void ActivateAbilityAndResetTimer(struct FGameplayAbilitySpecHandle& Ability);
+	void ActivateAbilityAndResetTimer(FGameplayAbilitySpec abilitySpec);
 
 	void EndComboHandler();
 
 	FGameplayAbilitySpecHandle* SwitchAndAdvanceCombo(APickupActor* PickupActor, UAbilityCombo* Combo);
+
+	bool CheckCooldownAndTryActivate(FGameplayAbilitySpec abilitySpec);
 
 	/// <summary>
 	/// The combo manager allows for an action queue of 1, this is used in the event that input
@@ -49,6 +51,8 @@ protected:
 	FGameplayAbilitySpecHandle* NextAbilityHandle;
 
 	FTimerHandle QueuedAbilityTimer;
+
+	FGameplayAbilityActorInfo GetOwnerActorInfo();
 
 public:
 	FGameplayAbilitySpecHandle LastActivatedAbilityHandle;
@@ -73,4 +77,7 @@ public:
 	double ComboExpiryTime = 1.0;
 
 	UAbilitySystemComponent* AbilitySystemComponent;
+
+private:
+	FGameplayAbilityActorInfo _ownerActorInfo = FGameplayAbilityActorInfo();
 };
