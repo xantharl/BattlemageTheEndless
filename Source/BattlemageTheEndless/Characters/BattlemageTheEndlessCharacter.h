@@ -45,6 +45,9 @@ DECLARE_DELEGATE_OneParam(FSpellClassSelectDelegate, const int);
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
+// Needed for iteration in input mapping, this intentionally skips None
+ENUM_RANGE_BY_FIRST_AND_LAST(ETriggerEvent, ETriggerEvent::Triggered, ETriggerEvent::Completed);
+
 UENUM(BlueprintType)
 enum class EGASAbilityInputId : uint8
 {
@@ -206,6 +209,10 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = UserInterface, meta = (AllowPrivateAccess = "true"))
 	UMenuContainerActivatableWidget* ContainerWidget;
 
+	/** Map of last activated abilities. This is NOT automatically cleared out on ability end, and will be validated on next attempt to process input **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
+	TMap<APickupActor*, FGameplayAbilitySpecHandle> LastActivatedAbilities;
+
 private:
 	milliseconds _lastCameraSwap;
 	milliseconds _lastJumpTime;
@@ -351,7 +358,7 @@ protected:
 
 	virtual void HealthChanged(const FOnAttributeChangeData& Data);
 
-	virtual void ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType);
+	virtual void ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
 
 	void HandleProjectileSpawn(UAttackBaseGameplayAbility* ability);
 	void HandleHitScan(UAttackBaseGameplayAbility* ability);

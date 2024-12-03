@@ -696,10 +696,14 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 	// track key bindings for the new weapon
 	if (EnhancedInputComponent)
 	{
-		EquipmentBindingHandles.Add(pickup, FBindingHandles());
-		auto handle = EnhancedInputComponent->BindAction(pickup->Weapon->FireAction, ETriggerEvent::Triggered,
-			this, &ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled, pickup, EAttackType::Light).GetHandle();
-		EquipmentBindingHandles[pickup].Handles.Add(handle);
+		auto handlesRef = &EquipmentBindingHandles[pickup].Handles;
+		for (ETriggerEvent triggerEvent : TEnumRange<ETriggerEvent>())
+		{
+			handlesRef->Add(
+				EnhancedInputComponent->BindAction(pickup->Weapon->FireAction, ETriggerEvent::Triggered,
+					this, &ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled, pickup, EAttackType::Light, triggerEvent)
+				.GetHandle());
+		}
 	}
 	// todo: make this work
 	// Grant abilities, but only on the server	
@@ -828,37 +832,62 @@ void ABattlemageTheEndlessCharacter::HealthChanged(const FOnAttributeChangeData&
 		return;
 }
 
-// TODO: Clean up this excessive amount of nesting
-void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType)
+void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)
 {
-	auto abilityHandle = ComboManager->ProcessInput(PickupActor, EAttackType::Light);
-
-	// if the ability activated, check if we need to bind the cancel event
-	if (abilityHandle.IsValid())
+	// Check if the last activated ability exists and is still active
+	FGameplayAbilitySpecHandle specHandle = FGameplayAbilitySpecHandle();
+	if (LastActivatedAbilities.Contains(PickupActor))
 	{
-		auto spec = AbilitySystemComponent->FindAbilitySpecFromHandle(abilityHandle);
-		auto ability = Cast<UAttackBaseGameplayAbility>(AbilitySystemComponent->FindAbilitySpecFromHandle(abilityHandle)->Ability);
-
-		// If the ability has projectiles to spawn, spawn them and exit
-		//	Currently an ability can apply effects either on hit or to self, but not both
-		if (ability->HitType == HitType::Projectile && ability->ProjectileConfiguration.ProjectileClass)
-		{
-			HandleProjectileSpawn(ability);
-			return;
-		}
-		else if (ability->HitType == HitType::HitScan)
-		{
-			HandleHitScan(ability);
-			return;
-		}
-
-		// If there are no effects, we have no need for a cancel callback
-		if (ability->EffectsToApply.Num() == 0)
-			return;
-
-		// Otherwise bind the cancel event to remove the active effects immediately
-		AbilitySystemComponent->OnAbilityEnded.AddUObject(this, &ABattlemageTheEndlessCharacter::OnAbilityCancelled);
+		if (LastActivatedAbilities[PickupActor].IsValid())
+			specHandle = LastActivatedAbilities[PickupActor];
+		// if an ability exists but has ended, clear it out
+		else
+			LastActivatedAbilities.Remove(PickupActor);
 	}
+
+	// If not, resolve and activate a new one
+	if (specHandle == FGameplayAbilitySpecHandle())
+	{
+		specHandle = ComboManager->ProcessInput(PickupActor, EAttackType::Light);
+		if (!specHandle.IsValid())
+			return;
+	}
+
+	// find the ability instance
+	auto ability = Cast<UAttackBaseGameplayAbility>(AbilitySystemComponent->FindAbilitySpecFromHandle(specHandle)->Ability);
+
+	// If we have a charge duration, check if the triggerEvent is of a relevant type
+	auto acceptedChargeTriggers = TArray<ETriggerEvent>({ ETriggerEvent::Completed, ETriggerEvent::Canceled, ETriggerEvent::Ongoing });
+	if (ability->ChargeDuration > 0.001f && !acceptedChargeTriggers.Contains(triggerEvent))
+	{
+		if(GEngine)
+			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, FString::Printf(TEXT("'%s' starting to charge!"), *GetNameSafe(ability)));
+		ability->HandleTriggerEvent(triggerEvent);
+
+		// If we're charging, there's nothing else to do right now
+		if (!ability->IsCharged())
+			return;
+	}
+
+	// If the ability has projectiles to spawn, spawn them and exit
+	//	Currently an ability can apply effects either on hit or to self, but not both
+	if (ability->HitType == HitType::Projectile && ability->ProjectileConfiguration.ProjectileClass)
+	{
+		HandleProjectileSpawn(ability);
+		return;
+	}
+	else if (ability->HitType == HitType::HitScan)
+	{
+		HandleHitScan(ability);
+		return;
+	}
+
+	// If there are no effects, we have no need for a cancel callback
+	if (ability->EffectsToApply.Num() == 0)
+		return;
+
+	// Otherwise bind the cancel event to remove the active effects immediately
+	AbilitySystemComponent->OnAbilityEnded.AddUObject(this, &ABattlemageTheEndlessCharacter::OnAbilityCancelled);
 }
 
 // TODO: Why is this in character instead of the ability?

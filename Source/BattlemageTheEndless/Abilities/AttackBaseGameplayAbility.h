@@ -16,9 +16,12 @@
 #include "../Pickups/BattlemageTheEndlessProjectile.h"
 #include "GameplayAbilities/Public/AbilitySystemComponent.h"
 #include "HitScanChainEffect.h"
+#include "InputTriggers.h"
+#include <chrono>
 #include "AttackBaseGameplayAbility.generated.h"
 
 class UNiagaraSystem;
+using namespace std::chrono;
 
 /// <summary>
 /// Enum of possible spell hit types
@@ -57,11 +60,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HitBehavior)
 	HitType HitType = HitType::None;
 
-	/** Hit Scan only particle effect **/
-
 	/** Projectile class to spawn */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectiles)
 	FProjectileConfiguration ProjectileConfiguration;
+
+	/** Required charge duration before ability can be fired **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CastBehavior)
+	float ChargeDuration = 0.f;
+
+	milliseconds ActivationTime;
 
 	/** Amount of times an ability can chain, 0 = no chaining **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ChainBehavior)
@@ -171,6 +178,10 @@ public:
 
 		return chainTimerHandles; 
 	}
+
+	void HandleTriggerEvent(ETriggerEvent triggerEvent);
+
+	bool IsCharged();
 
 protected:
 	FTimerHandle EndTimerHandle;

@@ -63,6 +63,7 @@ public:
 	// Adds a single ability to a combo, or creates a new combo if the ability is the first in a combo
 	void AddAbilityToCombo(APickupActor* PickupActor, UAttackBaseGameplayAbility* Ability, FGameplayAbilitySpecHandle Handle);
 
+	/** Processes input from the player, can activate immediately or queue an action. Returns an invalid handle if no ability was activated. **/
 	FGameplayAbilitySpecHandle ProcessInput(APickupActor* PickupActor, EAttackType AttackType);
 
 	FGameplayAbilitySpecHandle DelegateToWeapon(APickupActor* PickupActor, EAttackType AttackType);

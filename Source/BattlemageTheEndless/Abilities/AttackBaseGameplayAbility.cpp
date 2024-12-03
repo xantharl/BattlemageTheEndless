@@ -53,6 +53,11 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		return;
 	}
 
+	// Activation time is only used to determine if the ability is charged, so if this isn't a charge ability we don't need to set it
+	if (ChargeDuration > 0.001f) {
+		ActivationTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
+	}
+
 	// Try and play a firing animation if specified
 	auto animInstance = character->GetMesh()->GetAnimInstance();
 	float montageDuration = 0.f;
@@ -72,10 +77,13 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		montageDuration = FireAnimation->GetPlayLength();
 	}
 
-	if (CooldownGameplayEffectClass)
-		CommitAbilityCooldown(Handle, ActorInfo, ActivationInfo, false);
-
 	CommitAbility(Handle, ActorInfo, ActivationInfo);
+
+	// If we've got a charge time, simply exit and let handler worry about ending the ability
+	if (ChargeDuration >= 0.001f)
+	{
+		return;
+	}
 
 	// Apply effects to the character, these will in turn spawn any configured cues (Particles and/or sound)
 	if(HitType == HitType::Self)
@@ -90,7 +98,7 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 			return;
 	}
 
-	// If we have no montage and no effects, end the ability immediately
+	// If we have no montage, no effects, and no charge time, end the ability immediately
 	if (montageDuration < 0.001f)
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
@@ -163,6 +171,9 @@ void UAttackBaseGameplayAbility::ResetTimerAndClearEffects(const FGameplayAbilit
 
 void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
+	if (CooldownGameplayEffectClass)
+		CommitAbilityCooldown(Handle, ActorInfo, ActivationInfo, false);
+
 	ResetTimerAndClearEffects(ActorInfo);
 	TryPlayComboPause(ActorInfo);
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
@@ -216,4 +227,20 @@ bool UAttackBaseGameplayAbility::WillCancelAbility(FGameplayAbilitySpec* OtherAb
 		return false;
 
 	return OtherAbility->Ability->AbilityTags.HasAny(CancelAbilitiesWithTag);
+}
+
+void UAttackBaseGameplayAbility::HandleTriggerEvent(ETriggerEvent triggerEvent)
+{
+	// accepted events ETriggerEvent::Completed, ETriggerEvent::Canceled, ETriggerEvent::Ongoing
+	throw "Not implemented";
+	/*switch(triggerEvent)
+	{
+		
+		
+	}*/
+}
+
+bool UAttackBaseGameplayAbility::IsCharged()
+{
+	return duration_cast<milliseconds>(system_clock::now().time_since_epoch()) - ActivationTime >= (ChargeDuration * 1000ms);
 }
