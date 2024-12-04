@@ -18,6 +18,7 @@
 #include "HitScanChainEffect.h"
 #include "InputTriggers.h"
 #include <chrono>
+#include "GameplayEffect.h"
 #include "AttackBaseGameplayAbility.generated.h"
 
 class UNiagaraSystem;
@@ -71,6 +72,9 @@ public:
 	/** Current charge duration **/
 	milliseconds CurrentChargeDuration;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CastBehavior)
+	float ChargeSpellBaseDamage = 5.f;
+
 	/** Currently Active Multiplier at full charge **/
 	UPROPERTY(BlueprintReadOnly, Category = CastBehavior)
 	float CurrentChargeDamageMultiplier = 0.f;
@@ -106,7 +110,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
 	float MaxRange = DEFAULT_MAX_DISTANCE;
 
-	/** AnimMontage to play each time we use the ability */
+	/** AnimMontage to play during ability charge up */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
+	UAnimMontage* ChargeAnimation;
+
+	/** AnimMontage to play when we fire the ability */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	UAnimMontage* FireAnimation;
 
@@ -134,6 +142,8 @@ public:
 	/// <param name="TriggerEventData"></param>
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData);
 
+	void CreateAndDispatchMontageTask();
+
 	/// <summary>
 	/// Helper to apply any effects owned by this ability to the target, which can be the same as the character if applying to self
 	/// </summary>
@@ -157,6 +167,7 @@ public:
 	/// <param name="ActorInfo"></param>
 	/// <param name="wasCancelled"></param>
 	void ResetTimerAndClearEffects(const FGameplayAbilityActorInfo* ActorInfo, bool wasCancelled = false);
+
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
 	/// <summary>
@@ -189,8 +200,6 @@ public:
 
 		return chainTimerHandles; 
 	}
-
-	void HandleTriggerEvent(ETriggerEvent triggerEvent);
 
 	bool IsCharged();
 

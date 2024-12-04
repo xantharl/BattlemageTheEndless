@@ -47,6 +47,7 @@ FGameplayTagContainer UAttackBaseGameplayAbility::GetComboTags()
 void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	UWorld* const world = GetWorld();
+	_bIsCharged = false;
 	auto character = Cast<ACharacter>(ActorInfo->OwnerActor);
 	if (!world || !character)
 	{
@@ -61,21 +62,19 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	// Try and play a firing animation if specified
 	auto animInstance = character->GetMesh()->GetAnimInstance();
 	float montageDuration = 0.f;
-	if (FireAnimation && animInstance)
+	if (FireAnimation && animInstance && ChargeDuration <= 0.001f)
 	{
-		// TODO: Add a montage rate parameter to the ability
-		auto task = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, FireAnimation, 
-			1.0f, NAME_None, true, 1.0f, 0.f, true);
-		// this is firing way earlier than expected, so we'll use the OnCompleted event instead
-		//task->OnBlendOut.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCompleted);
-		task->OnCompleted.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCompleted);
-		task->OnInterrupted.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCancelled);
-		task->OnCancelled.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCancelled);
-		task->ReadyForActivation();
+		// if it's not a charge ability, play the fire animation and possibly end the ability on callback (it will check for active effects)
+		CreateAndDispatchMontageTask();
 
 		// TODO: account for rate parameter when added
 		montageDuration = FireAnimation->GetPlayLength();
 	}
+	else if (ChargeDuration > 0.001f && ChargeAnimation && animInstance)
+	{
+		// No need for anything fancy, just play the charge animation
+		animInstance->Montage_Play(ChargeAnimation);
+	};
 
 	CommitAbility(Handle, ActorInfo, ActivationInfo);
 
@@ -105,9 +104,20 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		return;
 	}
 
-	// if the effects have the longer duration, set a timer to end the ability after that duration
+	// if the montage has the longer duration, set a timer to end the ability after that duration
 	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UAttackBaseGameplayAbility::EndAbility, Handle, ActorInfo, ActivationInfo, true, true);
 	world->GetTimerManager().SetTimer(EndTimerHandle, TimerDelegate, montageDuration, false);
+}
+
+void UAttackBaseGameplayAbility::CreateAndDispatchMontageTask()
+{
+	// TODO: Add a montage rate parameter to the ability
+	auto task = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, FireAnimation,
+		1.0f, NAME_None, true, 1.0f, 0.f, true);
+	task->OnCompleted.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCompleted);
+	task->OnInterrupted.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCancelled);
+	task->OnCancelled.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCancelled);
+	task->ReadyForActivation();
 }
 
 void UAttackBaseGameplayAbility::ApplyEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser)
@@ -132,6 +142,10 @@ void UAttackBaseGameplayAbility::ApplyEffects(AActor* target, UAbilitySystemComp
 		FGameplayEffectSpecHandle specHandle = targetAsc->MakeOutgoingSpec(effect, 1.f, context);
 		if (specHandle.IsValid())
 		{
+			// This sets the damage manually for a Set By Caller type effect
+			if (CurrentChargeDamageMultiplier > 1.f)
+				specHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Spells.Charge.Damage")), CurrentChargeDamageMultiplier * ChargeSpellBaseDamage);
+
 			auto handle = targetAsc->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
 			ActiveEffectHandles.Add(handle);
 
@@ -174,6 +188,17 @@ void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Han
 	if (CooldownGameplayEffectClass)
 		CommitAbilityCooldown(Handle, ActorInfo, ActivationInfo, false);
 
+	// If this is a charge attack, play the attack animation now
+	if (_bIsCharged)
+	{
+		auto owner = Cast<ACharacter>(ActorInfo->OwnerActor);
+		auto animInstance = owner->GetMesh()->GetAnimInstance();
+		if (animInstance && FireAnimation)
+			animInstance->Montage_Play(FireAnimation);	
+		// reset charged status for next invocation
+		_bIsCharged = false;
+	}
+
 	ResetTimerAndClearEffects(ActorInfo);
 	TryPlayComboPause(ActorInfo);
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
@@ -196,7 +221,7 @@ void UAttackBaseGameplayAbility::TryPlayComboPause(const FGameplayAbilityActorIn
 
 void UAttackBaseGameplayAbility::OnMontageCancelled()
 {
-	EndAbility(this->CurrentSpecHandle, this->CurrentActorInfo, this->CurrentActivationInfo, true, true);
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 }
 
 void UAttackBaseGameplayAbility::OnEffectRemoved(const FGameplayEffectRemovalInfo& GameplayEffectRemovalInfo)
@@ -206,7 +231,7 @@ void UAttackBaseGameplayAbility::OnEffectRemoved(const FGameplayEffectRemovalInf
 	{
 		if (GEngine)
 			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ending ability %s due to effect removal"), *GetName()));
-		EndAbility(this->CurrentSpecHandle, this->CurrentActorInfo, this->CurrentActivationInfo, true, false);
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 	}
 }
 
@@ -218,7 +243,7 @@ void UAttackBaseGameplayAbility::OnMontageCompleted()
 
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ending ability %s due to montage finish"), *GetName()));
-	EndAbility(this->CurrentSpecHandle, this->CurrentActorInfo, this->CurrentActivationInfo, true, false);
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 
 bool UAttackBaseGameplayAbility::WillCancelAbility(FGameplayAbilitySpec* OtherAbility)
@@ -227,19 +252,6 @@ bool UAttackBaseGameplayAbility::WillCancelAbility(FGameplayAbilitySpec* OtherAb
 		return false;
 
 	return OtherAbility->Ability->AbilityTags.HasAny(CancelAbilitiesWithTag);
-}
-
-void UAttackBaseGameplayAbility::HandleTriggerEvent(ETriggerEvent triggerEvent)
-{
-	// accepted events ETriggerEvent::Completed, ETriggerEvent::Canceled, ETriggerEvent::Ongoing
-	switch(triggerEvent)
-	{
-		case ETriggerEvent::Ongoing:
-			HandleChargeProgress();
-			break;
-		default:
-			break;
-	}
 }
 
 bool UAttackBaseGameplayAbility::IsCharged()
@@ -258,8 +270,8 @@ void UAttackBaseGameplayAbility::HandleChargeProgress()
 	CurrentChargeDuration = duration_cast<milliseconds>(system_clock::now().time_since_epoch()) - ActivationTime;
 	
 	// calculate the current charge damage multiplier, it will never be below 1
-	CurrentChargeDamageMultiplier = 1.f + (CurrentChargeDuration / (ChargeDuration * 1000ms)) * (FullChargeDamageMultiplier - 1.f);
-	if (CurrentChargeDuration - ActivationTime >= (ChargeDuration * 1000ms))
+	CurrentChargeDamageMultiplier = 1.f + ((CurrentChargeDuration / (ChargeDuration * 1000ms)) * (FullChargeDamageMultiplier - 1.f));
+	if (CurrentChargeDuration >= (ChargeDuration * 1000ms))
 	{
 		_bIsCharged = true;
 		if (GEngine)

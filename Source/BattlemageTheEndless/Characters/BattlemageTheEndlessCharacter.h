@@ -361,8 +361,12 @@ protected:
 	/** Handles attack input for pickups using GAS abilities **/
 	virtual void ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
 
+	void PostAbilityActivation(UAttackBaseGameplayAbility* ability);
+
 	/** Spell specific handler which decides whether to call ProcessInputAndBindAbilityCancelled or do nothing **/
 	void ProcessSpellInput(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
+
+	TArray<TObjectPtr<UAttackBaseGameplayAbility>> GetAbilityActiveInstances(FGameplayAbilitySpec* spec);
 
 	void HandleProjectileSpawn(UAttackBaseGameplayAbility* ability);
 	void HandleHitScan(UAttackBaseGameplayAbility* ability);
@@ -373,5 +377,10 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	void OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+	FTimerHandle ChargeSpellTimerHandle;
+	void ChargeSpell(TObjectPtr<UAttackBaseGameplayAbility> ability);
+
+	const int TickRate = 60;
 };
 

@@ -841,94 +841,85 @@ void ABattlemageTheEndlessCharacter::HealthChanged(const FOnAttributeChangeData&
 
 void ABattlemageTheEndlessCharacter::ProcessSpellInput(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)
 {
+	// if charge spell, activate and start repeating charge timer
 	auto selectedAbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(ActiveSpellClass->Weapon->SelectedAbility);
-	auto selectedAbility = Cast<UAttackBaseGameplayAbility>(AbilitySystemComponent->FindAbilitySpecFromClass(ActiveSpellClass->Weapon->SelectedAbility)->Ability);
+	auto selectedAbility = Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability);
 
-	// Instant abilities only care about their triggered condition
-	if (selectedAbility->ChargeDuration <= 0.001f && triggerEvent != ETriggerEvent::Triggered)
+	// if this is a charge spell use some special handling
+	if (selectedAbility->ChargeDuration > 0.001f)
 	{
+		switch (triggerEvent)
+		{
+			case ETriggerEvent::Started:
+			{
+				bool success = AbilitySystemComponent->TryActivateAbility(selectedAbilitySpec->Handle, true);
+				if (!success && GEngine)
+					GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Red, FString::Printf(TEXT("Ability %s failed to activate"), *GetName()));
+
+				auto instances = GetAbilityActiveInstances(selectedAbilitySpec);
+				FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &ABattlemageTheEndlessCharacter::ChargeSpell, instances[0]);
+				GetWorld()->GetTimerManager().SetTimer(ChargeSpellTimerHandle, TimerDelegate, 1.0f / (float)TickRate, true);
+
+				if (GEngine)
+					GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is charging"), *GetName()));
+				break;
+			}
+			case ETriggerEvent::Completed:
+			{
+				// if charge spell and completed event, clear the charge timer
+				GetWorld()->GetTimerManager().ClearTimer(ChargeSpellTimerHandle);
+				PostAbilityActivation(selectedAbility);
+				// This is a hack to call EndAbility without needing to spoof up all the params
+				auto instances = GetAbilityActiveInstances(selectedAbilitySpec);
+				if (instances.Num() > 0)
+				{
+					Cast<UAttackBaseGameplayAbility>(instances[0])->OnMontageCompleted();
+				}
+				break;
+			}
+			// We don't need to do anything for ongoing since we've got the repeating timer handling it on a set interval
+			default:
+				break;
+		}
+
 		return;
 	}
 
-	// If we have a charge duration, and the ability has already been started, find the ability instance
-	if (selectedAbility && selectedAbility->ChargeDuration > 0.001f && triggerEvent != ETriggerEvent::Started)
-	{
-		// make sure the trigger event is relevant
-		auto acceptedChargeTriggers = TArray<ETriggerEvent>({ ETriggerEvent::Completed, ETriggerEvent::Canceled, ETriggerEvent::Ongoing });
-		if (!acceptedChargeTriggers.Contains(triggerEvent))
-			return;
-
-		// find the ability instance from the last activated abilities
-		FGameplayAbilitySpecHandle specHandle = FGameplayAbilitySpecHandle();
-		if (LastActivatedAbilities.Contains(PickupActor))
-		{
-			if (LastActivatedAbilities[PickupActor].IsValid())
-				specHandle = LastActivatedAbilities[PickupActor];
-			// if the ability is no longer valid, that implies we completed or canceled it in the last frame, so we have nothing to do here
-			else
-			{
-				LastActivatedAbilities.Remove(PickupActor);
-				return;
-			}
-
-			auto abilitySpec = AbilitySystemComponent->FindAbilitySpecFromHandle(specHandle);
-			auto ability = Cast<UAttackBaseGameplayAbility>(abilitySpec->Ability);
-			// safety check
-			if (!abilitySpec->IsActive())
-				return;
-
-			// handle the trigger event, then determine if we should continue
-			ability->HandleTriggerEvent(triggerEvent);
-
-			// If the ability is not charged, we do not want to continue to hit handling
-			if (!ability->IsCharged())
-				return;
-		}
-		// If we haven't activated any abilities, we need to handle the start and return
-		else
-		{
-			AbilitySystemComponent->TryActivateAbility(selectedAbilitySpec->Handle, true);
-			LastActivatedAbilities.Add(PickupActor, selectedAbilitySpec->Handle);
-			if (GEngine)
-				GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is charging"), *GetName()));
-			return;
-		}
-	}
-
+	// otherwise use the standard combo manager route
 	ProcessInputAndBindAbilityCancelled(PickupActor, AttackType, triggerEvent);
+}
+
+TArray<TObjectPtr<UAttackBaseGameplayAbility>> ABattlemageTheEndlessCharacter::GetAbilityActiveInstances(FGameplayAbilitySpec* spec)
+{
+	TArray<TObjectPtr<UAttackBaseGameplayAbility>> returnVal;
+	auto instances = spec->Ability->GetReplicationPolicy() == EGameplayAbilityReplicationPolicy::ReplicateNo
+		? spec->NonReplicatedInstances : spec->ReplicatedInstances;
+
+	for (auto instance : instances)
+	{
+		returnVal.Add(Cast<UAttackBaseGameplayAbility>(instance));
+	}	
+
+	return returnVal;
 }
 
 void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)
 {
-	// Check if the last activated ability exists and is still active
-	FGameplayAbilitySpecHandle specHandle = FGameplayAbilitySpecHandle();
-	if (LastActivatedAbilities.Contains(PickupActor))
-	{
-		auto abilitySpec = AbilitySystemComponent->FindAbilitySpecFromHandle(LastActivatedAbilities[PickupActor]);
-		if (abilitySpec->IsActive())
-			specHandle = LastActivatedAbilities[PickupActor];
-		// if an ability exists but has ended, clear it out
-		else
-			LastActivatedAbilities.Remove(PickupActor);
-	}
-
-	// If not, resolve and activate a new one
-	if (specHandle == FGameplayAbilitySpecHandle())
-	{
-		specHandle = ComboManager->ProcessInput(PickupActor, EAttackType::Light);
-		if (!specHandle.IsValid())
-			return;
-		
-		LastActivatedAbilities.Add(PickupActor, specHandle);
-	}
-
-	// find the ability instance
-	auto ability = Cast<UAttackBaseGameplayAbility>(AbilitySystemComponent->FindAbilitySpecFromHandle(specHandle)->Ability);
-
-	// if this is a charge ability and we've just started it, return so that the spell handler can continue to charge
-	if (ability->ChargeDuration > 0.001f && triggerEvent == ETriggerEvent::Started)
+	// Let combo manager resolve and dispatch ability as needed
+	auto specHandle = ComboManager->ProcessInput(PickupActor, EAttackType::Light);
+	if (!specHandle.IsValid())
 		return;
 
+	// find the ability instance
+	auto instances = GetAbilityActiveInstances(AbilitySystemComponent->FindAbilitySpecFromHandle(specHandle));
+	if (instances.Num() == 0)
+		return;
+
+	PostAbilityActivation(instances[0]);
+}
+
+void ABattlemageTheEndlessCharacter::PostAbilityActivation(UAttackBaseGameplayAbility* ability)
+{
 	// If the ability has projectiles to spawn, spawn them and exit
 	//	Currently an ability can apply effects either on hit or to self, but not both
 	if (ability->HitType == HitType::Projectile && ability->ProjectileConfiguration.ProjectileClass)
@@ -1152,4 +1143,14 @@ void ABattlemageTheEndlessCharacter::OnProjectileHit(UPrimitiveComponent* HitCom
 	// apply effects to the hit actor (this character)
 	// TODO: maybe package instigator with the ability so we can trace back to the source of the ability
 	ability->ApplyEffects(this, AbilitySystemComponent);
+}
+
+void ABattlemageTheEndlessCharacter::ChargeSpell(TObjectPtr<UAttackBaseGameplayAbility> ability)
+{
+	bool isChargedBefore = ability->IsCharged();
+	ability->HandleChargeProgress();
+	if (!isChargedBefore && ability->IsCharged() && GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is charged"), *GetName()));
+	}
 }

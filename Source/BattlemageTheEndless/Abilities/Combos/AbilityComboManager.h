@@ -29,6 +29,8 @@ UCLASS()
 class BATTLEMAGETHEENDLESS_API UAbilityComboManager : public UObject
 {
 	GENERATED_BODY()
+public:
+	FGameplayAbilityActorInfo GetOwnerActorInfo();
 	
 protected:
 	FTimerHandle ComboTimerHandle;
@@ -51,8 +53,6 @@ protected:
 	FGameplayAbilitySpecHandle* NextAbilityHandle;
 
 	FTimerHandle QueuedAbilityTimer;
-
-	FGameplayAbilityActorInfo GetOwnerActorInfo();
 
 public:
 	FGameplayAbilitySpecHandle LastActivatedAbilityHandle;
