@@ -131,16 +131,13 @@ public:
 	UGameplayAbility* SpawningAbility;
 	AActor* OwnerActor;
 
+	/** Effective Damage for abilities which do not have constant damage, evaluated at time of spawn **/
+	UPROPERTY(BlueprintReadOnly, Category = Damage, meta = (AllowPrivateAccess = "true"))
+	float EffectiveDamage;
+
 	ABattlemageTheEndlessProjectile();
 
-	/// <summary>
-	/// Called when the projectile hits something, damage is handled by the spawning gameplay ability
-	/// </summary>
-	/// <param name="HitComp"></param>
-	/// <param name="OtherActor"></param>
-	/// <param name="OtherComp"></param>
-	/// <param name="NormalImpulse"></param>
-	/// <param name="Hit"></param>
+	/** Called when the projectile hits something, damage is handled by the spawning gameplay ability **/
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
@@ -148,5 +145,7 @@ public:
 	USphereComponent* GetCollisionComp() const { return CollisionComp; }
 	/** Returns ProjectileMovement subobject **/
 	UProjectileMovementComponent* GetProjectileMovement() const { return ProjectileMovement; }
+
+	virtual bool ShouldDestroyOnHit() { return true;}
 };
 

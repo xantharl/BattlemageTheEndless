@@ -843,38 +843,35 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput(APickupActor* PickupActor
 {
 	// if charge spell, activate and start repeating charge timer
 	auto selectedAbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(ActiveSpellClass->Weapon->SelectedAbility);
-	auto selectedAbility = Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability);
 
 	// if this is a charge spell use some special handling
-	if (selectedAbility->ChargeDuration > 0.001f)
+	if (Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability)->ChargeDuration > 0.001f)
 	{
+		auto activeInstances = Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability)->GetAbilityActiveInstances(selectedAbilitySpec);
+		TObjectPtr<UAttackBaseGameplayAbility> activeInstance = activeInstances.Num() > 0 ? activeInstances[0] : nullptr;
+
 		switch (triggerEvent)
 		{
 			case ETriggerEvent::Started:
 			{
 				bool success = AbilitySystemComponent->TryActivateAbility(selectedAbilitySpec->Handle, true);
 				if (!success && GEngine)
-					GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Red, FString::Printf(TEXT("Ability %s failed to activate"), *GetName()));
+					GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Red, FString::Printf(TEXT("Ability %s failed to activate"), *selectedAbilitySpec->Ability->GetName()));
 
-				auto instances = GetAbilityActiveInstances(selectedAbilitySpec);
-				FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &ABattlemageTheEndlessCharacter::ChargeSpell, instances[0]);
+				FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &ABattlemageTheEndlessCharacter::ChargeSpell, activeInstance);
 				GetWorld()->GetTimerManager().SetTimer(ChargeSpellTimerHandle, TimerDelegate, 1.0f / (float)TickRate, true);
 
 				if (GEngine)
-					GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is charging"), *GetName()));
+					GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is charging"), *selectedAbilitySpec->Ability->GetName()));
 				break;
 			}
 			case ETriggerEvent::Completed:
 			{
 				// if charge spell and completed event, clear the charge timer
 				GetWorld()->GetTimerManager().ClearTimer(ChargeSpellTimerHandle);
-				PostAbilityActivation(selectedAbility);
+				PostAbilityActivation(activeInstance);
 				// This is a hack to call EndAbility without needing to spoof up all the params
-				auto instances = GetAbilityActiveInstances(selectedAbilitySpec);
-				if (instances.Num() > 0)
-				{
-					Cast<UAttackBaseGameplayAbility>(instances[0])->OnMontageCompleted();
-				}
+				activeInstance->OnMontageCompleted();
 				break;
 			}
 			// We don't need to do anything for ongoing since we've got the repeating timer handling it on a set interval
@@ -889,20 +886,6 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput(APickupActor* PickupActor
 	ProcessInputAndBindAbilityCancelled(PickupActor, AttackType, triggerEvent);
 }
 
-TArray<TObjectPtr<UAttackBaseGameplayAbility>> ABattlemageTheEndlessCharacter::GetAbilityActiveInstances(FGameplayAbilitySpec* spec)
-{
-	TArray<TObjectPtr<UAttackBaseGameplayAbility>> returnVal;
-	auto instances = spec->Ability->GetReplicationPolicy() == EGameplayAbilityReplicationPolicy::ReplicateNo
-		? spec->NonReplicatedInstances : spec->ReplicatedInstances;
-
-	for (auto instance : instances)
-	{
-		returnVal.Add(Cast<UAttackBaseGameplayAbility>(instance));
-	}	
-
-	return returnVal;
-}
-
 void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)
 {
 	// Let combo manager resolve and dispatch ability as needed
@@ -911,7 +894,9 @@ void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickup
 		return;
 
 	// find the ability instance
-	auto instances = GetAbilityActiveInstances(AbilitySystemComponent->FindAbilitySpecFromHandle(specHandle));
+	auto instances = Cast<UAttackBaseGameplayAbility>(AbilitySystemComponent->FindAbilitySpecFromHandle(specHandle)->Ability)
+		->GetAbilityActiveInstances(AbilitySystemComponent->FindAbilitySpecFromHandle(specHandle));
+
 	if (instances.Num() == 0)
 		return;
 
@@ -925,11 +910,21 @@ void ABattlemageTheEndlessCharacter::PostAbilityActivation(UAttackBaseGameplayAb
 	if (ability->HitType == HitType::Projectile && ability->ProjectileConfiguration.ProjectileClass)
 	{
 		HandleProjectileSpawn(ability);
+
+		// Some abilities need to be kept alive until after projectile spawn
+		//	Currently this is only for damage multipliers
+		ability->EndSelf();
+
 		return;
 	}
 	else if (ability->HitType == HitType::HitScan)
 	{
 		HandleHitScan(ability);
+
+		// Some abilities need to be kept alive until after hit scan
+		//	Currently this is only for damage multipliers
+		ability->EndSelf();
+
 		return;
 	}
 
@@ -1142,7 +1137,9 @@ void ABattlemageTheEndlessCharacter::OnProjectileHit(UPrimitiveComponent* HitCom
 
 	// apply effects to the hit actor (this character)
 	// TODO: maybe package instigator with the ability so we can trace back to the source of the ability
-	ability->ApplyEffects(this, AbilitySystemComponent);
+	ability->ApplyEffects(this, AbilitySystemComponent, nullptr, projectile);
+	if (projectile->ShouldDestroyOnHit())
+		projectile->Destroy();
 }
 
 void ABattlemageTheEndlessCharacter::ChargeSpell(TObjectPtr<UAttackBaseGameplayAbility> ability)

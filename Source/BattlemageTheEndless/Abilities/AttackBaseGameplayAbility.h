@@ -53,6 +53,10 @@ class BATTLEMAGETHEENDLESS_API UAttackBaseGameplayAbility : public UGameplayAbil
 public:
 	const float DEFAULT_MAX_DISTANCE = 10000.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ExitBehavior)
+	float MaxLifetime = 10.f;
+	FTimerHandle TimeoutTimerHandle;
+
 	UAttackBaseGameplayAbility()
 	{
 		InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
@@ -66,21 +70,24 @@ public:
 	FProjectileConfiguration ProjectileConfiguration;
 
 	/** Required charge duration before ability can be fired **/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CastBehavior)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ChargeBehavior)
 	float ChargeDuration = 0.f;
 
 	/** Current charge duration **/
 	milliseconds CurrentChargeDuration;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = CastBehavior)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = ChargeBehavior)
 	float ChargeSpellBaseDamage = 5.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = ChargeBehavior)
+	bool ShouldCastOnPartialCharge = true;
+
 	/** Currently Active Multiplier at full charge **/
-	UPROPERTY(BlueprintReadOnly, Category = CastBehavior)
-	float CurrentChargeDamageMultiplier = 0.f;
+	UPROPERTY(BlueprintReadOnly, Category = ChargeBehavior)
+	float CurrentChargeDamageMultiplier = 1.f;
 
 	/** Damage Multiplier at full charge **/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CastBehavior)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ChargeBehavior)
 	float FullChargeDamageMultiplier = 3.f;
 
 	milliseconds ActivationTime;
@@ -169,6 +176,11 @@ public:
 	void ResetTimerAndClearEffects(const FGameplayAbilityActorInfo* ActorInfo, bool wasCancelled = false);
 
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
+	
+	// Helper using current ability instance's data to end itself if it is active (to prevent attempted end of CDO)
+	void EndSelf();
+
+	void EndAbilityByTimeout(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled);
 
 	/// <summary>
 	/// Play the animation used for a pause between combo stages if present
@@ -190,6 +202,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category="ChainBehavior")
 	TArray<FTimerHandle>& GetChainTimerHandles() 
 	{
+		// init if needed
 		if (chainTimerHandles.Num() == 0)
 		{
 			for (int i = 0; i < NumberOfChains; i++)
@@ -205,6 +218,8 @@ public:
 
 	virtual void HandleChargeProgress();
 
+	TArray<TObjectPtr<UAttackBaseGameplayAbility>> GetAbilityActiveInstances(FGameplayAbilitySpec* spec);
+
 protected:
 	FTimerHandle EndTimerHandle;
 
@@ -216,4 +231,5 @@ private:
 	TArray<FTimerHandle> chainTimerHandles;
 
 	bool _bIsCharged = false;
+
 };
