@@ -20,7 +20,7 @@ void AGameplayCueNotify_ActorWNiagara::HandleGameplayCue(AActor* MyTarget, EGame
 	// if the EventType is OnActive, we want to spawn the NiagaraSystem
 	if (EventType == EGameplayCueEvent::OnActive)
 	{
-		TryCreateNiagaraInstance();
+		TryCreateNiagaraInstance(MyTarget);
 
 		if (AttackEffect.bShouldKillPreviousEffect)
 		{
@@ -46,7 +46,7 @@ void AGameplayCueNotify_ActorWNiagara::TryDestroyNiagaraInstance()
 	}
 }
 
-void AGameplayCueNotify_ActorWNiagara::TryCreateNiagaraInstance()
+void AGameplayCueNotify_ActorWNiagara::TryCreateNiagaraInstance(AActor* MyTarget)
 {
 	UWorld* const world = GetWorld();
 	if (!world)
@@ -58,29 +58,28 @@ void AGameplayCueNotify_ActorWNiagara::TryCreateNiagaraInstance()
 	UNiagaraSystem* NiagaraSystem = NiagaraConfig->GetAsset();
 	if (NiagaraSystem && !NiagaraInstance)
 	{
-		// get the character and be safe about it
-		auto controller = world->GetFirstPlayerController();
-		if (!controller) {
-			UE_LOG(LogTemp, Warning, TEXT("No controller found in AGameplayCueNotify_ActorWNiagara::TickActor"));
-			return;
-		}
-		auto pawn = world->GetFirstPlayerController()->AcknowledgedPawn;
-		if (!pawn) {
-			UE_LOG(LogTemp, Warning, TEXT("No pawn found in AGameplayCueNotify_ActorWNiagara::TickActor"));
-			return;
-		}
-		auto character = Cast<ABattlemageTheEndlessCharacter>(world->GetFirstPlayerController()->AcknowledgedPawn);
-		if (!character) {
-			UE_LOG(LogTemp, Warning, TEXT("No character found in AGameplayCueNotify_ActorWNiagara::TickActor"));
-			return;
-		}
+		//// get the character and be safe about it
+		//auto controller = world->GetFirstPlayerController();
+		//if (!controller) {
+		//	UE_LOG(LogTemp, Warning, TEXT("No controller found in AGameplayCueNotify_ActorWNiagara::TickActor"));
+		//	return;
+		//}
+		//auto pawn = world->GetFirstPlayerController()->AcknowledgedPawn;
+		//if (!pawn) {
+		//	UE_LOG(LogTemp, Warning, TEXT("No pawn found in AGameplayCueNotify_ActorWNiagara::TickActor"));
+		//	return;
+		//}
+		//auto character = Cast<ABattlemageTheEndlessCharacter>(world->GetFirstPlayerController()->AcknowledgedPawn);
+		//if (!character) {
+		//	UE_LOG(LogTemp, Warning, TEXT("No character found in AGameplayCueNotify_ActorWNiagara::TickActor"));
+		//	return;
+		//}
 
-
-		FRotator SpawnRotation = controller->PlayerCameraManager->GetCameraRotation() + NiagaraConfig->GetRelativeTransform().Rotator();
+		FRotator SpawnRotation = MyTarget->GetRootComponent()->GetRelativeRotation() + NiagaraConfig->GetRelativeTransform().Rotator();
 		SpawnRotation.Roll = 0.f;
 		//FVector SpawnLocation = NiagaraConfig->GetRelativeLocation().RotateAngleAxis(GetTransform().Rotator().Yaw, FVector::ZAxisVector);
-		FVector SpawnLocation = character->GetActorLocation() 
-			+ NiagaraConfig->GetRelativeTransform().GetLocation().RotateAngleAxis(controller->PlayerCameraManager->GetCameraRotation().Yaw, FVector::ZAxisVector);
+		FVector SpawnLocation = MyTarget->GetActorLocation() 
+			+ NiagaraConfig->GetRelativeTransform().GetLocation().RotateAngleAxis(MyTarget->GetRootComponent()->GetRelativeRotation().Yaw, FVector::ZAxisVector);
 
 		// handle bSnapToGround
 		if (AttackEffect.bSnapToGround)
@@ -115,10 +114,16 @@ void AGameplayCueNotify_ActorWNiagara::TryCreateNiagaraInstance()
 
 		USkeletalMeshComponent* attachToComponent;
 		if (AttackEffect.AttachType == EAttachType::Character)
+		{
+			ACharacter* character = Cast<ACharacter>(MyTarget);
 			attachToComponent = character->GetMesh();
+		}
 		else
+		{
+			ABattlemageTheEndlessCharacter* character = Cast<ABattlemageTheEndlessCharacter>(MyTarget);
 			attachToComponent = character->GetWeapon(
 				AttackEffect.AttachType == EAttachType::PrimaryWeapon ? EquipSlot::Primary : EquipSlot::Secondary)->Weapon;
+		}
 
 		NiagaraInstance = UNiagaraFunctionLibrary::SpawnSystemAttached(NiagaraSystem, attachToComponent,
 			AttackEffect.AttachSocket, FVector::ZeroVector, SpawnRotation, EAttachLocation::KeepRelativeOffset, 
