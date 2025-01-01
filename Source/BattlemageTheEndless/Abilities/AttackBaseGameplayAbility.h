@@ -19,6 +19,7 @@
 #include "InputTriggers.h"
 #include <chrono>
 #include "GameplayEffect.h"
+#include "Components/AudioComponent.h"
 #include "AttackBaseGameplayAbility.generated.h"
 
 class UNiagaraSystem;
@@ -120,6 +121,14 @@ public:
 	/** AnimMontage to play during ability charge up */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	UAnimMontage* ChargeAnimation;
+
+	/** Sound to play during ability charge up, will be cancelled upon ability release */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
+	USoundWave* ChargeSound;
+
+	/** Sound to play during ability charge up, will be cancelled upon ability release */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
+	USoundWave* ChargeCompleteSound;
 
 	/** AnimMontage to play when we fire the ability */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
@@ -232,4 +241,9 @@ private:
 
 	bool _bIsCharged = false;
 
+	FTimerHandle ChargeCompleteSoundTimerHandle;
+
+	UAudioComponent* ChargeSoundComponent;
+
+	void PlayChargeCompleteSound();
 };

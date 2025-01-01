@@ -72,8 +72,21 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	}
 	else if (ChargeDuration > 0.001f && ChargeAnimation && animInstance)
 	{
-		// No need for anything fancy, just play the charge animation
+		// play the charge animation
 		animInstance->Montage_Play(ChargeAnimation);
+
+		// play the charge sound if present
+		if (ChargeSound)
+		{
+			ChargeSoundComponent = UGameplayStatics::SpawnSoundAttached(ChargeSound, character->GetRootComponent());
+
+			// if there is a charge complete sound, set it to play at the end of the charge duration
+			if (ChargeCompleteSound)
+			{
+				FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UAttackBaseGameplayAbility::PlayChargeCompleteSound);
+				world->GetTimerManager().SetTimer(ChargeCompleteSoundTimerHandle, TimerDelegate, ChargeDuration, false);
+			}
+		}
 	};
 
 	CommitAbility(Handle, ActorInfo, ActivationInfo);
@@ -118,6 +131,13 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 
 void UAttackBaseGameplayAbility::CreateAndDispatchMontageTask()
 {
+	// if the ability was charging, end the charge sound
+	if (ChargeSoundComponent && ChargeSoundComponent->GetPlayState() == EAudioComponentPlayState::Playing)
+	{
+		ChargeSoundComponent->Stop();
+	}
+
+	// trigger the fire animation
 	// TODO: Add a montage rate parameter to the ability
 	auto task = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, FireAnimation,
 		1.0f, NAME_None, true, 1.0f, 0.f, true);
@@ -226,6 +246,13 @@ void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Han
 		{
 			auto owner = Cast<ACharacter>(ActorInfo->OwnerActor);
 			auto animInstance = owner->GetMesh()->GetAnimInstance();
+
+			// if the charge was interrupted, play the fire animation after cancelling the charge sound
+			if (ChargeSoundComponent && ChargeSoundComponent->GetPlayState() == EAudioComponentPlayState::Playing)
+			{
+				ChargeSoundComponent->Stop();
+			}
+
 			if (animInstance && FireAnimation)
 				animInstance->Montage_Play(FireAnimation);
 		}
@@ -324,4 +351,14 @@ TArray<TObjectPtr<UAttackBaseGameplayAbility>> UAttackBaseGameplayAbility::GetAb
 	}
 
 	return returnVal;
+}
+
+void UAttackBaseGameplayAbility::PlayChargeCompleteSound()
+{
+	if (ChargeSoundComponent && ChargeSoundComponent->GetPlayState() == EAudioComponentPlayState::Playing)
+	{
+		ChargeSoundComponent->Stop();
+	}
+
+	ChargeSoundComponent = UGameplayStatics::SpawnSoundAttached(ChargeCompleteSound, CurrentActorInfo->OwnerActor->GetRootComponent());
 }
