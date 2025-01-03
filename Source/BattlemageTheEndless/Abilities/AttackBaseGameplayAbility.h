@@ -161,6 +161,16 @@ public:
 	void CreateAndDispatchMontageTask();
 
 	/// <summary>
+	/// Chain specific helper to apply effects and spawn projectiles
+	/// </summary>
+	/// <param name="target"></param>
+	/// <param name="targetAsc"></param>
+	/// <param name="instigator"></param>
+	/// <param name="effectCauser"></param>
+	/// <param name="isLastTarget">Controls whether to call endSelf</param>
+	void ApplyChainEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser, bool isLastTarget);
+
+	/// <summary>
 	/// Helper to apply any effects owned by this ability to the target, which can be the same as the character if applying to self
 	/// </summary>
 	/// <param name="instigator">Character causing the effect(s)</param>

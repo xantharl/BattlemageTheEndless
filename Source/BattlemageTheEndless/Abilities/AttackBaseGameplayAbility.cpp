@@ -110,6 +110,15 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 			return;
 	}
 
+	// if there is chain delay, set a timer to end the ability after that duration
+	if (ChainDelay > 0.001f && NumberOfChains > 0)
+	{
+		FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UAttackBaseGameplayAbility::EndSelf);
+		world->GetTimerManager().SetTimer(EndTimerHandle, TimerDelegate, (ChainDelay * NumberOfChains) + .01f //add a delay for hit to resolve
+			, false);
+		return;
+	}
+
 	// If we have no montage, no effects, and no charge time, end the ability immediately
 	if (montageDuration < 0.001f)
 	{
@@ -147,6 +156,15 @@ void UAttackBaseGameplayAbility::CreateAndDispatchMontageTask()
 	task->ReadyForActivation();
 }
 
+void UAttackBaseGameplayAbility::ApplyChainEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser, bool isLastTarget)
+{
+	ApplyEffects(target, targetAsc, instigator, effectCauser);
+	if (isLastTarget)
+	{
+		EndSelf();
+	}
+}
+
 void UAttackBaseGameplayAbility::ApplyEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser)
 {
 	if (ChainSystem && instigator)
@@ -182,20 +200,13 @@ void UAttackBaseGameplayAbility::ApplyEffects(AActor* target, UAbilitySystemComp
 			auto handle = targetAsc->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
 			ActiveEffectHandles.Add(handle);
 
-			// TODO: Figure out what to do with infinite effects (keep alive?)
-			auto durationPolicy = effect.GetDefaultObject()->DurationPolicy;
-			if (durationPolicy == EGameplayEffectDurationType::HasDuration)
-			{
-				auto task = UAbilityTask_WaitGameplayEffectRemoved::WaitForGameplayEffectRemoved(this, handle);
-				task->OnRemoved.AddDynamic(this, &UAttackBaseGameplayAbility::OnEffectRemoved);
-				task->ReadyForActivation();
-			}
-			else if (durationPolicy == EGameplayEffectDurationType::Instant)
-			{
-				// if the effect is instant, remove it immediately
-				targetAsc->RemoveActiveGameplayEffect(handle);
-				ActiveEffectHandles.Remove(handle);
-			}
+			// TODO: See if we still need this
+			//else if (durationPolicy == EGameplayEffectDurationType::Instant)
+			//{
+			//	// if the effect is instant, remove it immediately
+			//	targetAsc->RemoveActiveGameplayEffect(handle);
+			//	ActiveEffectHandles.Remove(handle);
+			//}
 		}
 	}
 }

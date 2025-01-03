@@ -39,6 +39,7 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 	// See details of replication modes https://github.com/tranek/GASDocumentation?tab=readme-ov-file#concepts-asc-rm
 	// Defaulting to minimal, updates to Mixed on possession (which indicates this is a player character)
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
+	AbilitySystemComponent->OnAnyGameplayEffectRemovedDelegate().AddUObject(this, &ABattlemageTheEndlessCharacter::OnRemoveGameplayEffectCallback);
 
 	// Create the attribute set, this replicates by default
 	// Adding it as a subobject of the owning actor of an AbilitySystemComponent
@@ -911,9 +912,9 @@ void ABattlemageTheEndlessCharacter::PostAbilityActivation(UAttackBaseGameplayAb
 	{
 		HandleProjectileSpawn(ability);
 
-		// Some abilities need to be kept alive until after projectile spawn
-		//	Currently this is only for damage multipliers
-		ability->EndSelf();
+		// for charge spells we need to end the ability after the hit check
+		if (ability->ChargeDuration > 0.001f)
+			ability->EndSelf();
 
 		return;
 	}
@@ -921,9 +922,9 @@ void ABattlemageTheEndlessCharacter::PostAbilityActivation(UAttackBaseGameplayAb
 	{
 		HandleHitScan(ability);
 
-		// Some abilities need to be kept alive until after hit scan
-		//	Currently this is only for damage multipliers
-		ability->EndSelf();
+		// for charge spells we need to end the ability after the hit check
+		if (ability->ChargeDuration > 0.001f)
+			ability->EndSelf();
 
 		return;
 	}
@@ -999,48 +1000,51 @@ void ABattlemageTheEndlessCharacter::HandleHitScan(UAttackBaseGameplayAbility* a
 
 	FHitResult hit = Traces::LineTraceGeneric(this, startLocation, endLocation);
 
+	// Nothing to do if we don't have a hit
+	ABattlemageTheEndlessCharacter* hitCharacter = Cast<ABattlemageTheEndlessCharacter>(hit.GetActor());
+	if (!hitCharacter)
+		return;
+
 	// If we've hit a character, handle it
-	if (ABattlemageTheEndlessCharacter* hitCharacter = Cast<ABattlemageTheEndlessCharacter>(hit.GetActor()))
+	TArray<ABattlemageTheEndlessCharacter*> hitCharacters = { hitCharacter };
+	if (ability->NumberOfChains > 0)
 	{
-		TArray<ABattlemageTheEndlessCharacter*> hitCharacters = { hitCharacter };
-		if (ability->NumberOfChains > 0)
-		{
-			hitCharacters.Append(GetChainTargets(ability->NumberOfChains, ability->ChainDistance, hitCharacter));
-		}
+		hitCharacters.Append(GetChainTargets(ability->NumberOfChains, ability->ChainDistance, hitCharacter));
+	}
 
-		if (ability->EffectsToApply.Num() == 0)
-			return;
+	if (ability->EffectsToApply.Num() == 0)
+		return;
 		
-		// Handle chain delay if needed
-		// floating point precision, woo
-		if (FMath::Abs(ability->ChainDelay) < 0.00001f)
+	// Handle chain delay if needed
+	// floating point precision, woo
+	if (FMath::Abs(ability->ChainDelay) < 0.00001f)
+	{
+		for (auto applyTo : hitCharacters)
+			ability->ApplyEffects(applyTo, applyTo->AbilitySystemComponent, this);
+	}
+	else
+	{
+		for (int i = 0; i < hitCharacters.Num(); ++i)
 		{
-			for (auto applyTo : hitCharacters)
-				ability->ApplyEffects(applyTo, applyTo->AbilitySystemComponent, this);
-		}
-		else
-		{
-			for (int i = 0; i < hitCharacters.Num(); ++i)
+			// No delay for the first target
+			if (i == 0)
 			{
-				// No delay for the first target
-				if (i == 0)
-				{
-					ability->ApplyEffects(hitCharacters[i], hitCharacters[i]->AbilitySystemComponent, this);
-					continue;
-				}
-
-				// NOTE: Apparently this binding is not smart enough to handle default params, automatic casting of nullptrs, or downcasting so we need to do all of those manually
-				FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(
-					ability, 
-					&UAttackBaseGameplayAbility::ApplyEffects, 
-					(AActor*)hitCharacters[i], 
-					(UAbilitySystemComponent*)hitCharacters[i]->AbilitySystemComponent, 
-					(AActor*)hitCharacters[i-1],
-					(AActor*)nullptr
-				);
-
-				GetWorld()->GetTimerManager().SetTimer(ability->GetChainTimerHandles()[i - 1], TimerDelegate, ability->ChainDelay * i, false);
+				ability->ApplyEffects(hitCharacters[i], hitCharacters[i]->AbilitySystemComponent, this);
+				continue;
 			}
+
+			// NOTE: Apparently this binding is not smart enough to handle default params, automatic casting of nullptrs, or downcasting so we need to do all of those manually
+			FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(
+				ability, 
+				&UAttackBaseGameplayAbility::ApplyChainEffects, 
+				(AActor*)hitCharacters[i], 
+				(UAbilitySystemComponent*)hitCharacters[i]->AbilitySystemComponent, 
+				(AActor*)hitCharacters[i-1],
+				(AActor*)nullptr,
+				i == ability->NumberOfChains
+			);
+
+			GetWorld()->GetTimerManager().SetTimer(ability->GetChainTimerHandles()[i - 1], TimerDelegate, ability->ChainDelay * i, false);
 		}
 	}
 }
@@ -1150,4 +1154,8 @@ void ABattlemageTheEndlessCharacter::ChargeSpell(TObjectPtr<UAttackBaseGameplayA
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is charged"), *GetName()));
 	}
+}
+
+void ABattlemageTheEndlessCharacter::OnRemoveGameplayEffectCallback(const FActiveGameplayEffect& EffectRemoved)
+{
 }

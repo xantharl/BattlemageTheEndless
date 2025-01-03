@@ -22,12 +22,13 @@ void ATrainingDummyActor::BeginPlay()
 
 void ATrainingDummyActor::ResetHealth()
 {
-	AttributeSet->Health.SetCurrentValue(AttributeSet->MaxHealth.GetBaseValue());
-	GetWorldTimerManager().ClearTimer(ResetHealthTimer);
-	
 	// Passing an empty tag container is pretty hacky but let's see if matching no tags works to fetch all effects
 	FGameplayEffectQuery allEffectsQuery = FGameplayEffectQuery::MakeQuery_MatchNoOwningTags(FGameplayTagContainer());
 	AbilitySystemComponent->RemoveActiveEffects(allEffectsQuery);
+
+	AttributeSet->Health.SetCurrentValue(AttributeSet->MaxHealth.GetBaseValue());
+	AttributeSet->Health.SetBaseValue(AttributeSet->MaxHealth.GetBaseValue());
+	GetWorldTimerManager().ClearTimer(ResetHealthTimer);
 }
 
 // Called every frame
@@ -49,7 +50,18 @@ void ATrainingDummyActor::HealthChanged(const FOnAttributeChangeData& Data)
 
 	if (Data.NewValue <= AttributeSet->GetHealth())
 	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Training Dummy health changed: %f -> %f"), Data.OldValue, Data.NewValue));
+		}
 		// Replaces existing timer if present
 		GetWorld()->GetTimerManager().SetTimer(ResetHealthTimer, this, &ATrainingDummyActor::ResetHealth, WaitBeforeResetHealthSeconds, false);
+	}
+	else
+	{
+		if(GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Training Dummy Health Restored"));
+		}
 	}
 }

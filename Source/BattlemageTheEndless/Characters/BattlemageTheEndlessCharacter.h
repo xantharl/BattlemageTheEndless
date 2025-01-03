@@ -380,5 +380,7 @@ protected:
 	void ChargeSpell(TObjectPtr<UAttackBaseGameplayAbility> ability);
 
 	const int TickRate = 60;
+
+	virtual void OnRemoveGameplayEffectCallback(const FActiveGameplayEffect& EffectRemoved);
 };
 
