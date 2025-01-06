@@ -19,6 +19,7 @@
 #include "InputTriggers.h"
 #include <chrono>
 #include "GameplayEffect.h"
+#include "HitEffectActor.h"
 #include "Components/AudioComponent.h"
 #include "AttackBaseGameplayAbility.generated.h"
 
@@ -112,7 +113,7 @@ public:
 
 	/** Actor(s) to spawn on hit (e.g. fire surface, explosion, ice wall, etc.) **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HitBehavior)
-	TSubclassOf<AActor> HitEffectActors;
+	TArray<TSubclassOf<AHitEffectActor>> HitEffectActors;
 
 	/** Maximum distance for the ability, 0 = unlimited */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
@@ -238,6 +239,12 @@ public:
 	virtual void HandleChargeProgress();
 
 	TArray<TObjectPtr<UAttackBaseGameplayAbility>> GetAbilityActiveInstances(FGameplayAbilitySpec* spec);
+
+	void SpawnHitEffectActors(FHitResult HitResult);
+	
+	/** Called when the ability hits something, damage is handled by the spawning gameplay ability **/
+	UFUNCTION()
+	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
 protected:
 	FTimerHandle EndTimerHandle;

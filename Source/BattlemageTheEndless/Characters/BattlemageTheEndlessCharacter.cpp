@@ -979,7 +979,11 @@ void ABattlemageTheEndlessCharacter::HandleProjectileSpawn(UAttackBaseGameplayAb
 	}
 
 	for (auto projectile : projectiles)
+	{
 		GetCapsuleComponent()->IgnoreActorWhenMoving(projectile, true);
+		projectile->GetCollisionComp()->OnComponentHit.AddDynamic(ability, &UAttackBaseGameplayAbility::OnHit);
+	}
+
 }
 
 void ABattlemageTheEndlessCharacter::HandleHitScan(UAttackBaseGameplayAbility* ability)

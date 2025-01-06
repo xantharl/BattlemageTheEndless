@@ -4,9 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Abilities/GameplayAbility.h"
+#include "Components/SphereComponent.h"
+#include "NiagaraSystem.h"
+#include <NiagaraFunctionLibrary.h>
+#include "AbilitySystemComponent.h"
 #include "HitEffectActor.generated.h"
 
-// TODO: This class may not be necessary, turns out AActor has a built-in InitialLifeSpan feature
 /// <summary>
 /// AHitEffectActor is a simple actor that is spawned when a hit is detected by an ability. It is used primarily to spawn persistent volumes.
 /// </summary>
@@ -19,18 +23,41 @@ public:
 	// Sets default values for this actor's properties
 	AHitEffectActor();
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hit Effect")
+	bool SnapToGround = true;
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
+	/** Store a reference to the spawning ability in case we need details **/
+	UGameplayAbility* SpawningAbility;
 
-	/// <summary>
-	/// Lifetime of the actor in seconds, will automatically be destroyed after this time relative to World->GetTimeSeconds() and CreationTime.
-	/// A Lifetime of 0 means unlimited, but this is discouraged as the actor will never be cleaned up.
-	/// </summary>
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Configuration)
-	float Lifetime = 1.f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hit Effect")
+	TArray<TSubclassOf<UGameplayEffect>> Effects;
+
+	/** The interval at which the effect is re-applied, 0 = only applied once without exiting and re-entering **/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hit Effect")
+	float EffectApplicationInterval = 0.5f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"), Category = "Hit Effect")
+	TObjectPtr<USphereComponent> AreaOfEffect;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hit Effect")
+	TObjectPtr<UNiagaraSystem> VisualEffectSystem;
+
+	UFUNCTION(BlueprintCallable, Category = "Hit Effect")
+	virtual void OnAreaOfEffectBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION(BlueprintCallable, Category = "Hit Effect")
+	virtual void OnAreaOfEffectEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	TObjectPtr<AActor> Instigator;
+
+	void ActivateEffect(TObjectPtr<UNiagaraSystem> system);
+
+private:
+	virtual bool Validate();
+
+	UNiagaraComponent* _visualEffectInstance;
+
+	TMap<AActor*, FTimerHandle> _effectReapplyTimers;
+
+	virtual void ApplyEffects(AActor* actor);
 };

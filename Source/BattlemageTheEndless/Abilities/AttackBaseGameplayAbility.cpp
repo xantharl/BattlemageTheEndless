@@ -364,6 +364,34 @@ TArray<TObjectPtr<UAttackBaseGameplayAbility>> UAttackBaseGameplayAbility::GetAb
 	return returnVal;
 }
 
+void UAttackBaseGameplayAbility::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+	if (HitEffectActors.Num() > 0) {
+		SpawnHitEffectActors(Hit);
+	}
+}
+
+void UAttackBaseGameplayAbility::SpawnHitEffectActors(FHitResult HitResult)
+{
+	auto world = GetWorld();
+	if (!world)
+	{
+		UE_LOG(LogTemp, Error, TEXT("No world found for spawning hit effects"));
+		return;
+	}
+
+	FActorSpawnParameters ActorSpawnParams = FActorSpawnParameters();
+	ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	for (auto effect : HitEffectActors)
+	{
+		auto newActor = world->SpawnActor<AHitEffectActor>(effect, HitResult.ImpactPoint, HitResult.ImpactNormal.Rotation(), ActorSpawnParams);
+		newActor->ActivateEffect(effect->GetDefaultObject<AHitEffectActor>()->VisualEffectSystem);
+		newActor->SpawningAbility = this;
+		newActor->Instigator = CurrentActorInfo->OwnerActor.Get();
+	}
+}
+
 void UAttackBaseGameplayAbility::PlayChargeCompleteSound()
 {
 	if (ChargeSoundComponent && ChargeSoundComponent->GetPlayState() == EAudioComponentPlayState::Playing)
