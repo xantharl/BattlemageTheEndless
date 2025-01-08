@@ -385,7 +385,13 @@ void UAttackBaseGameplayAbility::SpawnHitEffectActors(FHitResult HitResult)
 
 	for (auto effect : HitEffectActors)
 	{
-		auto newActor = world->SpawnActor<AHitEffectActor>(effect, HitResult.ImpactPoint, HitResult.ImpactNormal.Rotation(), ActorSpawnParams);
+		auto rotation = HitResult.ImpactNormal.Rotation();
+		rotation.Pitch = 0.f;
+		rotation.Roll = 0.f;
+		// leave yaw alone, he's the fun one
+
+		auto newActor = world->SpawnActor<AHitEffectActor>(effect, HitResult.ImpactPoint, rotation, ActorSpawnParams);
+		newActor->SnapActorToGround(); // method checks if snap needs to happen
 		newActor->ActivateEffect(effect->GetDefaultObject<AHitEffectActor>()->VisualEffectSystem);
 		newActor->SpawningAbility = this;
 		newActor->Instigator = CurrentActorInfo->OwnerActor.Get();

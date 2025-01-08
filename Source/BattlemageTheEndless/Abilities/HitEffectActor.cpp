@@ -26,6 +26,25 @@ AHitEffectActor::AHitEffectActor()
 	AreaOfEffect->OnComponentEndOverlap.AddDynamic(this, &AHitEffectActor::OnAreaOfEffectEndOverlap);
 }
 
+void AHitEffectActor::SnapActorToGround()
+{
+	if (SnapToGround)
+	{
+		FHitResult hitResult;
+		FVector start = GetActorLocation();
+		FVector end = start - FVector(0, 0, 1000);
+		FCollisionQueryParams params;
+		params.AddIgnoredActor(this);
+		if (GetWorld()->LineTraceSingleByChannel(hitResult, start, end, ECC_Visibility, params))
+		{
+			auto location = hitResult.Location;
+			// add height so ground effects don't clip into the ground
+			location.Z += 1.f;
+			SetActorLocation(location);
+		}
+	}
+}
+
 void AHitEffectActor::ActivateEffect(TObjectPtr<UNiagaraSystem> system)
 {
 	_visualEffectInstance = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), system,

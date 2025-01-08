@@ -58,23 +58,6 @@ void AGameplayCueNotify_ActorWNiagara::TryCreateNiagaraInstance(AActor* MyTarget
 	UNiagaraSystem* NiagaraSystem = NiagaraConfig->GetAsset();
 	if (NiagaraSystem && !NiagaraInstance)
 	{
-		//// get the character and be safe about it
-		//auto controller = world->GetFirstPlayerController();
-		//if (!controller) {
-		//	UE_LOG(LogTemp, Warning, TEXT("No controller found in AGameplayCueNotify_ActorWNiagara::TickActor"));
-		//	return;
-		//}
-		//auto pawn = world->GetFirstPlayerController()->AcknowledgedPawn;
-		//if (!pawn) {
-		//	UE_LOG(LogTemp, Warning, TEXT("No pawn found in AGameplayCueNotify_ActorWNiagara::TickActor"));
-		//	return;
-		//}
-		//auto character = Cast<ABattlemageTheEndlessCharacter>(world->GetFirstPlayerController()->AcknowledgedPawn);
-		//if (!character) {
-		//	UE_LOG(LogTemp, Warning, TEXT("No character found in AGameplayCueNotify_ActorWNiagara::TickActor"));
-		//	return;
-		//}
-
 		FRotator SpawnRotation = MyTarget->GetRootComponent()->GetRelativeRotation() + NiagaraConfig->GetRelativeTransform().Rotator();
 		SpawnRotation.Roll = 0.f;
 		//FVector SpawnLocation = NiagaraConfig->GetRelativeLocation().RotateAngleAxis(GetTransform().Rotator().Yaw, FVector::ZAxisVector);

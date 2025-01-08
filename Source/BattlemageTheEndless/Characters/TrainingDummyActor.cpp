@@ -50,10 +50,10 @@ void ATrainingDummyActor::HealthChanged(const FOnAttributeChangeData& Data)
 
 	if (Data.NewValue <= AttributeSet->GetHealth())
 	{
-		if (GEngine)
+		/*if (GEngine)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Training Dummy health changed: %f -> %f"), Data.OldValue, Data.NewValue));
-		}
+		}*/
 		// Replaces existing timer if present
 		GetWorld()->GetTimerManager().SetTimer(ResetHealthTimer, this, &ATrainingDummyActor::ResetHealth, WaitBeforeResetHealthSeconds, false);
 	}

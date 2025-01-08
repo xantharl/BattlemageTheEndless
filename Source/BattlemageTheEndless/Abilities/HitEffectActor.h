@@ -23,6 +23,8 @@ public:
 	// Sets default values for this actor's properties
 	AHitEffectActor();
 
+	void SnapActorToGround();
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hit Effect")
 	bool SnapToGround = true;
 
