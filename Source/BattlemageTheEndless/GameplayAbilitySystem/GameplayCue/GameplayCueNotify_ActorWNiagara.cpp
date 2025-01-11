@@ -34,6 +34,8 @@ void AGameplayCueNotify_ActorWNiagara::HandleGameplayCue(AActor* MyTarget, EGame
 		TryDestroyNiagaraInstance();
 
 	Super::HandleGameplayCue(MyTarget, EventType, Parameters);
+
+	Destroy();
 }
 
 void AGameplayCueNotify_ActorWNiagara::TryDestroyNiagaraInstance()

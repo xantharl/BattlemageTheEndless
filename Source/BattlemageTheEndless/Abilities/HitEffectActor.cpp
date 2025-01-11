@@ -48,7 +48,23 @@ void AHitEffectActor::SnapActorToGround()
 void AHitEffectActor::ActivateEffect(TObjectPtr<UNiagaraSystem> system)
 {
 	_visualEffectInstance = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), system,
-		GetActorLocation(), GetActorRotation(), GetActorScale3D(), false, true, ENCPoolMethod::None, false);
+		GetActorLocation(), GetActorRotation(), VisualEffectScale, false, true, ENCPoolMethod::None, false);
+}
+
+void AHitEffectActor::DeactivateEffect()
+{
+	if (_visualEffectInstance)
+	{
+		_visualEffectInstance->Deactivate();
+		_visualEffectInstance->DestroyComponent();
+		_visualEffectInstance = nullptr;
+	}
+}
+
+void AHitEffectActor::Destroyed()
+{
+ 	DeactivateEffect();
+	Super::Destroyed();
 }
 
 bool AHitEffectActor::Validate()
@@ -92,6 +108,12 @@ void AHitEffectActor::ApplyEffects(AActor* actor)
 		if (specHandle.IsValid())
 		{
 			auto handle = abilitySystemComponent->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
+			if (GEngine)
+			{
+				GEngine->AddOnScreenDebugMessage(-1, 2.5f, FColor::Green, 
+					FString::Printf(TEXT("Applied effect %s (Stacks: %i)"), *effect->GetName(), 
+						abilitySystemComponent->GetCurrentStackCount(handle)));
+			}
 		}
 	}
 }

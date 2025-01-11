@@ -7,6 +7,7 @@
 #include "Abilities/GameplayAbility.h"
 #include "Components/SphereComponent.h"
 #include "NiagaraSystem.h"
+#include "NiagaraComponent.h"
 #include <NiagaraFunctionLibrary.h>
 #include "AbilitySystemComponent.h"
 #include "HitEffectActor.generated.h"
@@ -44,6 +45,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hit Effect")
 	TObjectPtr<UNiagaraSystem> VisualEffectSystem;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hit Effect")
+	FVector VisualEffectScale = FVector::OneVector;
+
 	UFUNCTION(BlueprintCallable, Category = "Hit Effect")
 	virtual void OnAreaOfEffectBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
@@ -53,6 +57,10 @@ public:
 	TObjectPtr<AActor> Instigator;
 
 	void ActivateEffect(TObjectPtr<UNiagaraSystem> system);
+
+	void DeactivateEffect();
+
+	virtual void Destroyed() override;
 
 private:
 	virtual bool Validate();
