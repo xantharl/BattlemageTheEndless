@@ -13,6 +13,18 @@ void UHealthBarWidget::SubscribeToStackChanges(UAbilitySystemComponent* abilityS
 	_abilitySystemComponent->GetGameplayAttributeValueChangeDelegate(attributeSet->GetHealthAttribute()).AddUObject(this, &UHealthBarWidget::HealthChanged);
 }
 
+FRichImageRow* UHealthBarWidget::FindImageRow(FName TagOrId, bool bWarnIfMissing)
+{
+	// Get the row from the table
+	FRichImageRow* row = StatusIconLookupTable->FindRow<FRichImageRow>(TagOrId, FString());
+	if (bWarnIfMissing && !row)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("URichTextBlockImageDecorator::FindImageRow: Unable to find row with TagOrId %s in ImageSet"), *TagOrId.ToString());
+	}
+
+	return row;
+}
+
 void UHealthBarWidget::OnActiveGameplayEffectAddedCallback(UAbilitySystemComponent* Target, const FGameplayEffectSpec& SpecApplied, FActiveGameplayEffectHandle ActiveHandle)
 {
 }

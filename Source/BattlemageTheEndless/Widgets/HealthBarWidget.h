@@ -6,6 +6,7 @@
 #include "Blueprint/UserWidget.h"
 #include "AbilitySystemComponent.h"
 #include "../Abilities/BaseAttributeSet.h"
+#include "Components/RichTextBlockImageDecorator.h"
 #include "HealthBarWidget.generated.h"
 
 /**
@@ -19,9 +20,14 @@ class BATTLEMAGETHEENDLESS_API UHealthBarWidget : public UUserWidget
 public:
 	void SubscribeToStackChanges(UAbilitySystemComponent* abilitySystemComponent, UBaseAttributeSet* attributeSet);
 
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Health Bar")
+	UDataTable* StatusIconLookupTable;
+
 private:
 	UAbilitySystemComponent* _abilitySystemComponent;
 	UBaseAttributeSet* _attributeSet;
+
+	FRichImageRow* FindImageRow(FName TagOrId, bool bWarnIfMissing);
 
 protected:
 	virtual void OnActiveGameplayEffectAddedCallback(UAbilitySystemComponent* Target, const FGameplayEffectSpec& SpecApplied, FActiveGameplayEffectHandle ActiveHandle);
