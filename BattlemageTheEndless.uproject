@@ -12,7 +12,8 @@
 				"Engine",
 				"CommonUI",
 				"GameplayAbilities",
-				"CoreUObject"
+				"CoreUObject",
+				"UMG"
 			]
 		},
 		{
