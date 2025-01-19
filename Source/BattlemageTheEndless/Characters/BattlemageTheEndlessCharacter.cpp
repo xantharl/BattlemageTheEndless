@@ -215,6 +215,22 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 
 	HealthChangedDelegateHandle = AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute())
 		.AddUObject(this, &ABattlemageTheEndlessCharacter::HealthChanged);
+
+	// subscribe the health bar to effect changes if the character has a UHealthBarWidget
+	TArray<USceneComponent*> childComponents;
+	GetMesh()->GetChildrenComponents(true, childComponents);
+	for (USceneComponent* component : childComponents)
+	{
+		UWidgetComponent* healthBarComponent = Cast<UWidgetComponent>(component);
+		if (!healthBarComponent)
+			continue;
+
+		if(UHealthBarWidget* healthBarWidget = Cast<UHealthBarWidget>(healthBarComponent->GetUserWidgetObject()))
+		{
+			healthBarWidget->SubscribeToStackChanges(AbilitySystemComponent, AttributeSet);
+			break;
+		}
+	}
 }
 
 void ABattlemageTheEndlessCharacter::GiveStartingEquipment()

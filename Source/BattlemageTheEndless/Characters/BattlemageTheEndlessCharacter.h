@@ -29,6 +29,8 @@
 #include "../BMageJumpAbility.h"
 #include <BattlemageTheEndless/Abilities/Combos/AbilityComboManager.h>
 #include <BattlemageTheEndless/Abilities/BaseAttributeSet.h>
+#include "../Widgets/HealthBarWidget.h"
+#include "Components/WidgetComponent.h"
 #include "../Abilities/ProjectileManager.h"
 
 #include "BattlemageTheEndlessCharacter.generated.h"
