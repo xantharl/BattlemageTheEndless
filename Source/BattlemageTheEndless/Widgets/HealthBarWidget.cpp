@@ -3,14 +3,53 @@
 
 #include "HealthBarWidget.h"
 
-void UHealthBarWidget::SubscribeToStackChanges(UAbilitySystemComponent* abilitySystemComponent, UBaseAttributeSet* attributeSet)
+void UHealthBarWidget::Init(UAbilitySystemComponent* abilitySystemComponent, UBaseAttributeSet* attributeSet)
 {
 	_abilitySystemComponent = abilitySystemComponent;
 	_attributeSet = attributeSet;
+	SetInitialDisplayValues();
+	SubscribeToEffectChanges();
+}
 
+void UHealthBarWidget::SetInitialDisplayValues()
+{
+	auto tree = WidgetTree.Get();
+	auto currentHealthWidget = tree->FindWidget<UTextBlock>(CurrentHealthTextBlockName);
+	if (currentHealthWidget)
+	{
+		currentHealthWidget->SetText(FText::FromString(FString::FromInt(_attributeSet->Health.GetBaseValue())));
+	}
+
+	auto healthBarWidget = tree->FindWidget<UProgressBar>(ProgressBarName);
+	if (healthBarWidget)
+	{
+		healthBarWidget->SetPercent(1.0f);
+	}
+}
+
+void UHealthBarWidget::SubscribeToEffectChanges()
+{
 	_abilitySystemComponent->OnActiveGameplayEffectAddedDelegateToSelf.AddUObject(this, &UHealthBarWidget::OnActiveGameplayEffectAddedCallback);
 	_abilitySystemComponent->OnAnyGameplayEffectRemovedDelegate().AddUObject(this, &UHealthBarWidget::OnRemoveGameplayEffectCallback);
-	_abilitySystemComponent->GetGameplayAttributeValueChangeDelegate(attributeSet->GetHealthAttribute()).AddUObject(this, &UHealthBarWidget::HealthChanged);
+	_abilitySystemComponent->GetGameplayAttributeValueChangeDelegate(_attributeSet->GetHealthAttribute()).AddUObject(this, &UHealthBarWidget::HealthChanged);
+}
+
+void UHealthBarWidget::Reset()
+{
+	SetInitialDisplayValues();
+	StatusGrid.Empty();
+	auto tree = WidgetTree.Get();
+	for (int i = 0; i < MAX_STATUS_EFFECTS; ++i)
+	{
+		auto statusIconWidget = tree->FindWidget<UImage>(FName(FString::Printf(IconNameFormat, i + 1)));
+		auto progressIconWidget = tree->FindWidget<UImage>(FName(FString::Printf(ProgressNameFormat, i + 1)));
+		auto stackCounterWidget = tree->FindWidget<UTextBlock>(FName(FString::Printf(StackCountFormat, i + 1)));
+
+		statusIconWidget->SetVisibility(ESlateVisibility::Hidden);
+		progressIconWidget->SetVisibility(ESlateVisibility::Hidden);
+		stackCounterWidget->SetVisibility(ESlateVisibility::Hidden);
+	
+	}
 }
 
 FRichImageRow* UHealthBarWidget::FindImageRow(FName TagOrId, bool bWarnIfMissing)
@@ -214,13 +253,13 @@ void UHealthBarWidget::HealthChanged(const FOnAttributeChangeData& Data)
 {
 	// Update health bar
 	auto tree = WidgetTree.Get();
-	auto currentHealthWidget = tree->FindWidget<UTextBlock>(FName("Current_Health"));
+	auto currentHealthWidget = tree->FindWidget<UTextBlock>(CurrentHealthTextBlockName);
 	if (currentHealthWidget)
 	{
 		currentHealthWidget->SetText(FText::FromString(FString::FromInt(Data.NewValue)));
 	}
 
-	auto healthBarWidget = tree->FindWidget<UProgressBar>(FName("Health_Bar"));
+	auto healthBarWidget = tree->FindWidget<UProgressBar>(ProgressBarName);
 	if (healthBarWidget)
 	{
 		healthBarWidget->SetPercent(Data.NewValue / _attributeSet->MaxHealth.GetBaseValue());

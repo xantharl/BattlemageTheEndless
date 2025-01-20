@@ -56,13 +56,21 @@ class BATTLEMAGETHEENDLESS_API UHealthBarWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-	void SubscribeToStackChanges(UAbilitySystemComponent* abilitySystemComponent, UBaseAttributeSet* attributeSet);
+	void Init(UAbilitySystemComponent* abilitySystemComponent, UBaseAttributeSet* attributeSet);
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Health Bar")
 	UDataTable* StatusIconLookupTable;
 
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Health Bar")
 	TArray<FStatusGridItem> StatusGrid;
+
+	const FName CurrentHealthTextBlockName = FName("Current_Health");
+	const FName ProgressBarName = FName("Health_Bar");
+
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Health Bar")
+	int32 MAX_STATUS_EFFECTS = 6;
+
+	void Reset();
 
 private:
 	UAbilitySystemComponent* _abilitySystemComponent;
@@ -84,6 +92,9 @@ protected:
 	UFUNCTION()
 	virtual void OnRemoveGameplayEffectCallback(const FActiveGameplayEffect& EffectRemoved);
 	virtual void HealthChanged(const FOnAttributeChangeData& Data);
+
+	virtual void SetInitialDisplayValues();
+	virtual void SubscribeToEffectChanges();
 
 	FGameplayTagContainer OwnedStatusTags(const FGameplayEffectSpec& specApplied);
 

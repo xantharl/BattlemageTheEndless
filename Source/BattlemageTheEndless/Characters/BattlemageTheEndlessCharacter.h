@@ -255,6 +255,11 @@ public:
 
 protected:
 	virtual void BeginPlay();
+	void InitHealthbar();
+
+	// currently only enemies inheriting from this class have a health bar, so this can return nullptr
+	UHealthBarWidget* GetHealthBarWidget();
+
 	void GiveStartingEquipment();
 	void GiveDefaultAbilities();
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0);

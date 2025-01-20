@@ -29,6 +29,11 @@ void ATrainingDummyActor::ResetHealth()
 	AttributeSet->Health.SetCurrentValue(AttributeSet->MaxHealth.GetBaseValue());
 	AttributeSet->Health.SetBaseValue(AttributeSet->MaxHealth.GetBaseValue());
 	GetWorldTimerManager().ClearTimer(ResetHealthTimer);
+
+	if (UHealthBarWidget* HealthBarWidget = GetHealthBarWidget())
+	{
+		HealthBarWidget->Reset();
+	}
 }
 
 // Called every frame
