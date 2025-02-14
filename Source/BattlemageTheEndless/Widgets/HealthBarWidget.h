@@ -33,8 +33,8 @@ public:
 	FRichImageRow ImageRow;
 
 	float TimeRemainingTotal;
-	float TimeRemainingStack;
 	float TimeInitialStack;
+	float TimeElapsedStack = 0.f;
 
 	bool operator==(const FStatusGridItem& Other) const
 	{
@@ -45,6 +45,9 @@ public:
 	{
 		StatusEffectTag = statusEffectTag;
 	}
+
+	FVector2D InitialProgressSize;
+	FTimerHandle StackTimer;
 };
 
 /**
@@ -60,6 +63,9 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Health Bar")
 	UDataTable* StatusIconLookupTable;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, Category = "Health Bar")
+	int TickRate = 60;
 
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Health Bar")
 	TArray<FStatusGridItem> StatusGrid;
@@ -78,7 +84,10 @@ private:
 
 	FRichImageRow* FindImageRow(FName TagOrId, bool bWarnIfMissing);
 
+	void ConfigureStatusAtIndex(int index, const FSlateBrush& statusIconBrush, FText stackCount);
+	void SetVisibilityOfStatusAtIndex(int index, ESlateVisibility visibility);
 	void MoveStatusElementsAfterIndexDown(int32 startIndex);
+	void ClearTimerAtIndexIfActive(int statusGridItemIdx);
 
 	const wchar_t IconNameFormat[16] = TEXT("Status_%0d_Icon");
 	const wchar_t ProgressNameFormat[20] = TEXT("Status_%0d_Progress");
@@ -87,6 +96,10 @@ private:
 protected:
 	UFUNCTION()
 	virtual void OnActiveGameplayEffectAddedCallback(UAbilitySystemComponent* Target, const FGameplayEffectSpec& SpecApplied, FActiveGameplayEffectHandle ActiveHandle);
+
+	UFUNCTION()
+	void AdjustProgressIndicatorSize(int statusGridItemIdx);
+
 	UFUNCTION()
 	virtual void OnGameplayEffectStackChangeCallback(FActiveGameplayEffectHandle InHandle, int32 NewCount, int32 OldCount);
 	UFUNCTION()
@@ -95,6 +108,9 @@ protected:
 
 	virtual void SetInitialDisplayValues();
 	virtual void SubscribeToEffectChanges();
+
+	UFUNCTION()
+	void StartAdjustProgressIndicatorSizeTimer(int statusGridItemIdx);
 
 	FGameplayTagContainer OwnedStatusTags(const FGameplayEffectSpec& specApplied);
 
