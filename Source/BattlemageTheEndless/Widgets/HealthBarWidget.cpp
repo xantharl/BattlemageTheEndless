@@ -112,6 +112,11 @@ void UHealthBarWidget::MoveStatusElementsAfterIndexDown(int32 startIndex)
 	SetVisibilityOfStatusAtIndex(StatusGrid.Num(), ESlateVisibility::Hidden);
 }
 
+float UHealthBarWidget::GetTimeRemainingForStatusEffect(FStatusGridItem statusGridItem)
+{
+	return (statusGridItem.ActiveStacks * statusGridItem.TimeInitialStack) - statusGridItem.TimeElapsedStack;
+}
+
 void UHealthBarWidget::OnActiveGameplayEffectAddedCallback(UAbilitySystemComponent* Target, const FGameplayEffectSpec& SpecApplied, FActiveGameplayEffectHandle ActiveHandle)
 {
 	auto appliedStatusTags = OwnedStatusTags(SpecApplied);
@@ -145,7 +150,8 @@ void UHealthBarWidget::OnActiveGameplayEffectAddedCallback(UAbilitySystemCompone
 		newItem.ActiveStacks = 1;
 		if (imageRow != nullptr)
 			newItem.ImageRow = *imageRow;
-		newItem.InitialProgressSize = newItem.ImageRow.Brush.GetImageSize();
+		// This is set properly the first time adjust size is called
+		newItem.InitialProgressSize = FVector2D::ZeroVector;
 		newItem.TimeInitialStack = SpecApplied.GetDuration();
 		StatusGrid.Add(newItem);
 
@@ -156,12 +162,51 @@ void UHealthBarWidget::OnActiveGameplayEffectAddedCallback(UAbilitySystemCompone
 		_abilitySystemComponent->OnGameplayEffectStackChangeDelegate(ActiveHandle)->AddUObject(this, &UHealthBarWidget::OnGameplayEffectStackChangeCallback);
 		StartAdjustProgressIndicatorSizeTimer(statusGridItemIdx);
 	}
+
+	// If we have more than one active effect, make sure they're displayed in order of total duration descending
+	if (StatusGrid.Num() > 1)
+	{
+		// Copy status grid
+		auto sortedStatusGrid = StatusGrid;
+		sortedStatusGrid.Sort([](const FStatusGridItem& A, const FStatusGridItem& B) {
+			return GetTimeRemainingForStatusEffect(A) > GetTimeRemainingForStatusEffect(B);
+		});
+
+		bool orderChanged = false;
+		// Otherwise update the display order
+		for (int i = 0; i < sortedStatusGrid.Num(); i++)
+		{
+			// If the appropriate effect is already at this index, continue
+			if (sortedStatusGrid[i] == StatusGrid[i])
+				continue;
+
+			if (!orderChanged)
+				orderChanged = true;
+
+			// Otherwise update accordingly
+			ConfigureStatusAtIndex(i, sortedStatusGrid[i].ImageRow.Brush, FText::FromString(FString::FromInt(sortedStatusGrid[i].ActiveStacks)));
+		}
+
+		if (orderChanged)
+			StatusGrid = sortedStatusGrid;
+	}
 }
 
 void UHealthBarWidget::AdjustProgressIndicatorSize(int statusGridItemIdx)
 {
 	if (StatusGrid.Num() <= statusGridItemIdx)
 		return;
+
+	auto tree = WidgetTree.Get();
+	auto progressIconWidget = tree->FindWidget<UImage>(FName(FString::Printf(ProgressNameFormat, statusGridItemIdx)));
+	auto canvasPanelSlot = Cast<UCanvasPanelSlot>(progressIconWidget->Slot);
+	// If we cannot fetch the slot as a canvas panel slot, we cannot adjust the size
+	if (!canvasPanelSlot)
+		return;
+
+	// Init Initial Progress Size if needed
+	if (StatusGrid[statusGridItemIdx].InitialProgressSize == FVector2D::ZeroVector)
+		StatusGrid[statusGridItemIdx].InitialProgressSize = canvasPanelSlot->GetSize();
 
 	auto timer = StatusGrid[statusGridItemIdx].StackTimer;
 	if (!GetWorld()->GetTimerManager().IsTimerActive(timer))
@@ -172,10 +217,7 @@ void UHealthBarWidget::AdjustProgressIndicatorSize(int statusGridItemIdx)
 	auto newSize = FVector2D(StatusGrid[statusGridItemIdx].InitialProgressSize.X, 
 		StatusGrid[statusGridItemIdx].InitialProgressSize.Y * (1.f - (StatusGrid[statusGridItemIdx].TimeElapsedStack / StatusGrid[statusGridItemIdx].TimeInitialStack)));
 
-	auto tree = WidgetTree.Get();
-	auto progressIconWidget = tree->FindWidget<UImage>(FName(FString::Printf(ProgressNameFormat, statusGridItemIdx)));
-	if (auto canvasPanelSlot = Cast<UCanvasPanelSlot>(progressIconWidget->Slot))
-		canvasPanelSlot->SetSize(newSize);
+	canvasPanelSlot->SetSize(newSize);
 	
 }
 

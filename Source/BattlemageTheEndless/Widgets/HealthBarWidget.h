@@ -94,6 +94,8 @@ private:
 	const wchar_t ProgressNameFormat[20] = TEXT("Status_%0d_Progress");
 	const wchar_t StackCountFormat[18] = TEXT("Status_%0d_Stacks");
 
+	static float GetTimeRemainingForStatusEffect(FStatusGridItem statusGridItem);
+
 protected:
 	UFUNCTION()
 	virtual void OnActiveGameplayEffectAddedCallback(UAbilitySystemComponent* Target, const FGameplayEffectSpec& SpecApplied, FActiveGameplayEffectHandle ActiveHandle);
