@@ -48,7 +48,6 @@ public:
 	}
 
 	FVector2D InitialProgressSize;
-	FVector2D InitialProgressPosition;
 	FTimerHandle StackTimer;
 };
 
