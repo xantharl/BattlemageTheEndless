@@ -168,13 +168,14 @@ void UHealthBarWidget::AdjustProgressIndicatorSize(int statusGridItemIdx)
 		return;
 
 	auto elapsed = GetWorld()->GetTimerManager().GetTimerElapsed(timer);
-	auto statusGridItem = StatusGrid[statusGridItemIdx];
-	statusGridItem.TimeElapsedStack += elapsed;
-	auto newSize = FVector2D(statusGridItem.InitialProgressSize.X, statusGridItem.InitialProgressSize.Y * (1.f - (statusGridItem.TimeElapsedStack / statusGridItem.TimeInitialStack)));
+	StatusGrid[statusGridItemIdx].TimeElapsedStack += elapsed;
+	auto newSize = FVector2D(StatusGrid[statusGridItemIdx].InitialProgressSize.X, 
+		StatusGrid[statusGridItemIdx].InitialProgressSize.Y * (1.f - (StatusGrid[statusGridItemIdx].TimeElapsedStack / StatusGrid[statusGridItemIdx].TimeInitialStack)));
 
 	auto tree = WidgetTree.Get();
 	auto progressIconWidget = tree->FindWidget<UImage>(FName(FString::Printf(ProgressNameFormat, statusGridItemIdx)));
-	progressIconWidget->SetBrushSize(newSize);
+	if (auto canvasPanelSlot = Cast<UCanvasPanelSlot>(progressIconWidget->Slot))
+		canvasPanelSlot->SetSize(newSize);
 	
 }
 
@@ -259,7 +260,6 @@ void UHealthBarWidget::OnRemoveGameplayEffectCallback(const FActiveGameplayEffec
 			// if this was not the last element in the StatusGrid, move the rest up a spot
 			MoveStatusElementsAfterIndexDown(statusGridItemIdx);
 		}
-		ClearTimerAtIndexIfActive(statusGridItemIdx);
 		StatusGrid.RemoveAt(statusGridItemIdx);
 	}
 }

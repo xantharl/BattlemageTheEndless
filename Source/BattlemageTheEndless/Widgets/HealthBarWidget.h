@@ -11,6 +11,7 @@
 #include "Components/RichTextBlockImageDecorator.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
+#include "Components/CanvasPanelSlot.h"
 #include "Components/ProgressBar.h"
 #include "Blueprint/WidgetTree.h"
 #include "HealthBarWidget.generated.h"
@@ -47,6 +48,7 @@ public:
 	}
 
 	FVector2D InitialProgressSize;
+	FVector2D InitialProgressPosition;
 	FTimerHandle StackTimer;
 };
 
