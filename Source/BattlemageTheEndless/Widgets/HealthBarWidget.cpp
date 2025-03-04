@@ -100,16 +100,16 @@ void UHealthBarWidget::MoveStatusElementsAfterIndexDown(int32 startIndex)
 	auto tree = WidgetTree.Get();
 
 	// move all elements after the start index down one
-	for (int i = startIndex; i < StatusGrid.Num(); i++)
+	for (int i = startIndex; i < StatusGrid.Num()-1; i++)
 	{
-		auto nextStatusIconWidget = tree->FindWidget<UImage>(FName(FString::Printf(IconNameFormat, i)));
-		auto nextStackCounterWidget = tree->FindWidget<UTextBlock>(FName(FString::Printf(StackCountFormat, i)));
+		auto nextStatusIconWidget = tree->FindWidget<UImage>(FName(FString::Printf(IconNameFormat, i+1)));
+		auto nextStackCounterWidget = tree->FindWidget<UTextBlock>(FName(FString::Printf(StackCountFormat, i+1)));
 
 		ConfigureStatusAtIndex(i, nextStatusIconWidget->GetBrush(), nextStackCounterWidget->GetText());
 	}
 
-	// hide the last active status icon (icons are 1 indexed)
-	SetVisibilityOfStatusAtIndex(StatusGrid.Num(), ESlateVisibility::Hidden);
+	// hide the last active status icon
+	SetVisibilityOfStatusAtIndex(StatusGrid.Num()-1, ESlateVisibility::Hidden);
 }
 
 float UHealthBarWidget::GetTimeRemainingForStatusEffect(FStatusGridItem statusGridItem)
