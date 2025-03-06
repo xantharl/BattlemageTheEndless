@@ -105,15 +105,39 @@ void AHitEffectActor::ApplyEffects(AActor* actor)
 		}
 
 		FGameplayEffectSpecHandle specHandle = abilitySystemComponent->MakeOutgoingSpec(effect, 1.f, context);
-		if (specHandle.IsValid())
+
+		// check if the effect in question is already applied to the target
+		//TArray<FGameplayEffectSpec> OutSpecCopies;
+		//abilitySystemComponent->GetAllActiveGameplayEffectSpecs(OutSpecCopies);
+
+		//auto existingSpec = OutSpecCopies.FindByPredicate([effect](const FGameplayEffectSpec& spec) { return spec.Def.IsA(effect); });
+
+		//if (existingSpec)
+		//{
+		//	if (GEngine)
+		//	{
+		//		GEngine->AddOnScreenDebugMessage(-1, 2.5f, FColor::Green, 
+		//			FString::Printf(TEXT("Effect %s already applied to target, adding stack if possible"), *effect->GetName()));
+		//	}
+		//	existingSpec->SetStackCount(existingSpec->GetStackCount() + 1);
+		//	abilitySystemComponent->Stack
+		//	return;
+		//}
+
+		// If we haven't returned, this is a new effect so apply it
+
+		if (!specHandle.IsValid())
 		{
-			auto handle = abilitySystemComponent->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
-			if (GEngine)
-			{
-				GEngine->AddOnScreenDebugMessage(-1, 2.5f, FColor::Green, 
-					FString::Printf(TEXT("Applied effect %s (Stacks: %i)"), *effect->GetName(), 
-						abilitySystemComponent->GetCurrentStackCount(handle)));
-			}
+			UE_LOG(LogTemp, Error, TEXT("Failed to create effect spec for %s"), *effect->GetName());
+			return;
+		}
+
+		auto handle = abilitySystemComponent->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 2.5f, FColor::Green, 
+				FString::Printf(TEXT("Applied effect %s (Stacks: %i)"), *effect->GetName(), 
+					abilitySystemComponent->GetCurrentStackCount(handle)));
 		}
 	}
 }

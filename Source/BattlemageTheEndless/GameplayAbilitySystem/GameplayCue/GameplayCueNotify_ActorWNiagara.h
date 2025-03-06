@@ -68,10 +68,11 @@ public:
 	USceneComponent* SceneRoot;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Niagara, meta = (AllowPrivate))
-	UNiagaraComponent* NiagaraConfig;
+	UNiagaraComponent* ParticleSystem;
 
+	// CURRENTLY UNUSED, Particle System handles config and spawning
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Niagara, meta = (AllowPrivate))
-	UNiagaraComponent* NiagaraInstance;
+	TObjectPtr<UNiagaraComponent> NiagaraInstance;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivate))
 	FAttackEffectData AttackEffect;
@@ -79,6 +80,8 @@ public:
 	virtual void HandleGameplayCue(AActor* MyTarget, EGameplayCueEvent::Type EventType, const FGameplayCueParameters& Parameters) override;
 
 	void TryDestroyNiagaraInstance();
+
+	FTimerHandle DestroyTimer;
 	
 protected:
 	void TryCreateNiagaraInstance(AActor* MyTarget);

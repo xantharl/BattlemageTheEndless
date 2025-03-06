@@ -9,8 +9,16 @@ AGameplayCueNotify_ActorWNiagara::AGameplayCueNotify_ActorWNiagara()
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);
 
-	NiagaraConfig = CreateDefaultSubobject<UNiagaraComponent>(TEXT("NiagaraConfig"));
-	NiagaraConfig->AttachToComponent(SceneRoot, FAttachmentTransformRules::KeepRelativeTransform);
+	ParticleSystem = CreateDefaultSubobject<UNiagaraComponent>(TEXT("NiagaraConfig"));
+	ParticleSystem->AttachToComponent(SceneRoot, FAttachmentTransformRules::KeepRelativeTransform);
+
+	// disable auto activation, we want to control when the particle system is activated
+	// This is because GAS creates separate instances of the gameplay cue for the immediate application
+	// and the duration effect, and we only want to spawn the particle system once
+	ParticleSystem->bAutoActivate = false;
+
+	// makes the particle system follow the owner (target) of the gameplay cue
+	bAutoAttachToOwner = true;
 
 	NiagaraInstance = nullptr;
 }
@@ -20,22 +28,25 @@ void AGameplayCueNotify_ActorWNiagara::HandleGameplayCue(AActor* MyTarget, EGame
 	// if the EventType is OnActive, we want to spawn the NiagaraSystem
 	if (EventType == EGameplayCueEvent::OnActive)
 	{
-		TryCreateNiagaraInstance(MyTarget);
+		ParticleSystem->Activate();
+		//TryCreateNiagaraInstance(MyTarget);
 
 		if (AttackEffect.bShouldKillPreviousEffect)
 		{
-			if (ABattlemageTheEndlessCharacter* character = Cast< ABattlemageTheEndlessCharacter>(MyTarget))
+			if (ABattlemageTheEndlessCharacter* character = Cast<ABattlemageTheEndlessCharacter>(MyTarget))
 			{
 				character->TryRemovePreviousAbilityEffect(this);
 			}
 		}
 	}
-	else if (EventType == EGameplayCueEvent::Removed)
-		TryDestroyNiagaraInstance();
 
 	Super::HandleGameplayCue(MyTarget, EventType, Parameters);
 
-	Destroy();
+	if (EventType == EGameplayCueEvent::Removed)
+	{
+		ParticleSystem->Deactivate();
+		Destroy();
+	}
 }
 
 void AGameplayCueNotify_ActorWNiagara::TryDestroyNiagaraInstance()
@@ -57,14 +68,14 @@ void AGameplayCueNotify_ActorWNiagara::TryCreateNiagaraInstance(AActor* MyTarget
 		return;
 	}
 
-	UNiagaraSystem* NiagaraSystem = NiagaraConfig->GetAsset();
+	UNiagaraSystem* NiagaraSystem = ParticleSystem->GetAsset();
 	if (NiagaraSystem && !NiagaraInstance)
 	{
-		FRotator SpawnRotation = MyTarget->GetRootComponent()->GetRelativeRotation() + NiagaraConfig->GetRelativeTransform().Rotator();
+		FRotator SpawnRotation = MyTarget->GetRootComponent()->GetRelativeRotation() + ParticleSystem->GetRelativeTransform().Rotator();
 		SpawnRotation.Roll = 0.f;
 		//FVector SpawnLocation = NiagaraConfig->GetRelativeLocation().RotateAngleAxis(GetTransform().Rotator().Yaw, FVector::ZAxisVector);
 		FVector SpawnLocation = MyTarget->GetActorLocation() 
-			+ NiagaraConfig->GetRelativeTransform().GetLocation().RotateAngleAxis(MyTarget->GetRootComponent()->GetRelativeRotation().Yaw, FVector::ZAxisVector);
+			+ ParticleSystem->GetRelativeTransform().GetLocation().RotateAngleAxis(MyTarget->GetRootComponent()->GetRelativeRotation().Yaw, FVector::ZAxisVector);
 
 		// handle bSnapToGround
 		if (AttackEffect.bSnapToGround)
@@ -87,7 +98,7 @@ void AGameplayCueNotify_ActorWNiagara::TryCreateNiagaraInstance(AActor* MyTarget
 		if (AttackEffect.AttachType == EAttachType::None)
 		{
 			NiagaraInstance = UNiagaraFunctionLibrary::SpawnSystemAtLocation(world, NiagaraSystem,
-				SpawnLocation, SpawnRotation, NiagaraConfig->GetRelativeTransform().GetScale3D(), false, true, ENCPoolMethod::None, false);
+				SpawnLocation, SpawnRotation, ParticleSystem->GetRelativeTransform().GetScale3D(), false, true, ENCPoolMethod::None, false);
 			return;
 		}
 
@@ -110,9 +121,9 @@ void AGameplayCueNotify_ActorWNiagara::TryCreateNiagaraInstance(AActor* MyTarget
 				AttackEffect.AttachType == EAttachType::PrimaryWeapon ? EquipSlot::Primary : EquipSlot::Secondary)->Weapon;
 		}
 
-		NiagaraInstance = UNiagaraFunctionLibrary::SpawnSystemAttached(NiagaraSystem, attachToComponent,
+		/*NiagaraInstance = UNiagaraFunctionLibrary::SpawnSystemAttached(NiagaraSystem, attachToComponent,
 			AttackEffect.AttachSocket, FVector::ZeroVector, SpawnRotation, EAttachLocation::KeepRelativeOffset, 
-			false,true, ENCPoolMethod::None, false);
+			false,true, ENCPoolMethod::None, false);*/
 		
 	}
 }
