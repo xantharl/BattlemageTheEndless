@@ -70,7 +70,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Niagara, meta = (AllowPrivate))
 	UNiagaraComponent* ParticleSystem;
 
-	// CURRENTLY UNUSED, Particle System handles config and spawning
+	// CURRENTLY UNUSED, Particle System handles config and spawning 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Niagara, meta = (AllowPrivate))
 	TObjectPtr<UNiagaraComponent> NiagaraInstance;
 

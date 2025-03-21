@@ -29,6 +29,7 @@ ABattlemageTheEndlessProjectile::ABattlemageTheEndlessProjectile()
 
 	// Die after 3 seconds by default
 	InitialLifeSpan = 3.0f;
+	PrimaryActorTick.bCanEverTick = true;
 }
 
 void ABattlemageTheEndlessProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -46,5 +47,17 @@ void ABattlemageTheEndlessProjectile::OnHit(UPrimitiveComponent* HitComp, AActor
 	if ((OtherActor != nullptr) && (OtherActor != this) && (OtherComp != nullptr) && OtherComp->IsSimulatingPhysics())
 	{
 		OtherComp->AddImpulseAtLocation(GetVelocity() * 100.0f, GetActorLocation());
+	}
+}
+
+void ABattlemageTheEndlessProjectile::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	// if GrowthCurve is set, scale the projectile over time
+	if (ScaleByTime)
+	{
+		float scale = ScaleByTime->GetFloatValue(GetWorld()->GetTimeSeconds() - CreationTime);
+		SetActorScale3D(FVector(scale));
 	}
 }

@@ -147,5 +147,11 @@ public:
 	UProjectileMovementComponent* GetProjectileMovement() const { return ProjectileMovement; }
 
 	virtual bool ShouldDestroyOnHit() { return true;}
+
+	virtual void Tick(float DeltaTime) override;
+
+	/** If set, used on actor tick to scale the projectile over time **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Growth)
+	UCurveFloat* ScaleByTime;
 };
 
