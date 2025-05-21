@@ -241,6 +241,7 @@ public:
 	TArray<TObjectPtr<UAttackBaseGameplayAbility>> GetAbilityActiveInstances(FGameplayAbilitySpec* spec);
 
 	void SpawnHitEffectActors(FHitResult HitResult);
+	void SpawnHitEffectActorsAtLocation(FVector Location, FRotator CasterRotation);
 	
 	/** Called when the ability hits something, damage is handled by the spawning gameplay ability **/
 	UFUNCTION()

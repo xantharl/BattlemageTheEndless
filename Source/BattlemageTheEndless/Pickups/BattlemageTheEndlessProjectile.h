@@ -37,8 +37,7 @@ enum class FSpawnShape : uint8
 	Line UMETA(DisplayName = "Line"),
 	InwardRing UMETA(DisplayName = "InwardRing"),
 	OutwardRing UMETA(DisplayName = "OutwardRing")
-	// TODO: Implement these types as persistent effects with collision volumes rather than projectiles
-	//Rain UMETA(DisplayName = "Rain"),
+	//Rain UMETA(DisplayName = "Rain")
 	//Erruption UMETA(DisplayName = "Erruption")
 };
 
@@ -81,7 +80,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
 	FSpawnShape Shape = FSpawnShape::None;
 
-	/** Location to spawn Projectiles at */
+	/** Location to spawn Projectiles at. Ignored for HitScan */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
 	FSpawnLocation SpawnLocation = FSpawnLocation::SpellFocus;
 
@@ -112,6 +111,7 @@ public:
 	/** Persistent Area effect class to activate, only applicable to spells with HitType of Area */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class APersistentAreaEffect> PersistentAreaEffect = nullptr;
+
 };
 
 UCLASS(config=Game)

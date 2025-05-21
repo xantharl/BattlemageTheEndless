@@ -109,6 +109,10 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		if (durationEffects.Num() > 0)
 			return;
 	}
+	//else if (HitType == HitType::HitScan)
+	//{
+	//	// if we have a hit scan ability, we need to trace to find the target
+	//}
 
 	// if there is chain delay, set a timer to end the ability after that duration
 	if (ChainDelay > 0.001f && NumberOfChains > 0)
@@ -391,6 +395,32 @@ void UAttackBaseGameplayAbility::SpawnHitEffectActors(FHitResult HitResult)
 		// leave yaw alone, he's the fun one
 
 		auto newActor = world->SpawnActor<AHitEffectActor>(effect, HitResult.ImpactPoint, rotation, ActorSpawnParams);
+		newActor->SnapActorToGround(); // method checks if snap needs to happen
+		newActor->ActivateEffect(effect->GetDefaultObject<AHitEffectActor>()->VisualEffectSystem);
+		newActor->SpawningAbility = this;
+		newActor->Instigator = CurrentActorInfo->OwnerActor.Get();
+	}
+}
+
+void UAttackBaseGameplayAbility::SpawnHitEffectActorsAtLocation(FVector Location, FRotator CasterRotation)
+{
+	auto world = GetWorld();
+	if (!world)
+	{
+		UE_LOG(LogTemp, Error, TEXT("No world found for spawning hit effects"));
+		return;
+	}
+
+	FActorSpawnParameters ActorSpawnParams = FActorSpawnParameters();
+	ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	for (auto effect : HitEffectActors)
+	{
+		CasterRotation.Pitch = 0.f;
+		CasterRotation.Roll = 0.f;
+		// leave yaw alone, he's the fun one
+
+		auto newActor = world->SpawnActor<AHitEffectActor>(effect, Location, CasterRotation, ActorSpawnParams);
 		newActor->SnapActorToGround(); // method checks if snap needs to happen
 		newActor->ActivateEffect(effect->GetDefaultObject<AHitEffectActor>()->VisualEffectSystem);
 		newActor->SpawningAbility = this;
