@@ -71,8 +71,8 @@ public:
 	UNiagaraComponent* ParticleSystem;
 
 	// CURRENTLY UNUSED, Particle System handles config and spawning 
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Niagara, meta = (AllowPrivate))
-	//TObjectPtr<UNiagaraComponent> NiagaraInstance;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Niagara, meta = (AllowPrivate))
+	TObjectPtr<UNiagaraComponent> NiagaraInstance;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivate))
 	FAttackEffectData AttackEffect;
