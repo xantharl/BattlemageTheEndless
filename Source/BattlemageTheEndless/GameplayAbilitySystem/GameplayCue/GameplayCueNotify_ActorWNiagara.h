@@ -84,7 +84,7 @@ public:
 	FTimerHandle DestroyTimer;
 	
 protected:
-	void TryCreateNiagaraInstance(AActor* MyTarget);
+	//void TryCreateNiagaraInstance(AActor* MyTarget);
 
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);

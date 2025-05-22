@@ -20,7 +20,7 @@ AGameplayCueNotify_ActorWNiagara::AGameplayCueNotify_ActorWNiagara()
 	// makes the particle system follow the owner (target) of the gameplay cue
 	bAutoAttachToOwner = true;
 
-	NiagaraInstance = nullptr;
+	//NiagaraInstance = nullptr;
 }
 
 void AGameplayCueNotify_ActorWNiagara::HandleGameplayCue(AActor* MyTarget, EGameplayCueEvent::Type EventType, const FGameplayCueParameters& Parameters)
@@ -51,14 +51,14 @@ void AGameplayCueNotify_ActorWNiagara::HandleGameplayCue(AActor* MyTarget, EGame
 
 void AGameplayCueNotify_ActorWNiagara::TryDestroyNiagaraInstance()
 {
-	if (NiagaraInstance)
-	{
-		NiagaraInstance->Deactivate();
-		NiagaraInstance->DestroyComponent();
-		NiagaraInstance = nullptr;
-	}
+	//if (NiagaraInstance)
+	//{
+	//	NiagaraInstance->Deactivate();
+	//	NiagaraInstance->DestroyComponent();
+	//	NiagaraInstance = nullptr;
+	//}
 }
-
+/*
 void AGameplayCueNotify_ActorWNiagara::TryCreateNiagaraInstance(AActor* MyTarget)
 {
 	UWorld* const world = GetWorld();
@@ -69,7 +69,7 @@ void AGameplayCueNotify_ActorWNiagara::TryCreateNiagaraInstance(AActor* MyTarget
 	}
 
 	UNiagaraSystem* NiagaraSystem = ParticleSystem->GetAsset();
-	if (NiagaraSystem && !NiagaraInstance)
+	if (NiagaraSystem)// && !NiagaraInstance)
 	{
 		FRotator SpawnRotation = MyTarget->GetRootComponent()->GetRelativeRotation() + ParticleSystem->GetRelativeTransform().Rotator();
 		SpawnRotation.Roll = 0.f;
@@ -123,10 +123,10 @@ void AGameplayCueNotify_ActorWNiagara::TryCreateNiagaraInstance(AActor* MyTarget
 
 		/*NiagaraInstance = UNiagaraFunctionLibrary::SpawnSystemAttached(NiagaraSystem, attachToComponent,
 			AttackEffect.AttachSocket, FVector::ZeroVector, SpawnRotation, EAttachLocation::KeepRelativeOffset, 
-			false,true, ENCPoolMethod::None, false);*/
+			false,true, ENCPoolMethod::None, false);
 		
 	}
-}
+}*/
 
 void AGameplayCueNotify_ActorWNiagara::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
