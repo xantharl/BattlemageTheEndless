@@ -365,6 +365,8 @@ protected:
 
 	virtual void HealthChanged(const FOnAttributeChangeData& Data);
 
+	void ProcessMeleeInput(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
+
 	/** Handles attack input for pickups using GAS abilities **/
 	virtual void ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
 

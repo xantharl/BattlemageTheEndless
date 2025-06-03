@@ -734,7 +734,7 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 					pickup->Weapon->FireAction, 
 					triggerEvent,
 					this, 
-					pickup->PickupType == EPickupType::Weapon ? &ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled : & ABattlemageTheEndlessCharacter::ProcessSpellInput,
+					pickup->PickupType == EPickupType::Weapon ? &ABattlemageTheEndlessCharacter::ProcessMeleeInput : & ABattlemageTheEndlessCharacter::ProcessSpellInput,
 					pickup, 
 					EAttackType::Light, 
 					triggerEvent)
@@ -867,6 +867,30 @@ void ABattlemageTheEndlessCharacter::HealthChanged(const FOnAttributeChangeData&
 	// If health isn't set up, exit
 	if (AttributeSet->GetMaxHealth() == 0)
 		return;
+}
+
+void ABattlemageTheEndlessCharacter::ProcessMeleeInput(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)
+{
+	switch (triggerEvent)
+	{
+		// melee requires a completed event whether that's tap for light or hold for heavy
+		case ETriggerEvent::Completed:
+		{
+			// if we have a pickup actor, process the input
+			if (PickupActor)
+			{
+				ProcessSpellInput(PickupActor, AttackType, triggerEvent);
+			}
+			else
+			{
+				UE_LOG(LogTemplateCharacter, Warning, TEXT("'%s' ProcessMeleeInput called without a PickupActor!"), *GetNameSafe(this));
+			}
+			break;
+		}
+		default:
+			break;
+	}
+
 }
 
 void ABattlemageTheEndlessCharacter::ProcessSpellInput(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)
