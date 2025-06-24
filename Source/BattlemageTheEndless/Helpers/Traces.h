@@ -14,6 +14,8 @@ static class BATTLEMAGETHEENDLESS_API Traces
 public:
 	static FHitResult LineTraceMovementVector(ACharacter* character, UCharacterMovementComponent* movement, USkeletalMeshComponent* mesh, FName socketName, float magnitude, bool drawTrace = false, FColor drawColor = FColor::Green, float rotateYawByDegrees = 0.f);
 
+	static FHitResult LineTraceFromCharacter(ACharacter* character, USkeletalMeshComponent* mesh, FName socketName, FRotator rotation, float magnitude, bool drawTrace = false, FColor drawColor = FColor::Green);
+
 	/// <summary>
 	/// Performs a generic line trace from start to end and ignores sourceActor
 	/// </summary>

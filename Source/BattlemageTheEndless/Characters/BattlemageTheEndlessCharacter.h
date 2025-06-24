@@ -374,8 +374,8 @@ protected:
 
 	/** Spell specific handler which decides whether to call ProcessInputAndBindAbilityCancelled or do nothing **/
 	void ProcessSpellInput(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
-	void ProcessSpellInput_Charged(ETriggerEvent triggerEvent, FGameplayAbilitySpec* selectedAbilitySpec);
-	void ProcessSpellInput_Placed(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent, FGameplayAbilitySpec* abilitySpec, UAttackBaseGameplayAbility* ability);
+	void ProcessSpellInput_Charged(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
+	void ProcessSpellInput_Placed(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
 
 	void HandleProjectileSpawn(UAttackBaseGameplayAbility* ability);
 	void HandleHitScan(UAttackBaseGameplayAbility* ability);

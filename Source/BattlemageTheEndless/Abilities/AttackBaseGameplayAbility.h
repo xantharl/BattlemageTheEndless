@@ -252,6 +252,9 @@ public:
 	void RegisterPlacementGhost(AActor* GhostActor);
 	TArray<TObjectPtr<AActor>> GetPlacementGhosts() const { return _placementGhosts; }
 
+	UFUNCTION()
+	void OnPlacementGhostDestroyed(AActor* PlacementGhost);
+
 protected:
 	FTimerHandle EndTimerHandle;
 
@@ -273,5 +276,4 @@ private:
 
 	void PlayChargeCompleteSound();
 
-	void OnPlacementGhostDestroyed(AActor* PlacementGhost);
 };

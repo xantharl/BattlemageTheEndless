@@ -731,12 +731,36 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 		{
 			bindingHandles.Handles.Add(
 				EnhancedInputComponent->BindAction(
-					pickup->Weapon->FireAction, 
+					pickup->Weapon->FireActionTap, 
 					triggerEvent,
 					this, 
 					pickup->PickupType == EPickupType::Weapon ? &ABattlemageTheEndlessCharacter::ProcessMeleeInput : & ABattlemageTheEndlessCharacter::ProcessSpellInput,
 					pickup, 
 					EAttackType::Light, 
+					triggerEvent)
+				.GetHandle());
+
+			// Charge abilities start immediately 
+			bindingHandles.Handles.Add(
+				EnhancedInputComponent->BindAction(
+					pickup->Weapon->FireActionHold,
+					triggerEvent,
+					this,
+					pickup->PickupType == EPickupType::Weapon ? &ABattlemageTheEndlessCharacter::ProcessMeleeInput : &ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged,
+					pickup,
+					EAttackType::Light,
+					triggerEvent)
+				.GetHandle());
+
+			// placed abilities
+			bindingHandles.Handles.Add(
+				EnhancedInputComponent->BindAction(
+					pickup->Weapon->FireActionHoldAndRelease,
+					triggerEvent,
+					this,
+					pickup->PickupType == EPickupType::Weapon ? &ABattlemageTheEndlessCharacter::ProcessMeleeInput : &ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed,
+					pickup,
+					EAttackType::Light,
 					triggerEvent)
 				.GetHandle());
 		}
@@ -901,28 +925,31 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput(APickupActor* PickupActor
 		return;	
 	}
 
-	// if charge spell, activate and start repeating charge timer
 	auto selectedAbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(ActiveSpellClass->Weapon->SelectedAbility);
-
-	// if this is a charge spell use some special handling
 	auto ability = Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability);
-	if (ability && ability->ChargeDuration > 0.001f)
+
+	if (ability && (ability->ChargeDuration > 0.001f || ability->HitType == HitType::Placed))
 	{
-		ProcessSpellInput_Charged(triggerEvent, selectedAbilitySpec);
+		// if the ability is charged or placed, this is the wrong handler
+		return;
 	}
-	else if (ability && ability->HitType==HitType::Placed)
-	{
-		ProcessSpellInput_Placed(PickupActor, AttackType, triggerEvent, selectedAbilitySpec, ability);
-	}
-	// otherwise use the standard combo manager route
-	else
-	{
-		ProcessInputAndBindAbilityCancelled(PickupActor, AttackType, triggerEvent);
-	}
+
+	ProcessInputAndBindAbilityCancelled(PickupActor, AttackType, triggerEvent);
 }
 
-void ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged(ETriggerEvent triggerEvent, FGameplayAbilitySpec* selectedAbilitySpec)
+void ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)
 {
+	// TODO: handle non-charged abilities here, should try to activate and will only fire if not on cd
+
+	auto selectedAbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(ActiveSpellClass->Weapon->SelectedAbility);
+	auto ability = Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability);
+
+	if (!ability || ability->ChargeDuration <= 0.0001f)
+	{
+		// if the ability is not charged, this is the wrong handler
+		return;
+	}
+
 	auto activeInstances = Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability)->GetAbilityActiveInstances(selectedAbilitySpec);
 	TObjectPtr<UAttackBaseGameplayAbility> activeInstance = activeInstances.Num() > 0 ? activeInstances[0] : nullptr;
 
@@ -956,9 +983,20 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged(ETriggerEvent tri
 	}
 }
 
-void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent, FGameplayAbilitySpec* abilitySpec, UAttackBaseGameplayAbility* ability)
+void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)
 {
-	// Places spells have the following logical flow based on triggerEvent:
+	auto selectedAbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(ActiveSpellClass->Weapon->SelectedAbility);
+	auto ability = Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability);
+
+	if (!ability || ability->HitType != HitType::Placed)
+	{
+		// if the ability is not placed, this is the wrong handler
+		return;
+	}
+
+	auto movement = GetCharacterMovement();
+
+	// Placed spells have the following logic flow based on triggerEvent:
 	// Started: Display the "ghost" spell
 	// Ongoing: Update the "ghost" spell location based on player aim and max range
 	// Completed: Spawn the spell at the "ghost" location and end the ability
@@ -973,10 +1011,11 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 			// to do that, we need to create actor(s) at the target location and store them 
 			for (auto hitEffectActor: ability->HitEffectActors)
 			{
-				// spawn the ghost actor at the target location
-				FVector spawnLocation = GetMesh()->GetSocketLocation(GetTargetSocketName(PickupActor->Weapon->SlotType)) + CurrentGripOffset(GetTargetSocketName(PickupActor->Weapon->SlotType));
-				FRotator spawnRotation = Cast<APlayerController>(Controller)->PlayerCameraManager->GetCameraRotation();
-				auto ghostActor = GetWorld()->SpawnActor<AActor>(hitEffectActor, spawnLocation, spawnRotation);
+				UCameraComponent* activeCamera = FirstPersonCamera->IsActive() ? FirstPersonCamera : ThirdPersonCamera;
+				auto CastHit = Traces::LineTraceFromCharacter(this, GetMesh(), FName("cameraSocket"), activeCamera->GetComponentRotation(), ability->MaxRange);
+				FVector spawnLocation = CastHit.GetComponent() ? CastHit.Location : CastHit.TraceEnd;
+
+				auto ghostActor = GetWorld()->SpawnActor<AActor>(hitEffectActor, spawnLocation, movement->GetLastUpdateRotation());
 				if (ghostActor)
 				{
 					ghostActor->SetOwner(this);
@@ -984,21 +1023,22 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 					ability->RegisterPlacementGhost(ghostActor);
 				}
 			}
+			break;
 		}
 		// The button is being held
 		case ETriggerEvent::Ongoing:
 		{
 			// Update the ghost actor(s) location based on the player's aim and max range
-			FVector startLocation = GetMesh()->GetSocketLocation(GetTargetSocketName(PickupActor->Weapon->SlotType)) + CurrentGripOffset(GetTargetSocketName(PickupActor->Weapon->SlotType));
-			FRotator rotation = Cast<APlayerController>(Controller)->PlayerCameraManager->GetCameraRotation();
-			FVector endLocation = startLocation + (rotation.Vector() * ability->MaxRange);
+			UCameraComponent* activeCamera = FirstPersonCamera->IsActive() ? FirstPersonCamera : ThirdPersonCamera;
+			auto CastHit = Traces::LineTraceFromCharacter(this, GetMesh(), FName("cameraSocket"), activeCamera->GetComponentRotation(), ability->MaxRange, true);
+			FVector endLocation = CastHit.GetComponent() ? CastHit.Location : CastHit.TraceEnd;
 
 			for (auto ghostActor : ability->GetPlacementGhosts())
 			{
 				if (ghostActor)
 				{
 					ghostActor->SetActorLocation(endLocation);
-					ghostActor->SetActorRotation(rotation);
+					ghostActor->SetActorRotation(movement->GetLastUpdateRotation());
 				}
 			}
 			break;
@@ -1009,13 +1049,15 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 			// destroy all placement ghosts
 			for (auto ghostActor : ability->GetPlacementGhosts())
 				ghostActor->Destroy();
+			break;
 		}
 		// Casting was confirmed by releasing button
 		case ETriggerEvent::Triggered:
 		{			
-			bool success = AbilitySystemComponent->TryActivateAbility(abilitySpec->Handle, true);
+			bool success = AbilitySystemComponent->TryActivateAbility(selectedAbilitySpec->Handle, true);
 			if (!success && GEngine)
-				GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Red, FString::Printf(TEXT("Ability %s failed to activate"), *abilitySpec->Ability->GetName()));
+				GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Red, FString::Printf(TEXT("Ability %s failed to activate"), *selectedAbilitySpec->Ability->GetName()));
+			break;
 		}
 		default:
 			break;
