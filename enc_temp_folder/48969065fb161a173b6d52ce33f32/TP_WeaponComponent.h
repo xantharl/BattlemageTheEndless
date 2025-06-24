@@ -73,17 +73,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputMappingContext* WeaponMappingContext;
 
-	/** Fire Input Action - Tapped */
+	/** Fire Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
-	class UInputAction* FireActionTap;
-
-	/** Fire Input Action - Held */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	class UInputAction* FireActionHold;
-
-	/** Fire Input Action - Held */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	class UInputAction* FireActionHoldAndRelease;
+	class UInputAction* FireAction;
 
 	/** Sets default values for this component's properties */
 	UTP_WeaponComponent();

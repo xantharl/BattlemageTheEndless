@@ -731,7 +731,7 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 		{
 			bindingHandles.Handles.Add(
 				EnhancedInputComponent->BindAction(
-					pickup->Weapon->FireActionTap, 
+					pickup->Weapon->FireAction, 
 					triggerEvent,
 					this, 
 					pickup->PickupType == EPickupType::Weapon ? &ABattlemageTheEndlessCharacter::ProcessMeleeInput : & ABattlemageTheEndlessCharacter::ProcessSpellInput,

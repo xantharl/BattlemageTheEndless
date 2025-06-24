@@ -131,6 +131,7 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	}
 
 	// if the montage has the longer duration, set a timer to end the ability after that duration
+	// TODO: This should account for abilities with duration effects, probably take the longest duration effect and use that instead
 	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UAttackBaseGameplayAbility::EndAbility, Handle, ActorInfo, ActivationInfo, true, true);
 	world->GetTimerManager().SetTimer(EndTimerHandle, TimerDelegate, montageDuration, false);
 
@@ -375,6 +376,24 @@ void UAttackBaseGameplayAbility::OnHit(UPrimitiveComponent* HitComp, AActor* Oth
 	}
 }
 
+void UAttackBaseGameplayAbility::RegisterPlacementGhost(AActor* GhostActor)
+{
+	if (!GhostActor)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Ghost actor is null, cannot register placement ghost"));
+		return;
+	}
+
+	if (_placementGhosts.Contains(GhostActor))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Ghost actor %s is already registered"), *GhostActor->GetName());
+		return;
+	}
+
+	_placementGhosts.Add(GhostActor);
+	GhostActor->OnDestroyed.AddDynamic(this, &UAttackBaseGameplayAbility::OnPlacementGhostDestroyed);
+}
+
 void UAttackBaseGameplayAbility::SpawnHitEffectActors(FHitResult HitResult)
 {
 	auto world = GetWorld();
@@ -436,4 +455,16 @@ void UAttackBaseGameplayAbility::PlayChargeCompleteSound()
 	}
 
 	ChargeSoundComponent = UGameplayStatics::SpawnSoundAttached(ChargeCompleteSound, CurrentActorInfo->OwnerActor->GetRootComponent());
+}
+
+void UAttackBaseGameplayAbility::OnPlacementGhostDestroyed(AActor* PlacementGhost)
+{
+	if (!_placementGhosts.Contains(PlacementGhost))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Ghost actor %s is not registered, cannot unregister"), *PlacementGhost->GetName());
+		return;
+	}
+
+	_placementGhosts.Remove(PlacementGhost);
+	PlacementGhost->OnDestroyed.RemoveDynamic(this, &UAttackBaseGameplayAbility::OnPlacementGhostDestroyed);
 }

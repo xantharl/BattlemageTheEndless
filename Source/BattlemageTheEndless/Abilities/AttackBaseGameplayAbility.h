@@ -41,7 +41,9 @@ enum class HitType : uint8
 	// Uses a line trace to determine hit
 	HitScan UMETA(DisplayName = "HitScan"),
 	// Uses one or more projectiles to determine hit
-	Projectile UMETA(DisplayName = "Projectile")
+	Projectile UMETA(DisplayName = "Projectile"),
+	// For abilities which are placed at a location rather than casting at a target (e.g. Walls, ground effects, etc.)
+	Placed UMETA(DisplayName = "Placed")
 };
 
 /**
@@ -247,6 +249,9 @@ public:
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
+	void RegisterPlacementGhost(AActor* GhostActor);
+	TArray<TObjectPtr<AActor>> GetPlacementGhosts() const { return _placementGhosts; }
+
 protected:
 	FTimerHandle EndTimerHandle;
 
@@ -263,5 +268,10 @@ private:
 
 	UAudioComponent* ChargeSoundComponent;
 
+	// Used to track placement ghosts, which are actors that are used to preview the placement of an ability
+	TArray<TObjectPtr<AActor>> _placementGhosts;
+
 	void PlayChargeCompleteSound();
+
+	void OnPlacementGhostDestroyed(AActor* PlacementGhost);
 };

@@ -139,7 +139,7 @@ void UTP_WeaponComponent::AddBindings(ACharacter* character, UAbilitySystemCompo
 	// We are binding them all to the same action and relying on proper config of blocking tags to determine which one to use
 	for(auto action : bindableActions)
 	{
-		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Triggered, this, &UTP_WeaponComponent::BindAbilityActivate, action, abilityComponent);
+		EnhancedInputComponent->BindAction(FireActionTap, ETriggerEvent::Triggered, this, &UTP_WeaponComponent::BindAbilityActivate, action, abilityComponent);
 	}
 }
 
