@@ -1011,11 +1011,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 			// to do that, we need to create actor(s) at the target location and store them 
 			for (auto hitEffectActor: ability->HitEffectActors)
 			{
-				UCameraComponent* activeCamera = FirstPersonCamera->IsActive() ? FirstPersonCamera : ThirdPersonCamera;
-				auto CastHit = Traces::LineTraceFromCharacter(this, GetMesh(), FName("cameraSocket"), activeCamera->GetComponentRotation(), ability->MaxRange);
-				FVector spawnLocation = CastHit.GetComponent() ? CastHit.Location : CastHit.TraceEnd;
-
-				auto ghostActor = GetWorld()->SpawnActor<AActor>(hitEffectActor, spawnLocation, movement->GetLastUpdateRotation());
+				auto ghostActor = GetWorld()->SpawnActor<AActor>(hitEffectActor, GetCurrentPlacementPosition(ability, hitEffectActor), movement->GetLastUpdateRotation());
 				if (ghostActor && IsValid(ghostActor))
 				{
 					ghostActor->SetOwner(this);
@@ -1028,16 +1024,11 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 		// The button is being held
 		case ETriggerEvent::Ongoing:
 		{
-			// Update the ghost actor(s) location based on the player's aim and max range
-			UCameraComponent* activeCamera = FirstPersonCamera->IsActive() ? FirstPersonCamera : ThirdPersonCamera;
-			auto CastHit = Traces::LineTraceFromCharacter(this, GetMesh(), FName("cameraSocket"), activeCamera->GetComponentRotation(), ability->MaxRange);
-			FVector endLocation = CastHit.GetComponent() ? CastHit.Location : CastHit.TraceEnd;
-
 			for (auto ghostActor : ability->GetPlacementGhosts())
 			{
 				if (ghostActor && IsValid(ghostActor))
 				{
-					ghostActor->SetActorLocation(endLocation);
+					ghostActor->SetActorLocation(GetCurrentPlacementPosition(ability, ghostActor->StaticClass()));
 					ghostActor->SetActorRotation(movement->GetLastUpdateRotation());
 				}
 			}
@@ -1064,6 +1055,23 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 		default:
 			break;
 	}
+}
+
+FVector ABattlemageTheEndlessCharacter::GetCurrentPlacementPosition(UAttackBaseGameplayAbility* ability, TSubclassOf<AActor> hitEffectActorClass)
+{
+	// perform a ray cast up to max spell range to find a valid spawn location
+	UCameraComponent* activeCamera = FirstPersonCamera->IsActive() ? FirstPersonCamera : ThirdPersonCamera;
+	auto CastHit = Traces::LineTraceFromCharacter(this, GetMesh(), FName("cameraSocket"), activeCamera->GetComponentRotation(), ability->MaxRange);
+	auto hitComponent = CastHit.GetComponent();
+	FVector spawnLocation = hitComponent ? CastHit.Location : CastHit.TraceEnd;
+
+	// move the spawn location up by half the height of the hit effect actor if we are placing on the ground
+	if (hitComponent && hitComponent->IsA<UPrimitiveComponent>())
+	{
+		auto bounding = hitEffectActorClass->GetDefaultObject<AActor>()->GetComponentsBoundingBox();
+		spawnLocation.Z += bounding.Min.Z / 2.f;
+	}
+	return spawnLocation;
 }
 
 void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)

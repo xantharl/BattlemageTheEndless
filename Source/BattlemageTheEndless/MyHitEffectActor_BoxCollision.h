@@ -7,6 +7,7 @@
 #include "Components/BoxComponent.h"
 #include "MyHitEffectActor_BoxCollision.generated.h"
 
+// TODO: Remove this class
 /**
  * 
  */

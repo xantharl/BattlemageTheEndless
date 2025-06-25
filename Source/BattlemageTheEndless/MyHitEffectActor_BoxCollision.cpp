@@ -3,6 +3,7 @@
 
 #include "MyHitEffectActor_BoxCollision.h"
 
+// TODO: Remove this class
 void AMyHitEffectActor_BoxCollision::InitCollisionObject()
 {
 	PrimaryActorTick.bCanEverTick = true;

@@ -27,9 +27,6 @@ public:
 	virtual void InitCollisionObject();
 	virtual void InitCollisionType();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hit Effect")
-	TSubclassOf<UShapeComponent> BaseCollisionType = USphereComponent::StaticClass();
-
 	void SnapActorToGround();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hit Effect")
