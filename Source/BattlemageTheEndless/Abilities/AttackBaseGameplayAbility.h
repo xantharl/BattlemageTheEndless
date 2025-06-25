@@ -251,6 +251,7 @@ public:
 
 	void RegisterPlacementGhost(AActor* GhostActor);
 	TArray<TObjectPtr<AActor>> GetPlacementGhosts() const { return _placementGhosts; }
+	void ClearPlacementGhosts() { _placementGhosts.Empty(); }
 
 	UFUNCTION()
 	void OnPlacementGhostDestroyed(AActor* PlacementGhost);

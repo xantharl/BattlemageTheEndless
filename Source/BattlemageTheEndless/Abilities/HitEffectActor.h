@@ -24,6 +24,12 @@ public:
 	// Sets default values for this actor's properties
 	AHitEffectActor();
 
+	virtual void InitCollisionObject();
+	virtual void InitCollisionType();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hit Effect")
+	TSubclassOf<UShapeComponent> BaseCollisionType = USphereComponent::StaticClass();
+
 	void SnapActorToGround();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hit Effect")
@@ -40,7 +46,7 @@ public:
 	float EffectApplicationInterval = 0.5f;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"), Category = "Hit Effect")
-	TObjectPtr<USphereComponent> AreaOfEffect;
+	TObjectPtr<UShapeComponent> AreaOfEffect;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hit Effect")
 	TObjectPtr<UNiagaraSystem> VisualEffectSystem;

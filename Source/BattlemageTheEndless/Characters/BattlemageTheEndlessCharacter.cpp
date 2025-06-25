@@ -1016,7 +1016,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 				FVector spawnLocation = CastHit.GetComponent() ? CastHit.Location : CastHit.TraceEnd;
 
 				auto ghostActor = GetWorld()->SpawnActor<AActor>(hitEffectActor, spawnLocation, movement->GetLastUpdateRotation());
-				if (ghostActor)
+				if (ghostActor && IsValid(ghostActor))
 				{
 					ghostActor->SetOwner(this);
 					ghostActor->SetActorEnableCollision(false);
@@ -1035,7 +1035,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 
 			for (auto ghostActor : ability->GetPlacementGhosts())
 			{
-				if (ghostActor)
+				if (ghostActor && IsValid(ghostActor))
 				{
 					ghostActor->SetActorLocation(endLocation);
 					ghostActor->SetActorRotation(movement->GetLastUpdateRotation());
@@ -1057,6 +1057,8 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 			bool success = AbilitySystemComponent->TryActivateAbility(selectedAbilitySpec->Handle, true);
 			if (!success && GEngine)
 				GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Red, FString::Printf(TEXT("Ability %s failed to activate"), *selectedAbilitySpec->Ability->GetName()));
+			// stop tracking placement ghosts after making them real
+			ability->ClearPlacementGhosts();
 			break;
 		}
 		default:

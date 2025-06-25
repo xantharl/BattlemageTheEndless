@@ -16,10 +16,21 @@ AHitEffectActor::AHitEffectActor()
 
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	AreaOfEffect = CreateDefaultSubobject<USphereComponent>(TEXT("AreaOfEffect"));
+	InitCollisionObject();
+	InitCollisionType();
+}
+
+void AHitEffectActor::InitCollisionObject()
+{
+	TObjectPtr<USphereComponent> area = CreateDefaultSubobject<USphereComponent>(TEXT("AreaOfEffect"));
+	area->SetSphereRadius(100.f);
+	area->InitSphereRadius(100.f);
+	AreaOfEffect = area;
 	SetRootComponent(AreaOfEffect);
-	AreaOfEffect->SetSphereRadius(100.f);
-	AreaOfEffect->InitSphereRadius(100.f);
+}
+
+void AHitEffectActor::InitCollisionType()
+{
 	AreaOfEffect->SetCollisionProfileName(TEXT("OverlapAll"));
 	AreaOfEffect->SetGenerateOverlapEvents(true);
 	AreaOfEffect->OnComponentBeginOverlap.AddDynamic(this, &AHitEffectActor::OnAreaOfEffectBeginOverlap);
