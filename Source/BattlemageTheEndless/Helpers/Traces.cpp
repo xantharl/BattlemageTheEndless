@@ -11,14 +11,15 @@ FHitResult Traces::LineTraceMovementVector(ACharacter* character, UCharacterMove
 	FVector end = start + castVector;
 
 	// Perform the raycast
-	FHitResult hit = LineTraceGeneric(character, start, end);
+	auto params = FCollisionQueryParams(FName(TEXT("LineTrace")), true, character);
+	FHitResult hit = LineTraceGeneric(character->GetWorld(), params, start, end);
 
 	if (drawTrace)
 		DrawDebugLine(character->GetWorld(), start, end, drawColor, false, 3.0f, 0, 1.0f);
 	return hit;
 }
 
-FHitResult Traces::LineTraceFromCharacter(ACharacter* character, USkeletalMeshComponent* mesh, FName socketName, FRotator rotation, float magnitude, bool drawTrace, FColor drawColor)
+FHitResult Traces::LineTraceFromCharacter(ACharacter* character, USkeletalMeshComponent* mesh, FName socketName, FRotator rotation, float magnitude, TArray<AActor*> ignoreActors, bool drawTrace, FColor drawColor)
 {
 	FVector start = mesh->GetSocketLocation(socketName);
 	// Cast a ray out in look direction magnitude units long
@@ -28,20 +29,20 @@ FHitResult Traces::LineTraceFromCharacter(ACharacter* character, USkeletalMeshCo
 	FVector end = start + castVector;
 
 	// Perform the raycast
-	FHitResult hit = LineTraceGeneric(character, start, end);
+	auto params = FCollisionQueryParams(FName(TEXT("LineTrace")), true, character);
+	params.AddIgnoredActors(ignoreActors);
+	FHitResult hit = LineTraceGeneric(character->GetWorld(), params, start, end);
 
 	if (drawTrace)
 		DrawDebugLine(character->GetWorld(), start, end, drawColor, false, 3.0f, 0, 1.0f);
 	return hit;
 }
 
-FHitResult Traces::LineTraceGeneric(AActor* actor, FVector start, FVector end)
+FHitResult Traces::LineTraceGeneric(UWorld* world, FCollisionQueryParams params, FVector start, FVector end)
 {
 	// Perform the raycast
 	FHitResult hit;
-	FCollisionQueryParams params;
 	FCollisionObjectQueryParams objectParams;
-	params.AddIgnoredActor(actor);
-	actor->GetWorld()->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
+	world->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
 	return hit;
 }

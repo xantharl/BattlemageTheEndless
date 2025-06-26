@@ -46,7 +46,9 @@ bool UWallRunAbility::ShouldBegin()
 			FVector start = Mesh->GetSocketLocation(FName("feetRaycastSocket"));
 			// add 30 degrees to the left of the forward vector to account for wall runs starting near the start of the wall
 			FVector end = start + FVector::LeftVector.RotateAngleAxis(WallRunCapsule->GetComponentRotation().Yaw + 30.f, FVector::ZAxisVector) * 200;
-			WallIsToLeft = Traces::LineTraceGeneric(Character, start, end).GetActor() == WallRunObject;
+
+			auto params = FCollisionQueryParams(FName(TEXT("LineTrace")), true, Character);
+			WallIsToLeft = Traces::LineTraceGeneric(GetWorld(), params, start, end).GetActor() == WallRunObject;
 
 			return true;
 		}

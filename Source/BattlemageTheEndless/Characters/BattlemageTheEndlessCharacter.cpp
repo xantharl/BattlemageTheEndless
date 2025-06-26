@@ -1005,13 +1005,16 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 		// The button was pressed for the first time
 		case ETriggerEvent::Started:
 		{
+			auto defaultLocation = FVector(0, 0, -9999);
 			// TODO: Add an animation for placing a spell, can probably reuse the charging animation?
 			
 			// A Placed spell will produce one or more hit effect actors at the target location, so we need to ghost all of them
 			// to do that, we need to create actor(s) at the target location and store them 
 			for (auto hitEffectActor: ability->HitEffectActors)
 			{
-				auto ghostActor = GetWorld()->SpawnActor<AActor>(hitEffectActor, GetCurrentPlacementPosition(ability, hitEffectActor), movement->GetLastUpdateRotation());
+				// spawn the actor way below the world and then reposition it (we need the instance to calculate dimensions)
+				auto ghostActor = GetWorld()->SpawnActor<AActor>(hitEffectActor, defaultLocation, movement->GetLastUpdateRotation());
+				ghostActor->SetActorLocation(CalculatePlacementPosition(ability, ghostActor));
 				if (ghostActor && IsValid(ghostActor))
 				{
 					ghostActor->SetOwner(this);
@@ -1028,7 +1031,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 			{
 				if (ghostActor && IsValid(ghostActor))
 				{
-					ghostActor->SetActorLocation(GetCurrentPlacementPosition(ability, ghostActor->StaticClass()));
+					ghostActor->SetActorLocation(CalculatePlacementPosition(ability, ghostActor));
 					ghostActor->SetActorRotation(movement->GetLastUpdateRotation());
 				}
 			}
@@ -1057,19 +1060,23 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 	}
 }
 
-FVector ABattlemageTheEndlessCharacter::GetCurrentPlacementPosition(UAttackBaseGameplayAbility* ability, TSubclassOf<AActor> hitEffectActorClass)
+FVector ABattlemageTheEndlessCharacter::CalculatePlacementPosition(UAttackBaseGameplayAbility* ability, AActor* hitEffectActor)
 {
 	// perform a ray cast up to max spell range to find a valid spawn location
 	UCameraComponent* activeCamera = FirstPersonCamera->IsActive() ? FirstPersonCamera : ThirdPersonCamera;
-	auto CastHit = Traces::LineTraceFromCharacter(this, GetMesh(), FName("cameraSocket"), activeCamera->GetComponentRotation(), ability->MaxRange);
+	auto ignoreActors = TArray<AActor*>();
+	ignoreActors.Add(hitEffectActor);
+	auto CastHit = Traces::LineTraceFromCharacter(this, GetMesh(), FName("cameraSocket"), activeCamera->GetComponentRotation(), ability->MaxRange, ignoreActors);
 	auto hitComponent = CastHit.GetComponent();
 	FVector spawnLocation = hitComponent ? CastHit.Location : CastHit.TraceEnd;
 
 	// move the spawn location up by half the height of the hit effect actor if we are placing on the ground
 	if (hitComponent && hitComponent->IsA<UPrimitiveComponent>())
 	{
-		auto bounding = hitEffectActorClass->GetDefaultObject<AActor>()->GetComponentsBoundingBox();
-		spawnLocation.Z += bounding.Min.Z / 2.f;
+		// we need to consider all components since we have collision disabled at this point
+		//	this can be a performance issue if actors get too complex
+		auto bounding = hitEffectActor->GetComponentsBoundingBox(true);
+		spawnLocation.Z += (bounding.Max.Z - bounding.Min.Z) / 2.f;
 	}
 	return spawnLocation;
 }
@@ -1189,7 +1196,8 @@ void ABattlemageTheEndlessCharacter::HandleHitScan(UAttackBaseGameplayAbility* a
 
 	//DrawDebugLine(GetWorld(), startLocation, endLocation, FColor::Red, false, 5.0f, 0, 1.0f);
 
-	FHitResult hit = Traces::LineTraceGeneric(this, startLocation, endLocation);
+	auto params = FCollisionQueryParams(FName(TEXT("LineTrace")), true, this);
+	FHitResult hit = Traces::LineTraceGeneric(GetWorld(), params, startLocation, endLocation);
 
 	// Nothing to do if we don't have a hit
 	ABattlemageTheEndlessCharacter* hitCharacter = Cast<ABattlemageTheEndlessCharacter>(hit.GetActor());
@@ -1292,7 +1300,8 @@ ABattlemageTheEndlessCharacter* ABattlemageTheEndlessCharacter::GetNextChainTarg
 
 		// check for line of sight
 		// TODO: Use a specific trace channel rather than all of them
-		auto hitResult = Traces::LineTraceGeneric(ChainActor, ChainActor->GetActorLocation(), actor->GetActorLocation());
+		auto params = FCollisionQueryParams(FName(TEXT("LineTrace")), true, ChainActor);
+		auto hitResult = Traces::LineTraceGeneric(GetWorld(), params, ChainActor->GetActorLocation(), actor->GetActorLocation());
 		auto hitActor = hitResult.GetActor();
 		if (!hitActor || hitActor != actor)
 			continue;
