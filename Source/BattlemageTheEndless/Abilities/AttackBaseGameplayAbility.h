@@ -249,8 +249,8 @@ public:
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
-	void RegisterPlacementGhost(AActor* GhostActor);
-	TArray<TObjectPtr<AActor>> GetPlacementGhosts() const { return _placementGhosts; }
+	void RegisterPlacementGhost(AHitEffectActor* GhostActor);
+	TArray<TObjectPtr<AHitEffectActor>> GetPlacementGhosts() const { return _placementGhosts; }
 	void ClearPlacementGhosts() { _placementGhosts.Empty(); }
 
 	UFUNCTION()
@@ -273,7 +273,7 @@ private:
 	UAudioComponent* ChargeSoundComponent;
 
 	// Used to track placement ghosts, which are actors that are used to preview the placement of an ability
-	TArray<TObjectPtr<AActor>> _placementGhosts;
+	TArray<TObjectPtr<AHitEffectActor>> _placementGhosts;
 
 	void PlayChargeCompleteSound();
 

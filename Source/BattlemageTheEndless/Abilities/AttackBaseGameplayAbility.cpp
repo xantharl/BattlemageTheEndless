@@ -376,7 +376,7 @@ void UAttackBaseGameplayAbility::OnHit(UPrimitiveComponent* HitComp, AActor* Oth
 	}
 }
 
-void UAttackBaseGameplayAbility::RegisterPlacementGhost(AActor* GhostActor)
+void UAttackBaseGameplayAbility::RegisterPlacementGhost(AHitEffectActor* GhostActor)
 {
 	if (!GhostActor)
 	{
@@ -465,6 +465,6 @@ void UAttackBaseGameplayAbility::OnPlacementGhostDestroyed(AActor* PlacementGhos
 		return;
 	}
 
-	_placementGhosts.Remove(PlacementGhost);
+	_placementGhosts.Remove(Cast<AHitEffectActor>(PlacementGhost));
 	PlacementGhost->OnDestroyed.RemoveDynamic(this, &UAttackBaseGameplayAbility::OnPlacementGhostDestroyed);
 }

@@ -1013,12 +1013,25 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 			for (auto hitEffectActor: ability->HitEffectActors)
 			{
 				// spawn the actor way below the world and then reposition it (we need the instance to calculate dimensions)
-				auto ghostActor = GetWorld()->SpawnActor<AActor>(hitEffectActor, defaultLocation, movement->GetLastUpdateRotation());
+				auto ghostActor = GetWorld()->SpawnActor<AHitEffectActor>(hitEffectActor, defaultLocation, movement->GetLastUpdateRotation());
 				ghostActor->SetActorLocation(CalculatePlacementPosition(ability, ghostActor));
 				if (ghostActor && IsValid(ghostActor))
 				{
 					ghostActor->SetOwner(this);
-					ghostActor->SetActorEnableCollision(false);
+					ghostActor->SetActorEnableCollision(false);					
+
+					// for each Static Mesh Component on this actor, check if there is an instance of the material with Translucent blend mode
+					for(UActorComponent* component : ghostActor->GetComponents())
+					{
+						// check if the component is a mesh component
+						auto meshComponent = Cast<UStaticMeshComponent>(component);
+						if (!meshComponent)
+							continue;
+
+						auto material = meshComponent->GetMaterial(0);
+						meshComponent->SetMaterial(0, ghostActor->PlacementGhostMaterial);
+					}
+
 					ability->RegisterPlacementGhost(ghostActor);
 				}
 			}
@@ -1051,6 +1064,23 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 			bool success = AbilitySystemComponent->TryActivateAbility(selectedAbilitySpec->Handle, true);
 			if (!success && GEngine)
 				GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Red, FString::Printf(TEXT("Ability %s failed to activate"), *selectedAbilitySpec->Ability->GetName()));
+			// reset materials on all placement ghosts
+			for (auto ghostActor : ability->GetPlacementGhosts())
+			{
+				if (!ghostActor || !IsValid(ghostActor))
+					continue;
+
+				for (UActorComponent* component : ghostActor->GetComponents())
+				{
+					auto meshComponent = Cast<UStaticMeshComponent>(component);
+					if (!meshComponent)
+						continue;
+
+					// This design assumes the standard material is the parent of the ghost material
+					if (ghostActor->PlacementGhostMaterial && ghostActor->PlacementGhostMaterial->Parent)
+						meshComponent->SetMaterial(0, ghostActor->PlacementGhostMaterial->Parent);
+				}
+			}
 			// stop tracking placement ghosts after making them real
 			ability->ClearPlacementGhosts();
 			break;

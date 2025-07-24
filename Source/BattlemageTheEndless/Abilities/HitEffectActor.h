@@ -32,6 +32,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hit Effect")
 	bool SnapToGround = true;
 
+	/** Material to be used during placement ghost phase, this MUST BE a material instance of the main material **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hit Effect")
+	UMaterialInstance* PlacementGhostMaterial;
+
 	/** Store a reference to the spawning ability in case we need details **/
 	UGameplayAbility* SpawningAbility;
 
