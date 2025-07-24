@@ -748,7 +748,7 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 					this,
 					pickup->PickupType == EPickupType::Weapon ? &ABattlemageTheEndlessCharacter::ProcessMeleeInput : &ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged,
 					pickup,
-					EAttackType::Light,
+					EAttackType::Heavy,
 					triggerEvent)
 				.GetHandle());
 
@@ -994,6 +994,13 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 		return;
 	}
 
+	// check if this ability has a combo and we are past the first part
+	if (ComboManager->Combos.Contains(PickupActor) && ComboManager->Combos[PickupActor].ActiveCombo)
+	{
+		// if we are in a combo, we should not be placing spells
+		return;
+	}
+
 	auto movement = GetCharacterMovement();
 
 	// Placed spells have the following logic flow based on triggerEvent:
@@ -1117,7 +1124,7 @@ FVector ABattlemageTheEndlessCharacter::CalculatePlacementPosition(UAttackBaseGa
 void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)
 {
 	// Let combo manager resolve and dispatch ability as needed
-	auto specHandle = ComboManager->ProcessInput(PickupActor, EAttackType::Light);
+	auto specHandle = ComboManager->ProcessInput(PickupActor, AttackType);
 	if (!specHandle.IsValid())
 		return;
 
