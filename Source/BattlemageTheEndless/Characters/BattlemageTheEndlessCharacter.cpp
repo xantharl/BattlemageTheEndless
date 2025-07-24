@@ -1070,6 +1070,9 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 				if (!ghostActor || !IsValid(ghostActor))
 					continue;
 
+				// re-enable collision
+				ghostActor->SetActorEnableCollision(true);
+
 				for (UActorComponent* component : ghostActor->GetComponents())
 				{
 					auto meshComponent = Cast<UStaticMeshComponent>(component);
