@@ -1011,14 +1011,14 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 	auto selectedAbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(ActiveSpellClass->Weapon->SelectedAbility);
 	auto ability = Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability);
 
-	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("ProcessSpellInput_Placed: Ability %s"),
-		*(ability->GetAbilityName().ToString())));
-
 	if (!ability || ability->HitType != HitType::Placed)
 	{
 		// if the ability is not placed, this is the wrong handler
 		return;
 	}
+
+	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("ProcessSpellInput_Placed: Ability %s"),
+		*(ability->GetAbilityName().ToString())));
 
 	// check if this ability has a combo and we are past the first part
 	if (ComboManager->Combos.Contains(PickupActor) && ComboManager->Combos[PickupActor].ActiveCombo)
@@ -1094,9 +1094,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 		// Casting was confirmed by releasing button
 		case ETriggerEvent::Triggered:
 		{			
-			bool success = AbilitySystemComponent->TryActivateAbility(selectedAbilitySpec->Handle, true);
-			if (!success && GEngine)
-				GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Red, FString::Printf(TEXT("Ability %s failed to activate"), *selectedAbilitySpec->Ability->GetName()));
+			ComboManager->ProcessInput(PickupActor, AttackType);
 			// reset materials on all placement ghosts
 			for (auto ghostActor : ability->GetPlacementGhosts())
 			{
@@ -1119,16 +1117,6 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 			}
 			// stop tracking placement ghosts after making them real
 			ability->ClearPlacementGhosts();
-			
-			// if the ability is part of a combo, activate that combo
-			if (ability->HasComboTag() && ability->IsFirstInCombo())
-			{
-				auto nameTag = PickupActor->Weapon->SelectedAbility->GetDefaultObject<UAttackBaseGameplayAbility>()->GetAbilityName();
-				auto combo = ComboManager->FindComboByTag(PickupActor, nameTag);
-				// TODO: this should be abstracted out
-				combo->StartCombo();
-				ComboManager->Combos[PickupActor].ActiveCombo = combo;
-			}
 
 			break;
 		}
