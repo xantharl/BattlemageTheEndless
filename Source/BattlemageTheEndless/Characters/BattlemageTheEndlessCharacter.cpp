@@ -908,7 +908,8 @@ void ABattlemageTheEndlessCharacter::ProcessMeleeInput(APickupActor* PickupActor
 			// if we have a pickup actor, process the input
 			if (PickupActor)
 			{
-				ProcessSpellInput(PickupActor, AttackType, triggerEvent);
+				//ProcessSpellInput(PickupActor, AttackType, triggerEvent);
+				ProcessInputAndBindAbilityCancelled(PickupActor, AttackType, triggerEvent);
 			}
 			else
 			{
@@ -924,6 +925,12 @@ void ABattlemageTheEndlessCharacter::ProcessMeleeInput(APickupActor* PickupActor
 
 void ABattlemageTheEndlessCharacter::ProcessSpellInput(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)
 {
+	if (triggerEvent != ETriggerEvent::Triggered)
+	{
+		// This handler is for tap spells, so we only handle triggered events
+		return;
+	}
+
 	if (!PickupActor)
 	{
 		UE_LOG(LogTemplateCharacter, Warning, TEXT("'%s' ProcessSpellInput called without a PickupActor, how the heck did you manage that?"), *GetNameSafe(this));
@@ -940,15 +947,25 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput(APickupActor* PickupActor
 		return;
 	}
 
+	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("ProcessSpellInput: Ability %s"),
+		*(ability->GetAbilityName().ToString())));
+
 	ProcessInputAndBindAbilityCancelled(PickupActor, AttackType, triggerEvent);
 }
 
 void ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)
 {
-	// TODO: handle non-charged abilities here, should try to activate and will only fire if not on cd
+	if (triggerEvent != ETriggerEvent::Started && triggerEvent != ETriggerEvent::Completed)
+	{
+		// we only handle started and completed events for charged abilities
+		return;
+	}
 
 	auto selectedAbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(ActiveSpellClass->Weapon->SelectedAbility);
 	auto ability = Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability);
+
+	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("ProcessSpellInput_Charged: Ability %s"),
+		*(ability->GetAbilityName().ToString())));
 
 	if (!ability || ability->ChargeDuration <= 0.0001f)
 	{
@@ -993,6 +1010,9 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 {
 	auto selectedAbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(ActiveSpellClass->Weapon->SelectedAbility);
 	auto ability = Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability);
+
+	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("ProcessSpellInput_Placed: Ability %s"),
+		*(ability->GetAbilityName().ToString())));
 
 	if (!ability || ability->HitType != HitType::Placed)
 	{
