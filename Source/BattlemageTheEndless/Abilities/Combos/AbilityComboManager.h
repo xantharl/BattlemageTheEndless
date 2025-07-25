@@ -78,6 +78,8 @@ public:
 
 	UAbilitySystemComponent* AbilitySystemComponent;
 
+	UAbilityCombo* FindComboByTag(APickupActor* PickupActor, const FGameplayTag& ComboTag);
+
 private:
 	FGameplayAbilityActorInfo _ownerActorInfo = FGameplayAbilityActorInfo();
 };

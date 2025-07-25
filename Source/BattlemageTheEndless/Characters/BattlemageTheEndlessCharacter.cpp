@@ -705,6 +705,11 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 		FGameplayAbilitySpecHandle handle = AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
 		ComboManager->AddAbilityToCombo(pickup, ability->GetDefaultObject<UAttackBaseGameplayAbility>(), handle);
 	}
+	// to avoid nullptr
+	if (pickup->Weapon->GrantedAbilities.Num() > 0)
+	{
+		pickup->Weapon->SelectedAbility = pickup->Weapon->GrantedAbilities[0];
+	}
 
 	// Set the active spell to the first granted ability if it is not already set and the item is a spell focus
 	if (pickup->Weapon->SlotType == EquipSlot::Secondary && pickup->Weapon->GrantedAbilities.Num() > 0 && !pickup->Weapon->SelectedAbility)
@@ -925,12 +930,13 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput(APickupActor* PickupActor
 		return;	
 	}
 
-	auto selectedAbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(ActiveSpellClass->Weapon->SelectedAbility);
+	auto selectedAbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(PickupActor->Weapon->SelectedAbility);
 	auto ability = Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability);
+	auto isComboActive = ComboManager->Combos.Contains(PickupActor) && ComboManager->Combos[PickupActor].ActiveCombo;
 
-	if (ability && (ability->ChargeDuration > 0.001f || ability->HitType == HitType::Placed))
+	if (ability && (ability->ChargeDuration > 0.001f || (ability->HitType == HitType::Placed && !isComboActive)))
 	{
-		// if the ability is charged or placed, this is the wrong handler
+		// if the ability is charged or placed and we aren't in a combo, this is the wrong handler
 		return;
 	}
 
@@ -1093,6 +1099,17 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 			}
 			// stop tracking placement ghosts after making them real
 			ability->ClearPlacementGhosts();
+			
+			// if the ability is part of a combo, activate that combo
+			if (ability->HasComboTag() && ability->IsFirstInCombo())
+			{
+				auto nameTag = PickupActor->Weapon->SelectedAbility->GetDefaultObject<UAttackBaseGameplayAbility>()->GetAbilityName();
+				auto combo = ComboManager->FindComboByTag(PickupActor, nameTag);
+				// TODO: this should be abstracted out
+				combo->StartCombo();
+				ComboManager->Combos[PickupActor].ActiveCombo = combo;
+			}
+
 			break;
 		}
 		default:
