@@ -37,22 +37,38 @@ void AHitEffectActor::InitCollisionType()
 	AreaOfEffect->OnComponentEndOverlap.AddDynamic(this, &AHitEffectActor::OnAreaOfEffectEndOverlap);
 }
 
-void AHitEffectActor::SnapActorToGround()
+void AHitEffectActor::SnapActorToGround(FHitResult hitResult)
 {
-	if (SnapToGround)
+	if (!SnapToGround)
+		return;
+		
+	// If we didn't hit anything or we hit a non primitive, do a line trace down to find the ground
+	if (!hitResult.GetComponent())
 	{
-		FHitResult hitResult;
 		FVector start = GetActorLocation();
 		FVector end = start - FVector(0, 0, 1000);
 		FCollisionQueryParams params;
 		params.AddIgnoredActor(this);
-		if (GetWorld()->LineTraceSingleByChannel(hitResult, start, end, ECC_Visibility, params))
-		{
-			auto location = hitResult.Location;
-			// add height so ground effects don't clip into the ground
-			location.Z += 1.f;
-			SetActorLocation(location);
-		}
+		GetWorld()->LineTraceSingleByChannel(hitResult, start, end, ECC_Visibility, params);
+	}
+	// If we did hit something, use that hit result to snap the actor to the "ground", this can be any surface 
+	if (hitResult.GetComponent())
+	{
+		auto location = hitResult.Location;
+		// add height so ground effects don't clip into the ground
+		location.Z += 1.f;
+		SetActorLocation(location);
+
+		// account for uneven surfaces, walls, ceilings
+		auto rot = hitResult.ImpactNormal.Rotation();
+		auto baseNormalRot = FVector::UpVector.Rotation();
+		auto adjustRot = rot - baseNormalRot;
+
+		// preserve yaw if we are on the floor or ceiling
+		if (hitResult.ImpactNormal == FVector::UpVector || hitResult.ImpactNormal == FVector::DownVector)
+			adjustRot.Yaw = GetActorRotation().Yaw;
+
+		SetActorRotation(adjustRot);
 	}
 }
 

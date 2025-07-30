@@ -27,7 +27,8 @@ public:
 	virtual void InitCollisionObject();
 	virtual void InitCollisionType();
 
-	void SnapActorToGround();
+	/** Snaps actor to ground if SnapToGround is true **/
+	void SnapActorToGround(FHitResult hitResult);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hit Effect")
 	bool SnapToGround = true;

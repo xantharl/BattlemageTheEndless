@@ -1047,7 +1047,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 			{
 				// spawn the actor way below the world and then reposition it (we need the instance to calculate dimensions)
 				auto ghostActor = GetWorld()->SpawnActor<AHitEffectActor>(hitEffectActor, defaultLocation, movement->GetLastUpdateRotation());
-				ghostActor->SetActorLocation(CalculatePlacementPosition(ability, ghostActor));
+				PositionGhostActor(ability, ghostActor);
 				if (ghostActor && IsValid(ghostActor))
 				{
 					ghostActor->SetOwner(this);
@@ -1077,8 +1077,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 			{
 				if (ghostActor && IsValid(ghostActor))
 				{
-					ghostActor->SetActorLocation(CalculatePlacementPosition(ability, ghostActor));
-					ghostActor->SetActorRotation(movement->GetLastUpdateRotation());
+					PositionGhostActor(ability, ghostActor);
 				}
 			}
 			break;
@@ -1125,25 +1124,31 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 	}
 }
 
-FVector ABattlemageTheEndlessCharacter::CalculatePlacementPosition(UAttackBaseGameplayAbility* ability, AActor* hitEffectActor)
+void ABattlemageTheEndlessCharacter::PositionGhostActor(UAttackBaseGameplayAbility* ability, AHitEffectActor* hitEffectActor)
 {
 	// perform a ray cast up to max spell range to find a valid spawn location
 	UCameraComponent* activeCamera = FirstPersonCamera->IsActive() ? FirstPersonCamera : ThirdPersonCamera;
 	auto ignoreActors = TArray<AActor*>();
 	ignoreActors.Add(hitEffectActor);
+
+	// TODO: This trace needs to ignore characters so we don't place a wall spell on top of a character
+
 	auto CastHit = Traces::LineTraceFromCharacter(this, GetMesh(), FName("cameraSocket"), activeCamera->GetComponentRotation(), ability->MaxRange, ignoreActors);
 	auto hitComponent = CastHit.GetComponent();
 	FVector spawnLocation = hitComponent ? CastHit.Location : CastHit.TraceEnd;
 
 	// move the spawn location up by half the height of the hit effect actor if we are placing on the ground
-	if (hitComponent && hitComponent->IsA<UPrimitiveComponent>())
-	{
-		// we need to consider all components since we have collision disabled at this point
-		//	this can be a performance issue if actors get too complex
-		auto bounding = hitEffectActor->GetComponentsBoundingBox(true);
-		spawnLocation.Z += (bounding.Max.Z - bounding.Min.Z) / 2.f;
-	}
-	return spawnLocation;
+	//if (hitComponent && hitComponent->IsA<UPrimitiveComponent>())
+	//{
+	//	// we need to consider all components since we have collision disabled at this point
+	//	//	this can be a performance issue if actors get too complex
+	//	auto bounding = hitEffectActor->GetComponentsBoundingBox(true);
+	//	spawnLocation.Z += (bounding.Max.Z - bounding.Min.Z) / 2.f;
+	//}
+
+	hitEffectActor->SetActorLocation(spawnLocation);
+	hitEffectActor->SetActorRotation(GetCharacterMovement()->GetLastUpdateRotation());
+	hitEffectActor->SnapActorToGround(CastHit);
 }
 
 void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)

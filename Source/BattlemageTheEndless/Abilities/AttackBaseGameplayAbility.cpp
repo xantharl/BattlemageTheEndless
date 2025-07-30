@@ -414,7 +414,7 @@ void UAttackBaseGameplayAbility::SpawnHitEffectActors(FHitResult HitResult)
 		// leave yaw alone, he's the fun one
 
 		auto newActor = world->SpawnActor<AHitEffectActor>(effect, HitResult.ImpactPoint, rotation, ActorSpawnParams);
-		newActor->SnapActorToGround(); // method checks if snap needs to happen
+		newActor->SnapActorToGround(FHitResult()); // TODO: Figure out if all hit effects should be able to be on any surface
 		newActor->ActivateEffect(effect->GetDefaultObject<AHitEffectActor>()->VisualEffectSystem);
 		newActor->SpawningAbility = this;
 		newActor->Instigator = CurrentActorInfo->OwnerActor.Get();
@@ -440,7 +440,7 @@ void UAttackBaseGameplayAbility::SpawnHitEffectActorsAtLocation(FVector Location
 		// leave yaw alone, he's the fun one
 
 		auto newActor = world->SpawnActor<AHitEffectActor>(effect, Location, CasterRotation, ActorSpawnParams);
-		newActor->SnapActorToGround(); // method checks if snap needs to happen
+		newActor->SnapActorToGround(FHitResult()); 
 		newActor->ActivateEffect(effect->GetDefaultObject<AHitEffectActor>()->VisualEffectSystem);
 		newActor->SpawningAbility = this;
 		newActor->Instigator = CurrentActorInfo->OwnerActor.Get();
