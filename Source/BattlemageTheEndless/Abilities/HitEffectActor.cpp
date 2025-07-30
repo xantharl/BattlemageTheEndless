@@ -60,9 +60,7 @@ void AHitEffectActor::SnapActorToGround(FHitResult hitResult)
 		SetActorLocation(location);
 
 		// account for uneven surfaces, walls, ceilings
-		auto rot = hitResult.ImpactNormal.Rotation();
-		auto baseNormalRot = FVector::UpVector.Rotation();
-		auto adjustRot = rot - baseNormalRot;
+		auto adjustRot = hitResult.ImpactNormal.Rotation() - FVector::UpVector.Rotation();
 
 		// preserve yaw if we are on the floor or ceiling
 		if (hitResult.ImpactNormal == FVector::UpVector || hitResult.ImpactNormal == FVector::DownVector)

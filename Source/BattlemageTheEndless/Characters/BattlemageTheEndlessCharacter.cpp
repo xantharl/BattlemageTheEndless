@@ -1103,6 +1103,10 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 				// re-enable collision
 				ghostActor->SetActorEnableCollision(true);
 
+				// account for time spent placing the spell if it has a lifespan
+				if (ghostActor->InitialLifeSpan > 0.f)
+					ghostActor->SetLifeSpan(ghostActor->InitialLifeSpan + ghostActor->GetLifeSpan());
+
 				for (UActorComponent* component : ghostActor->GetComponents())
 				{
 					auto meshComponent = Cast<UStaticMeshComponent>(component);
