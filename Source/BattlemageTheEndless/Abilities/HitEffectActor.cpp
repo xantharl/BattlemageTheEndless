@@ -70,6 +70,28 @@ void AHitEffectActor::SnapActorToGround(FHitResult hitResult)
 	}
 }
 
+void AHitEffectActor::BeginPlay()
+{
+	Super::BeginPlay();
+	if (!AreaOfEffect)
+		return;
+
+	// Check for any collision children of AreaOfEffect and register their overlap events
+	TArray<USceneComponent*> children;
+	AreaOfEffect->GetChildrenComponents(true, children);
+	for (USceneComponent* child : children)
+	{
+		auto childPrimitive = Cast<UShapeComponent>(child);
+		if (childPrimitive)
+		{
+			childPrimitive->SetCollisionProfileName(TEXT("OverlapAll"));
+			childPrimitive->SetGenerateOverlapEvents(true);
+			childPrimitive->OnComponentBeginOverlap.AddDynamic(this, &AHitEffectActor::OnAreaOfEffectBeginOverlap);
+			childPrimitive->OnComponentEndOverlap.AddDynamic(this, &AHitEffectActor::OnAreaOfEffectEndOverlap);
+		}
+	}
+}
+
 void AHitEffectActor::ActivateEffect(TObjectPtr<UNiagaraSystem> system)
 {
 	_visualEffectInstance = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), system,
@@ -169,6 +191,14 @@ void AHitEffectActor::ApplyEffects(AActor* actor)
 
 void AHitEffectActor::OnAreaOfEffectBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	// if OtherActor does not have an AbilitySystemComponent, do nothing
+	if (!OtherActor || OtherActor == this || !OtherActor->FindComponentByClass<UAbilitySystemComponent>())
+		return;
+
+	// if OtherComp is not the root component, do nothing
+	if (OtherComp && OtherComp != OtherActor->GetRootComponent())
+		return;
+
 	// if we aren't re-applying, apply the effects now and be done
 	if (EffectApplicationInterval <= 0.0001f)
 	{

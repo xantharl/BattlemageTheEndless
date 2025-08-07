@@ -30,6 +30,8 @@ public:
 	/** Snaps actor to ground if SnapToGround is true **/
 	void SnapActorToGround(FHitResult hitResult);
 
+	virtual void BeginPlay();
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Hit Effect")
 	bool SnapToGround = true;
 
