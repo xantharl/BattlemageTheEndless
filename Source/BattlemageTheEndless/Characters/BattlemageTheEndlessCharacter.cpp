@@ -1110,14 +1110,23 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 				for (UActorComponent* component : ghostActor->GetComponents())
 				{
 					auto meshComponent = Cast<UStaticMeshComponent>(component);
-					if (!meshComponent)
+					if (meshComponent)
+					{
+						// This design assumes the standard material is the parent of the ghost material
+						if (ghostActor->PlacementGhostMaterial && ghostActor->PlacementGhostMaterial->Parent)
+							meshComponent->SetMaterial(0, ghostActor->PlacementGhostMaterial->Parent);
 						continue;
+					}
 
-					// This design assumes the standard material is the parent of the ghost material
-					if (ghostActor->PlacementGhostMaterial && ghostActor->PlacementGhostMaterial->Parent)
-						meshComponent->SetMaterial(0, ghostActor->PlacementGhostMaterial->Parent);
+					auto niagaraComponent = Cast<UNiagaraComponent>(component);
+					if (niagaraComponent)
+					{
+						niagaraComponent->ActivateSystem();
+						continue;
+					}
 				}
 			}
+
 			// stop tracking placement ghosts after making them real
 			ability->ClearPlacementGhosts();
 
@@ -1135,7 +1144,7 @@ void ABattlemageTheEndlessCharacter::PositionGhostActor(UAttackBaseGameplayAbili
 	auto ignoreActors = TArray<AActor*>();
 	ignoreActors.Add(hitEffectActor);
 
-	// TODO: This trace needs to ignore characters so we don't place a wall spell on top of a character
+	// TODO: This trace needs to handle direct hits on characters so we don't place a wall spell on top of a character
 
 	auto CastHit = Traces::LineTraceFromCharacter(this, GetMesh(), FName("cameraSocket"), activeCamera->GetComponentRotation(), ability->MaxRange, ignoreActors);
 	auto hitComponent = CastHit.GetComponent();
