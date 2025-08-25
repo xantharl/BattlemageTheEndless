@@ -1047,11 +1047,11 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 			{
 				// spawn the actor way below the world and then reposition it (we need the instance to calculate dimensions)
 				auto ghostActor = GetWorld()->SpawnActor<AHitEffectActor>(hitEffectActor, defaultLocation, movement->GetLastUpdateRotation());
-				PositionGhostActor(ability, ghostActor);
 				if (ghostActor && IsValid(ghostActor))
 				{
 					ghostActor->SetOwner(this);
-					ghostActor->SetActorEnableCollision(false);					
+					ghostActor->SetActorEnableCollision(false);
+					PositionGhostActor(ability, ghostActor);
 
 					// for each Static Mesh Component on this actor, check if there is an instance of the material with Translucent blend mode
 					for(UActorComponent* component : ghostActor->GetComponents())

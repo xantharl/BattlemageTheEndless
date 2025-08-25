@@ -182,9 +182,9 @@ void AHitEffectActor::ApplyEffects(AActor* actor)
 		auto handle = abilitySystemComponent->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
 		if (GEngine)
 		{
+			int stacks = abilitySystemComponent->GetCurrentStackCount(handle);
 			GEngine->AddOnScreenDebugMessage(-1, 2.5f, FColor::Green, 
-				FString::Printf(TEXT("Applied effect %s (Stacks: %i)"), *effect->GetName(), 
-					abilitySystemComponent->GetCurrentStackCount(handle)));
+				FString::Printf(TEXT("Applied effect %s (Stacks: %i)"), *effect->GetName(), stacks));
 		}
 	}
 }
@@ -195,6 +195,7 @@ void AHitEffectActor::OnAreaOfEffectBeginOverlap(UPrimitiveComponent* Overlapped
 	if (!OtherActor || OtherActor == this || !OtherActor->FindComponentByClass<UAbilitySystemComponent>())
 		return;
 
+	// TODO: Figure out why this check didn't stop the health bar from going further
 	// if OtherComp is not the root component, do nothing
 	if (OtherComp && OtherComp != OtherActor->GetRootComponent())
 		return;
