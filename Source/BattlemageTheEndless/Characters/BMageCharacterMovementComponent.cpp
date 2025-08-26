@@ -83,6 +83,9 @@ void UBMageCharacterMovementComponent::TickComponent(float DeltaTime, enum ELeve
 
 bool UBMageCharacterMovementComponent::TryStartAbility(MovementAbilityType abilityType)
 {
+	if (!MovementAbilities.Contains(abilityType))
+		return false;
+
 	UMovementAbility* ability = MovementAbilities[abilityType];
 	if (!ability->IsEnabled || ability->IsActive || !ShouldAbilityBegin(abilityType))
 		return false;
@@ -112,7 +115,7 @@ bool UBMageCharacterMovementComponent::TryStartAbility(MovementAbilityType abili
 bool UBMageCharacterMovementComponent::ShouldAbilityBegin(MovementAbilityType abilityType)
 {
 	// we check what we can at the ability level
-	if (!MovementAbilities[abilityType]->ShouldBegin())
+	if (!MovementAbilities.Contains(abilityType) || !MovementAbilities[abilityType]->ShouldBegin())
 		return false;
 
 	// handle ability interactions at this level
@@ -124,7 +127,7 @@ bool UBMageCharacterMovementComponent::ShouldAbilityBegin(MovementAbilityType ab
 
 bool UBMageCharacterMovementComponent::TryEndAbility(MovementAbilityType abilityType)
 {
-	if (!IsAbilityActive(abilityType) || !MovementAbilities[abilityType]->ShouldEnd())
+	if (!MovementAbilities.Contains(abilityType) || !IsAbilityActive(abilityType) || !MovementAbilities[abilityType]->ShouldEnd())
 		return false;
 
 	// handle abiltiy interactions

@@ -110,7 +110,7 @@ public:
 	/// </summary>
 	/// <param name="abilityType"></param>
 	/// <returns></returns>
-	bool IsAbilityActive(MovementAbilityType abilityType) { return MovementAbilities[abilityType]->IsActive; }
+	bool IsAbilityActive(MovementAbilityType abilityType) { return MovementAbilities.Contains(abilityType) && MovementAbilities[abilityType]->IsActive; }
 
 	UPROPERTY(BlueprintReadOnly, Category = CharacterMovement)
 	UMovementAbility* MostImportantActiveAbility;

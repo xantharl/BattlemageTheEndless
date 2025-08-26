@@ -440,12 +440,6 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 	if (movement->ShouldUnCrouch && !movement->IsAbilityActive(MovementAbilityType::Slide))
 		DoUnCrouch(movement);
 
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(Controller->InputComponent))
-	{
-		// update the last control input vector
-		UE_LOG(LogTemplateCharacter, Log, TEXT("'%s' Updating Last Control Input Vector"), *GetNameSafe(this));
-	}
-
 	// call super to apply movement before we evaluate a change in z velocity
 	AActor::TickActor(DeltaTime, TickType, ThisTickFunction);
 }
