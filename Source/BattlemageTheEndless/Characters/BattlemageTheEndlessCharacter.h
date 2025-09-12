@@ -90,6 +90,7 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
+public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
 	TArray<TSubclassOf<class UGameplayAbility>> DefaultAbilities;
 
@@ -395,5 +396,8 @@ protected:
 	const int TickRate = 60;
 
 	virtual void OnRemoveGameplayEffectCallback(const FActiveGameplayEffect& EffectRemoved);
+
+	// Debug time to avoid spamming print messages
+	float _secondsSinceLastPrint = 0;
 };
 

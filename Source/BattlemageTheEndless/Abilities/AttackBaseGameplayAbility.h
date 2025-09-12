@@ -57,6 +57,12 @@ class BATTLEMAGETHEENDLESS_API UAttackBaseGameplayAbility : public UGameplayAbil
 public:
 	const float DEFAULT_MAX_DISTANCE = 10000.f;
 
+	// Note the CanEditChange() function is only available when compiling with the editor.
+	// Make sure to wrap it with the WITH_EDITOR define or your builds fail!
+#if WITH_EDITOR
+	virtual bool CanEditChange(const FProperty* InProperty) const override;
+#endif
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ExitBehavior)
 	float MaxLifetime = 10.f;
 	FTimerHandle TimeoutTimerHandle;
@@ -141,9 +147,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	UAnimMontage* ComboPauseAnimation;
 
-	/** GameplayEffects to apply, target depends on HitType **/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true"))
+	/** GameplayEffects to apply, target depends on HitType, for placed abilities put effects on the HitEffectActor instead **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true", EditConditionHides))
 	TArray<TSubclassOf<UGameplayEffect>> EffectsToApply;
+
 
 	FGameplayTag GetAbilityName();
 	bool HasComboTag();

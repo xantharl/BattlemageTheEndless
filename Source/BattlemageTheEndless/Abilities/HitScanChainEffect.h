@@ -23,7 +23,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
 	TObjectPtr<UNiagaraSystem> HitScanChainEffect;
 
-	void Init(TObjectPtr<AActor> originatingActor, TObjectPtr<AActor> targetActor, TObjectPtr<UNiagaraSystem> hitScanChainEffect);
+	void Init(TObjectPtr<AActor> originatingActor, TObjectPtr<AActor> targetActor, TObjectPtr<UNiagaraSystem> hitScanChainEffect, FVector beamEnd = FVector::ZeroVector);
 
 protected:
 	// Called when the game starts or when spawned
@@ -40,6 +40,9 @@ protected:
 
 	/** Actor to anchor to on end of chain **/
 	TObjectPtr<AActor> TargetActor;
+
+	/** Override for Actor Location based beam end **/
+	FVector BeamEnd;
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

@@ -25,7 +25,6 @@ FHitResult Traces::LineTraceFromCharacter(ACharacter* character, USkeletalMeshCo
 	// Cast a ray out in look direction magnitude units long
 
 	FVector castVector = rotation.Vector() * magnitude;
-	//(FVector::XAxisVector * magnitude).RotateAngleAxis(rotation.Yaw, FVector::ZAxisVector).RotateAngleAxis(rotation.Pitch, FVector::XAxisVector);
 	FVector end = start + castVector;
 
 	// Perform the raycast

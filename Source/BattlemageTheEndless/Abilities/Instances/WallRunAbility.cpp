@@ -32,6 +32,9 @@ void UWallRunAbility::Init(UCharacterMovementComponent* movement, ACharacter* ch
 
 bool UWallRunAbility::ShouldBegin()
 {
+	if (!WallRunCapsule)
+		return false;
+
 	// check if there are any eligible wallrun objects
 	TArray<AActor*> overlappingActors;
 	WallRunCapsule->GetOverlappingActors(overlappingActors, nullptr);

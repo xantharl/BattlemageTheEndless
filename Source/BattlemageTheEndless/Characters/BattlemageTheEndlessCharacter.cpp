@@ -1011,8 +1011,14 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 		return;
 	}
 
-	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("ProcessSpellInput_Placed: Ability %s"),
-		*(ability->GetAbilityName().ToString())));
+	_secondsSinceLastPrint += GetWorld()->GetTime().GetDeltaWorldTimeSeconds();
+	if (_secondsSinceLastPrint > 0.33f)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("ProcessSpellInput_Placed: Ability %s"),
+			*(ability->GetAbilityName().ToString())));
+
+		_secondsSinceLastPrint = 0;
+	}
 
 	// check if this ability has a combo and we are past the first part
 	if (ComboManager->Combos.Contains(PickupActor) && ComboManager->Combos[PickupActor].ActiveCombo)
@@ -1041,6 +1047,8 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 			{
 				// spawn the actor way below the world and then reposition it (we need the instance to calculate dimensions)
 				auto ghostActor = GetWorld()->SpawnActor<AHitEffectActor>(hitEffectActor, defaultLocation, movement->GetLastUpdateRotation());
+				// required for calculations of positional differences between instigator and target
+				ghostActor->Instigator = this;
 				if (ghostActor && IsValid(ghostActor))
 				{
 					ghostActor->SetOwner(this);
@@ -1099,7 +1107,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 
 				// account for time spent placing the spell if it has a lifespan
 				if (ghostActor->InitialLifeSpan > 0.f)
-					ghostActor->SetLifeSpan(ghostActor->InitialLifeSpan + ghostActor->GetLifeSpan());
+					ghostActor->SetLifeSpan(ghostActor->InitialLifeSpan);
 
 				for (UActorComponent* component : ghostActor->GetComponents())
 				{
@@ -1138,11 +1146,20 @@ void ABattlemageTheEndlessCharacter::PositionGhostActor(UAttackBaseGameplayAbili
 	auto ignoreActors = TArray<AActor*>();
 	ignoreActors.Add(hitEffectActor);
 
-	// TODO: This trace needs to handle direct hits on characters so we don't place a wall spell on top of a character
-
 	auto CastHit = Traces::LineTraceFromCharacter(this, GetMesh(), FName("cameraSocket"), activeCamera->GetComponentRotation(), ability->MaxRange, ignoreActors);
 	auto hitComponent = CastHit.GetComponent();
-	FVector spawnLocation = hitComponent ? CastHit.Location : CastHit.TraceEnd;
+	FVector spawnLocation;
+
+	// if we hit a character, place the effect just shy of them and SnapActorToGround will handle the rest
+	auto isDirectHit = CastHit.GetActor() && CastHit.GetActor()->IsA<ACharacter>();
+	if (isDirectHit)
+	{
+		auto castNormal = CastHit.Location - GetMesh()->GetSocketLocation(FName("cameraSocket"));
+		castNormal.Normalize();
+		spawnLocation = CastHit.Location - castNormal * 30.f;
+	}
+	else
+		spawnLocation = hitComponent ? CastHit.Location : CastHit.TraceEnd;
 
 	// move the spawn location up by half the height of the hit effect actor if we are placing on the ground
 	//if (hitComponent && hitComponent->IsA<UPrimitiveComponent>())
@@ -1155,7 +1172,7 @@ void ABattlemageTheEndlessCharacter::PositionGhostActor(UAttackBaseGameplayAbili
 
 	hitEffectActor->SetActorLocation(spawnLocation);
 	hitEffectActor->SetActorRotation(GetCharacterMovement()->GetLastUpdateRotation());
-	hitEffectActor->SnapActorToGround(CastHit);
+	hitEffectActor->SnapActorToGround(isDirectHit ? FHitResult() : CastHit);
 }
 
 void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)
@@ -1276,12 +1293,21 @@ void ABattlemageTheEndlessCharacter::HandleHitScan(UAttackBaseGameplayAbility* a
 	auto params = FCollisionQueryParams(FName(TEXT("LineTrace")), true, this);
 	FHitResult hit = Traces::LineTraceGeneric(GetWorld(), params, startLocation, endLocation);
 
-	// Nothing to do if we don't have a hit
-	ABattlemageTheEndlessCharacter* hitCharacter = Cast<ABattlemageTheEndlessCharacter>(hit.GetActor());
-	if (!hitCharacter)
+	auto hitActor = hit.GetActor();
+	if (!hitActor)
 		return;
 
-	// If we've hit a character, handle it
+	ABattlemageTheEndlessCharacter* hitCharacter = Cast<ABattlemageTheEndlessCharacter>(hit.GetActor());
+	// if we hit something other than a character and this is a chain attack, render the hit at that location
+	if (hitActor && !hitCharacter && ability->ChainSystem)
+	{
+		// We don't need to keep the reference, UE will handle disposing when it is destroyed
+		auto chainEffectActor = GetWorld()->SpawnActor<AHitScanChainEffect>(AHitScanChainEffect::StaticClass(), GetActorLocation(), FRotator::ZeroRotator);
+		chainEffectActor->Init(this, hitActor, ability->ChainSystem, hit.Location);
+		return;
+	}
+
+	// if we hit a character apply effects to them (and chain if needed)
 	TArray<ABattlemageTheEndlessCharacter*> hitCharacters = { hitCharacter };
 	if (ability->NumberOfChains > 0)
 	{

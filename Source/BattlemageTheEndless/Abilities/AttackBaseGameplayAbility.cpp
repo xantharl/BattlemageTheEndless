@@ -2,6 +2,26 @@
 
 #include "AttackBaseGameplayAbility.h"
 
+#if WITH_EDITOR
+bool UAttackBaseGameplayAbility::CanEditChange(const FProperty* InProperty) const
+{
+	// If other logic prevents editing, we want to respect that
+	const bool ParentVal = Super::CanEditChange(InProperty);
+
+	if (InProperty->GetFName() == GET_MEMBER_NAME_CHECKED(UAttackBaseGameplayAbility, EffectsToApply))
+	{
+		return ParentVal && HitType != HitType::Placed;
+	}
+
+	if (InProperty->GetFName() == GET_MEMBER_NAME_CHECKED(UAttackBaseGameplayAbility, ProjectileConfiguration))
+	{
+		return ParentVal && HitType != HitType::Placed;
+	}
+
+	return ParentVal;
+}
+#endif
+
 FGameplayTag UAttackBaseGameplayAbility::GetAbilityName()
 {
 	FGameplayTagContainer baseComboIdentifierTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Weapons")));

@@ -152,7 +152,6 @@ void AHitEffectActor::ApplyEffects(AActor* actor)
 		}
 
 		FGameplayEffectSpecHandle specHandle = abilitySystemComponent->MakeOutgoingSpec(effect, 1.f, context);
-
 		// check if the effect in question is already applied to the target
 		//TArray<FGameplayEffectSpec> OutSpecCopies;
 		//abilitySystemComponent->GetAllActiveGameplayEffectSpecs(OutSpecCopies);
@@ -191,6 +190,11 @@ void AHitEffectActor::ApplyEffects(AActor* actor)
 
 void AHitEffectActor::OnAreaOfEffectBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	// TODO: We might want some spells to be able to hit the owner, but for now we're disabling that
+	// technically, "Self" spells hit the owner, but we won't have hit effect actors on those
+	if (Instigator && OtherActor == Instigator)
+		return;
+
 	// if OtherActor does not have an AbilitySystemComponent, do nothing
 	if (!OtherActor || OtherActor == this || !OtherActor->FindComponentByClass<UAbilitySystemComponent>())
 		return;

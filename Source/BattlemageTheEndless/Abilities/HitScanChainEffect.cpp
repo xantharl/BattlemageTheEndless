@@ -10,11 +10,12 @@ AHitScanChainEffect::AHitScanChainEffect()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
-void AHitScanChainEffect::Init(TObjectPtr<AActor> originatingActor, TObjectPtr<AActor> targetActor, TObjectPtr<UNiagaraSystem> hitScanChainEffect)
+void AHitScanChainEffect::Init(TObjectPtr<AActor> originatingActor, TObjectPtr<AActor> targetActor, TObjectPtr<UNiagaraSystem> hitScanChainEffect, FVector beamEnd)
 {
 	HitScanChainEffect = hitScanChainEffect;
 	OriginatingActor = originatingActor;
 	TargetActor = targetActor;
+	BeamEnd = beamEnd;
 
 	// Spawn the system and subscribe
 	HitScanChainEffectInstance = UNiagaraFunctionLibrary::SpawnSystemAtLocation(OriginatingActor, HitScanChainEffect, OriginatingActor->GetActorLocation());
@@ -40,7 +41,7 @@ void AHitScanChainEffect::OnSystemFinished(UNiagaraComponent* finishedComponent)
 void AHitScanChainEffect::Tick(float DeltaTime)
 {
 	HitScanChainEffectInstance->SetWorldLocation(OriginatingActor->GetActorLocation());
-	HitScanChainEffectInstance->SetVariablePosition(FName("BeamEnd"), TargetActor->GetActorLocation());
+	HitScanChainEffectInstance->SetVariablePosition(FName("BeamEnd"), BeamEnd != FVector::ZeroVector ? BeamEnd : TargetActor->GetActorLocation());
 	Super::Tick(DeltaTime);
 }
 
