@@ -1,7 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "BattlemageTheEndlessCharacter.h"
-#include "../Pickups/BattlemageTheEndlessProjectile.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -14,7 +13,6 @@
 #include <GameFramework/FloatingPawnMovement.h>
 #include <format>
 #include <Kismet/GameplayStatics.h>
-#include <BattlemageTheEndless/Abilities/AttackBaseGameplayAbility.h>
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 //////////////////////////////////////////////////////////////////////////

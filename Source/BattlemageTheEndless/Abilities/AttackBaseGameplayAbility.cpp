@@ -210,29 +210,21 @@ void UAttackBaseGameplayAbility::ApplyEffects(AActor* target, UAbilitySystemComp
 		}
 
 		FGameplayEffectSpecHandle specHandle = targetAsc->MakeOutgoingSpec(effect, 1.f, context);
-		if (specHandle.IsValid())
+		if (!specHandle.IsValid())
+			continue;
+
+		// This sets the damage manually for a Set By Caller type effect
+		ABattlemageTheEndlessProjectile* projectile = Cast<ABattlemageTheEndlessProjectile>(effectCauser);
+		if (projectile && FMath::Abs(projectile->EffectiveDamage) > 0.0001f)
 		{
-			// This sets the damage manually for a Set By Caller type effect
-			ABattlemageTheEndlessProjectile* projectile = Cast<ABattlemageTheEndlessProjectile>(effectCauser);
-			if (projectile && FMath::Abs(projectile->EffectiveDamage) > 0.0001f)
-			{
-				specHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Spells.Charge.Damage")), projectile->EffectiveDamage);
-				if (GEngine)
-					GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, 
-						FString::Printf(TEXT("%s hit for %f"), *effect->GetName(), projectile->EffectiveDamage));
-			}
-
-			auto handle = targetAsc->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
-			ActiveEffectHandles.Add(handle);
-
-			// TODO: See if we still need this
-			//else if (durationPolicy == EGameplayEffectDurationType::Instant)
-			//{
-			//	// if the effect is instant, remove it immediately
-			//	targetAsc->RemoveActiveGameplayEffect(handle);
-			//	ActiveEffectHandles.Remove(handle);
-			//}
+			specHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Spells.Charge.Damage")), projectile->EffectiveDamage);
+			if (GEngine)
+				GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, 
+					FString::Printf(TEXT("%s hit for %f"), *effect->GetName(), projectile->EffectiveDamage));
 		}
+
+		auto handle = targetAsc->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
+		ActiveEffectHandles.Add(handle);
 	}
 }
 

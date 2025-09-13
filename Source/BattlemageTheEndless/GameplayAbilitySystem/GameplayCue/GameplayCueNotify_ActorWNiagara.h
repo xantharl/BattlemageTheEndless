@@ -13,7 +13,6 @@
 UENUM()
 enum class EAttachType : uint8
 {
-	None UMETA(DisplayName = "None"),
 	Character UMETA(DisplayName = "Character"),
 	PrimaryWeapon UMETA(DisplayName = "PrimaryWeapon"),
 	SecondaryWeapon UMETA(DisplayName = "SecondaryWeapon")
@@ -34,7 +33,7 @@ struct FAttackEffectData
 	/// Determines which object to attach to, if any
 	/// </summary>
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true"))
-	EAttachType AttachType = EAttachType::None;
+	EAttachType AttachType = EAttachType::PrimaryWeapon;
 
 	/// <summary>
 	/// Specifies the attachment point for the effect, ignored if attach type is none
@@ -70,16 +69,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Niagara, meta = (AllowPrivate))
 	UNiagaraComponent* ParticleSystem;
 
-	// CURRENTLY UNUSED, Particle System handles config and spawning 
-	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Niagara, meta = (AllowPrivate))
-	//TObjectPtr<UNiagaraComponent> NiagaraInstance;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivate))
 	FAttackEffectData AttackEffect;
 
 	virtual void HandleGameplayCue(AActor* MyTarget, EGameplayCueEvent::Type EventType, const FGameplayCueParameters& Parameters) override;
 
 	void TryDestroyNiagaraInstance();
+
+	void TryCreateNiagaraInstance(AActor* MyTarget);
 
 	FTimerHandle DestroyTimer;
 	

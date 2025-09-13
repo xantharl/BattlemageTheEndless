@@ -28,6 +28,8 @@
 #include "../Pickups/PickupActor.h"
 #include "../BMageJumpAbility.h"
 #include <BattlemageTheEndless/Abilities/Combos/AbilityComboManager.h>
+#include <BattlemageTheEndless/Abilities/AttackBaseGameplayAbility.h>
+#include "../Pickups/BattlemageTheEndlessProjectile.h"
 #include <BattlemageTheEndless/Abilities/BaseAttributeSet.h>
 #include "../Widgets/HealthBarWidget.h"
 #include "Components/WidgetComponent.h"
