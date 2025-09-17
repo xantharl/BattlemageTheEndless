@@ -393,7 +393,7 @@ protected:
 	void OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
 	FTimerHandle ChargeSpellTimerHandle;
-	void ChargeSpell(TObjectPtr<UAttackBaseGameplayAbility> ability);
+	void ChargeSpell(UAttackBaseGameplayAbility* ability);
 
 	const int TickRate = 60;
 

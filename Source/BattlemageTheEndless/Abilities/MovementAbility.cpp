@@ -12,7 +12,7 @@ void UMovementAbility::onEndTransitionOut()
 {
 }
 
-UMovementAbility::UMovementAbility(const FObjectInitializer& X) : UObject(X)
+UMovementAbility::UMovementAbility(const FObjectInitializer& X) : UGameplayAbility(X)
 {
 }
 

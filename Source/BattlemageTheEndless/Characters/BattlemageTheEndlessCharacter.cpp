@@ -965,8 +965,11 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged(APickupActor* Pic
 		return;
 	}
 
-	auto activeInstances = Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability)->GetAbilityActiveInstances(selectedAbilitySpec);
-	TObjectPtr<UAttackBaseGameplayAbility> activeInstance = activeInstances.Num() > 0 ? activeInstances[0] : nullptr;
+	auto activeInstances = Cast<UGA_WithEffectsBase>(selectedAbilitySpec->Ability)->GetAbilityActiveInstances(selectedAbilitySpec);
+	TObjectPtr<UGA_WithEffectsBase> activeInstance = activeInstances.Num() > 0 ? activeInstances[0] : nullptr;
+	auto attackAbility = Cast<UAttackBaseGameplayAbility>(activeInstance);
+	if (!attackAbility)
+		return;
 
 	switch (triggerEvent)
 	{
@@ -976,7 +979,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged(APickupActor* Pic
 		if (!success && GEngine)
 			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Red, FString::Printf(TEXT("Ability %s failed to activate"), *selectedAbilitySpec->Ability->GetName()));
 
-		FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &ABattlemageTheEndlessCharacter::ChargeSpell, activeInstance);
+		FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &ABattlemageTheEndlessCharacter::ChargeSpell, attackAbility);
 		GetWorld()->GetTimerManager().SetTimer(ChargeSpellTimerHandle, TimerDelegate, 1.0f / (float)TickRate, true);
 
 		if (GEngine)
@@ -987,9 +990,9 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged(APickupActor* Pic
 	{
 		// if charge spell and completed event, clear the charge timer
 		GetWorld()->GetTimerManager().ClearTimer(ChargeSpellTimerHandle);
-		PostAbilityActivation(activeInstance);
+		PostAbilityActivation(attackAbility);
 		// This is a hack to call EndAbility without needing to spoof up all the params
-		activeInstance->OnMontageCompleted();
+		attackAbility->OnMontageCompleted();
 		break;
 	}
 	// We don't need to do anything for ongoing since we've got the repeating timer handling it on a set interval
@@ -1187,7 +1190,8 @@ void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickup
 	if (instances.Num() == 0)
 		return;
 
-	PostAbilityActivation(instances[0]);
+	if (auto attackAbility = Cast<UAttackBaseGameplayAbility>(instances[0]))
+		PostAbilityActivation(attackAbility);
 }
 
 void ABattlemageTheEndlessCharacter::PostAbilityActivation(UAttackBaseGameplayAbility* ability)
@@ -1447,7 +1451,7 @@ void ABattlemageTheEndlessCharacter::OnProjectileHit(UPrimitiveComponent* HitCom
 		projectile->Destroy();
 }
 
-void ABattlemageTheEndlessCharacter::ChargeSpell(TObjectPtr<UAttackBaseGameplayAbility> ability)
+void ABattlemageTheEndlessCharacter::ChargeSpell(UAttackBaseGameplayAbility* ability)
 {
 	bool isChargedBefore = ability->IsCharged();
 	ability->HandleChargeProgress();

@@ -27,3 +27,8 @@ void UBaseAttributeSet::OnRep_HealthRegenRate(const FGameplayAttributeData& OldH
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, HealthRegenRate, OldHealthRegenRate);
 }
+
+void UBaseAttributeSet::OnRep_MovementSpeed(const FGameplayAttributeData& OldMovementSpeed)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, MovementSpeed, OldMovementSpeed);
+}

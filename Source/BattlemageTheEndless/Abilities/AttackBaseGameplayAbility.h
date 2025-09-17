@@ -10,6 +10,7 @@
 #include "Engine/EngineTypes.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
+#include "GA_WithEffectsBase.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEffectRemoved.h"
 #include "GameFramework/Character.h"
@@ -50,7 +51,7 @@ enum class HitType : uint8
  * 
  */
 UCLASS()
-class BATTLEMAGETHEENDLESS_API UAttackBaseGameplayAbility : public UGameplayAbility
+class BATTLEMAGETHEENDLESS_API UAttackBaseGameplayAbility : public UGA_WithEffectsBase
 {
 	GENERATED_BODY()
 
@@ -62,16 +63,10 @@ public:
 #if WITH_EDITOR
 	virtual bool CanEditChange(const FProperty* InProperty) const override;
 #endif
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ExitBehavior)
-	float MaxLifetime = 10.f;
 	FTimerHandle TimeoutTimerHandle;
 
-	UAttackBaseGameplayAbility()
-	{
-		InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
-		NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
-	}
+	UAttackBaseGameplayAbility();
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HitBehavior)
 	HitType HitType = HitType::None;
 
@@ -147,12 +142,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	UAnimMontage* ComboPauseAnimation;
 
-	/** GameplayEffects to apply, target depends on HitType, for placed abilities put effects on the HitEffectActor instead **/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true", EditConditionHides))
-	TArray<TSubclassOf<UGameplayEffect>> EffectsToApply;
-
-
-	FGameplayTag GetAbilityName();
 	bool HasComboTag();
 
 	bool IsFirstInCombo();
@@ -189,27 +178,14 @@ public:
 	void ApplyEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator = nullptr, AActor* effectCauser = nullptr);
 
 	/// <summary>
-	/// Override of the CancelAbility method to clear effects (even if they still have duration) and reset the Combo Continuation timer
+	/// Handles any SetByCaller values needed for the effect being applied
 	/// </summary>
-	/// <param name="Handle"></param>
-	/// <param name="ActorInfo"></param>
-	/// <param name="ActivationInfo"></param>
-	/// <param name="bReplicateCancelAbility"></param>
-	virtual void CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility) override;
-
-	/// <summary>
-	/// Clears all effects caused by this ability and resets the Combo Continuation timer
-	/// </summary>
-	/// <param name="ActorInfo"></param>
-	/// <param name="wasCancelled"></param>
-	void ResetTimerAndClearEffects(const FGameplayAbilityActorInfo* ActorInfo, bool wasCancelled = false);
+	/// <param name="effect"></param>
+	/// <param name="specHandle"></param>
+	/// <param name="effectCauser"></param>
+	virtual void HandleSetByCaller(TSubclassOf<UGameplayEffect> effect, FGameplayEffectSpecHandle specHandle, AActor* effectCauser);
 
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
-	
-	// Helper using current ability instance's data to end itself if it is active (to prevent attempted end of CDO)
-	void EndSelf();
-
-	void EndAbilityByTimeout(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled);
 
 	/// <summary>
 	/// Play the animation used for a pause between combo stages if present
@@ -221,12 +197,7 @@ public:
 	void OnMontageCancelled();
 
 	UFUNCTION()
-	void OnEffectRemoved(const FGameplayEffectRemovalInfo& GameplayEffectRemovalInfo);
-
-	UFUNCTION()
 	void OnMontageCompleted();
-
-	bool WillCancelAbility(FGameplayAbilitySpec* OtherAbility);
 
 	UFUNCTION(BlueprintCallable, Category="ChainBehavior")
 	TArray<FTimerHandle>& GetChainTimerHandles() 
@@ -247,8 +218,6 @@ public:
 
 	virtual void HandleChargeProgress();
 
-	TArray<TObjectPtr<UAttackBaseGameplayAbility>> GetAbilityActiveInstances(FGameplayAbilitySpec* spec);
-
 	void SpawnHitEffectActors(FHitResult HitResult);
 	void SpawnHitEffectActorsAtLocation(FVector Location, FRotator CasterRotation);
 	
@@ -262,11 +231,6 @@ public:
 
 	UFUNCTION()
 	void OnPlacementGhostDestroyed(AActor* PlacementGhost);
-
-protected:
-	FTimerHandle EndTimerHandle;
-
-	TArray<FActiveGameplayEffectHandle> ActiveEffectHandles;
 
 private:
 	/** Timer handles for chained abilities, do not reference directly without ensuring it is initialized
