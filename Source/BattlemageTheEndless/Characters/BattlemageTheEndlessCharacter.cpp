@@ -547,19 +547,31 @@ void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
-	if (Controller != nullptr)
+	if (Controller == nullptr)
+		return;
+
+	TObjectPtr<UBMageCharacterMovementComponent> movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
+	if (!movement)
+		return;
+
+	// add movement, only apply forward if we're wall running
+	if (movement->IsAbilityActive(MovementAbilityType::WallRun))
 	{
-		TObjectPtr<UBMageCharacterMovementComponent> movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
-		// add movement, only apply lateral if not wall running
-		if (!movement->IsAbilityActive(MovementAbilityType::WallRun))
-		{
-			AddMovementInput(GetActorRightVector(), MovementVector.X);
-		}
-
 		AddMovementInput(GetActorForwardVector(), MovementVector.Y);
-
-		movement->ApplyInput();
 	}
+	else if (movement->IsAbilityActive(MovementAbilityType::Slide))
+	{
+		// slide ignores lateral input and reduces impact of backward input
+		AddMovementInput(GetActorForwardVector(), MovementVector.Y * MovementVector.Y < 0.f ? SlideBrakingFactor : 1.0f);
+	}
+	else
+	{
+		AddMovementInput(GetActorForwardVector(), MovementVector.Y);
+		AddMovementInput(GetActorRightVector(), MovementVector.X);
+	}
+
+	movement->ApplyInput();
+
 }
 
 void ABattlemageTheEndlessCharacter::Look(const FInputActionValue& Value)

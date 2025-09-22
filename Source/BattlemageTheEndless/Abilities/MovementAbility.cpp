@@ -50,7 +50,7 @@ void UMovementAbility::End(bool bForce)
 		return;
 
 	// If we need to transition out, inform the blueprint with the bool and set a timer to end the ability
-	if (!bForce && TransitionOutDuration > 0.00001f)
+	if (TransitionOutDuration > 0.00001f)
 	{
 		shouldTransitionOut = true;
 		OnMovementAbilityShouldTransitionOut.Broadcast(this);
