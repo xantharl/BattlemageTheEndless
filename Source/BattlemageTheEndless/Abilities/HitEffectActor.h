@@ -12,6 +12,14 @@
 #include "AbilitySystemComponent.h"
 #include "HitEffectActor.generated.h"
 
+UENUM(BlueprintType)
+enum class EOnApplyEffectsBehavior : uint8
+{
+	None UMETA(DisplayName = "None"),
+	DestroyComponent UMETA(DisplayName = "DestroyComponent"),
+	DestroyActor UMETA(DisplayName = "DestroyActor")
+};
+
 /// <summary>
 /// AHitEffectActor is a simple actor that is spawned when a hit is detected by an ability. It is used primarily to spawn persistent volumes.
 /// </summary>
@@ -58,6 +66,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hit Effect")
 	FVector VisualEffectScale = FVector::OneVector;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hit Effect")
+	bool bRootShouldApplyEffects = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hit Effect")
+	EOnApplyEffectsBehavior OnApplyEffectsBehavior = EOnApplyEffectsBehavior::None;
+
 	UFUNCTION(BlueprintCallable, Category = "Hit Effect")
 	virtual void OnAreaOfEffectBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
@@ -79,5 +93,5 @@ private:
 
 	TMap<AActor*, FTimerHandle> _effectReapplyTimers;
 
-	virtual void ApplyEffects(AActor* actor);
+	virtual void ApplyEffects(AActor* actor, UPrimitiveComponent* applyingComponent);
 };

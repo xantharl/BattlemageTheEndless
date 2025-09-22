@@ -33,8 +33,8 @@ void AHitEffectActor::InitCollisionType()
 {
 	AreaOfEffect->SetCollisionProfileName(TEXT("OverlapAll"));
 	AreaOfEffect->SetGenerateOverlapEvents(true);
-	AreaOfEffect->OnComponentBeginOverlap.AddDynamic(this, &AHitEffectActor::OnAreaOfEffectBeginOverlap);
-	AreaOfEffect->OnComponentEndOverlap.AddDynamic(this, &AHitEffectActor::OnAreaOfEffectEndOverlap);
+	//AreaOfEffect->OnComponentBeginOverlap.AddDynamic(this, &AHitEffectActor::OnAreaOfEffectBeginOverlap);
+	//AreaOfEffect->OnComponentEndOverlap.AddDynamic(this, &AHitEffectActor::OnAreaOfEffectEndOverlap);
 }
 
 void AHitEffectActor::SnapActorToGround(FHitResult hitResult)
@@ -75,19 +75,21 @@ void AHitEffectActor::BeginPlay()
 	Super::BeginPlay();
 	if (!AreaOfEffect)
 		return;
-
-	// Check for any collision children of AreaOfEffect and register their overlap events
-	TArray<USceneComponent*> children;
-	AreaOfEffect->GetChildrenComponents(true, children);
-	for (USceneComponent* child : children)
+	// Check for any collision components and register their overlap events
+	auto components = this->GetComponents();
+	for (UActorComponent* child : components)
 	{
 		auto childPrimitive = Cast<UShapeComponent>(child);
 		if (childPrimitive)
 		{
 			childPrimitive->SetCollisionProfileName(TEXT("OverlapAll"));
 			childPrimitive->SetGenerateOverlapEvents(true);
-			childPrimitive->OnComponentBeginOverlap.AddDynamic(this, &AHitEffectActor::OnAreaOfEffectBeginOverlap);
-			childPrimitive->OnComponentEndOverlap.AddDynamic(this, &AHitEffectActor::OnAreaOfEffectEndOverlap);
+
+			// safety checks since something is binding this for AreaOfEffect already
+			if (!childPrimitive->OnComponentBeginOverlap.IsBound())
+				childPrimitive->OnComponentBeginOverlap.AddDynamic(this, &AHitEffectActor::OnAreaOfEffectBeginOverlap);
+			if (!childPrimitive->OnComponentEndOverlap.IsBound())
+				childPrimitive->OnComponentEndOverlap.AddDynamic(this, &AHitEffectActor::OnAreaOfEffectEndOverlap);
 		}
 	}
 }
@@ -135,7 +137,7 @@ bool AHitEffectActor::Validate()
 	return true;
 }
 
-void AHitEffectActor::ApplyEffects(AActor* actor)
+void AHitEffectActor::ApplyEffects(AActor* actor, UPrimitiveComponent* applyingComponent)
 {
 	auto abilitySystemComponent = actor->FindComponentByClass<UAbilitySystemComponent>();
 	if (!abilitySystemComponent)
@@ -175,7 +177,7 @@ void AHitEffectActor::ApplyEffects(AActor* actor)
 		if (!specHandle.IsValid())
 		{
 			UE_LOG(LogTemp, Error, TEXT("Failed to create effect spec for %s"), *effect->GetName());
-			return;
+			continue;
 		}
 
 		auto handle = abilitySystemComponent->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
@@ -186,10 +188,55 @@ void AHitEffectActor::ApplyEffects(AActor* actor)
 				FString::Printf(TEXT("Applied effect %s (Stacks: %i)"), *effect->GetName(), stacks));
 		}
 	}
+
+	if (OnApplyEffectsBehavior == EOnApplyEffectsBehavior::DestroyActor)
+	{
+		Destroy();
+	}
+	else if (OnApplyEffectsBehavior == EOnApplyEffectsBehavior::DestroyComponent)
+	{
+		// if we have been passed a collision volume, get its parent and destroy that
+		auto collisionComponent = Cast<UShapeComponent>(applyingComponent);
+		if (collisionComponent)
+		{
+			auto parent = collisionComponent->GetAttachParent();
+			// we have to destroy both the collision component and its parent since children do not get auto-destroyed
+			collisionComponent->DestroyComponent();
+			if (parent)
+				parent->DestroyComponent();
+		}
+		else
+		{
+			// otherwise just destroy the component we were passed, though this probably isn't a real use case
+			applyingComponent->DestroyComponent();
+		}
+
+		// if we are all out of colliding components, destroy ourselves
+		auto components = this->GetComponents();
+		bool hasCollision = false;
+		for (UActorComponent* child : components)
+		{
+			auto childPrimitive = Cast<UShapeComponent>(child);
+			if (childPrimitive == GetRootComponent() && !bRootShouldApplyEffects)
+				continue;
+			if (childPrimitive && childPrimitive->IsCollisionEnabled())
+			{
+				hasCollision = true;
+				break;
+			}
+		}
+
+		if (!hasCollision)
+			Destroy();
+	}
 }
 
 void AHitEffectActor::OnAreaOfEffectBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	// special case for actors that act as buffs for players since we still need to anchor around the root component, but it's not what we want to apply effects from
+	if (OverlappedComponent == GetRootComponent() && !bRootShouldApplyEffects)
+		return;
+
 	// TODO: We might want some spells to be able to hit the owner, but for now we're disabling that
 	// technically, "Self" spells hit the owner, but we won't have hit effect actors on those
 	if (Instigator && OtherActor == Instigator)
@@ -207,13 +254,13 @@ void AHitEffectActor::OnAreaOfEffectBeginOverlap(UPrimitiveComponent* Overlapped
 	// if we aren't re-applying, apply the effects now and be done
 	if (EffectApplicationInterval <= 0.0001f)
 	{
-		ApplyEffects(OtherActor);
+		ApplyEffects(OtherActor, OverlappedComponent);
 		return;
 	}
 
 	// Otherwise use a reocurring timer to apply the effects
 	_effectReapplyTimers.Add(OtherActor, FTimerHandle());
-	auto timerDelegate = FTimerDelegate::CreateUObject(this, &AHitEffectActor::ApplyEffects, OtherActor);
+	auto timerDelegate = FTimerDelegate::CreateUObject(this, &AHitEffectActor::ApplyEffects, OtherActor, OverlappedComponent);
 	GetWorld()->GetTimerManager().SetTimer(_effectReapplyTimers[OtherActor], timerDelegate, EffectApplicationInterval, true);
 }
 
