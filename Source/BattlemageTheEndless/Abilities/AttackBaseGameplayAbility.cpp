@@ -22,22 +22,8 @@ bool UAttackBaseGameplayAbility::CanEditChange(const FProperty* InProperty) cons
 }
 #endif
 
-FGameplayTag UAttackBaseGameplayAbility::GetAbilityName()
+UAttackBaseGameplayAbility::UAttackBaseGameplayAbility()
 {
-	FGameplayTagContainer baseComboIdentifierTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Weapons")));
-	baseComboIdentifierTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Spells")));
-
-	// otherwise identify this ability's BaseComboIdentifier
-	auto tags = AbilityTags.Filter(baseComboIdentifierTags);
-	if (tags.Num() > 0)
-	{
-		return tags.GetByIndex(0);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("Ability %s has no Weapons or Spells tag, returning empty tag"), *GetName());
-		return FGameplayTag();
-	}
 }
 
 bool UAttackBaseGameplayAbility::HasComboTag()
@@ -199,70 +185,24 @@ void UAttackBaseGameplayAbility::ApplyEffects(AActor* target, UAbilitySystemComp
 		chainEffectActor->Init(instigator, target, ChainSystem);
 	}
 
-	for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
+	Super::ApplyEffects(target, targetAsc, instigator, effectCauser);
+}
+
+void UAttackBaseGameplayAbility::HandleSetByCaller(TSubclassOf<UGameplayEffect> effect, FGameplayEffectSpecHandle specHandle, AActor* effectCauser)
+{
+	// This sets the damage manually for a Set By Caller type effect
+	ABattlemageTheEndlessProjectile* projectile = Cast<ABattlemageTheEndlessProjectile>(effectCauser);
+	if (projectile && FMath::Abs(projectile->EffectiveDamage) > 0.0001f)
 	{
-		FGameplayEffectContextHandle context = targetAsc->MakeEffectContext();
-		if(instigator)
-		{
-			context.AddSourceObject(instigator);
-			context.AddInstigator(instigator, effectCauser ? effectCauser : instigator);
-			context.AddActors({ instigator });
-		}
-
-		FGameplayEffectSpecHandle specHandle = targetAsc->MakeOutgoingSpec(effect, 1.f, context);
-		if (!specHandle.IsValid())
-			continue;
-
-		// This sets the damage manually for a Set By Caller type effect
-		ABattlemageTheEndlessProjectile* projectile = Cast<ABattlemageTheEndlessProjectile>(effectCauser);
-		if (projectile && FMath::Abs(projectile->EffectiveDamage) > 0.0001f)
-		{
-			specHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Spells.Charge.Damage")), projectile->EffectiveDamage);
-			if (GEngine)
-				GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, 
-					FString::Printf(TEXT("%s hit for %f"), *effect->GetName(), projectile->EffectiveDamage));
-		}
-
-		auto handle = targetAsc->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
-		ActiveEffectHandles.Add(handle);
+		specHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Spells.Charge.Damage")), projectile->EffectiveDamage);
+		if (GEngine)
+			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow,
+				FString::Printf(TEXT("%s hit for %f"), *effect->GetName(), projectile->EffectiveDamage));
 	}
-}
-
-void UAttackBaseGameplayAbility::CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility)
-{
-	ResetTimerAndClearEffects(ActorInfo, true);
-	Super::CancelAbility(Handle, ActorInfo, ActivationInfo, bReplicateCancelAbility);
-}
-
-void UAttackBaseGameplayAbility::ResetTimerAndClearEffects(const FGameplayAbilityActorInfo* ActorInfo, bool wasCancelled)
-{
-	// if we have a timer running to end the ability, clear it
-	UWorld* const world = GetWorld();
-	if (world && world->GetTimerManager().IsTimerActive(EndTimerHandle))
-	{
-		world->GetTimerManager().ClearTimer(EndTimerHandle);
-	}
-}
-void UAttackBaseGameplayAbility::EndSelf()
-{
-	if (IsActive())
-		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
-	else if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Blue, FString::Printf(TEXT("Ability %s is not active, cannot end it"), *GetName()));
-}
-
-void UAttackBaseGameplayAbility::EndAbilityByTimeout(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
-{
-	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Red, FString::Printf(TEXT("Ending ability %s due to timeout"), *GetName()));
-	EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
 void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	if (CooldownGameplayEffectClass)
-		CommitAbilityCooldown(Handle, ActorInfo, ActivationInfo, false);
-
 	// If this is a charge attack, play the attack animation now
 	if (ChargeDuration > 0.0001f)
 	{
@@ -286,8 +226,8 @@ void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Han
 		}
 	}
 
-	ResetTimerAndClearEffects(ActorInfo);
 	TryPlayComboPause(ActorInfo);
+
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
@@ -311,17 +251,6 @@ void UAttackBaseGameplayAbility::OnMontageCancelled()
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 }
 
-void UAttackBaseGameplayAbility::OnEffectRemoved(const FGameplayEffectRemovalInfo& GameplayEffectRemovalInfo)
-{
-	ActiveEffectHandles.Remove(GameplayEffectRemovalInfo.ActiveEffect->Handle);
-	if (ActiveEffectHandles.IsEmpty())
-	{
-		if (GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ending ability %s due to effect removal"), *GetName()));
-		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
-	}
-}
-
 void UAttackBaseGameplayAbility::OnMontageCompleted()
 {
 	// check if effects are still active, if so keep the ability alive
@@ -331,14 +260,6 @@ void UAttackBaseGameplayAbility::OnMontageCompleted()
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ending ability %s due to montage finish"), *GetName()));
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
-}
-
-bool UAttackBaseGameplayAbility::WillCancelAbility(FGameplayAbilitySpec* OtherAbility)
-{
-	if (CancelAbilitiesWithTag.Num() == 0)
-		return false;
-
-	return OtherAbility->Ability->AbilityTags.HasAny(CancelAbilitiesWithTag);
 }
 
 bool UAttackBaseGameplayAbility::IsCharged()
@@ -365,20 +286,6 @@ void UAttackBaseGameplayAbility::HandleChargeProgress()
 		if (GEngine)
 			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is now charged with multiplier of %f"), *GetName(), CurrentChargeDamageMultiplier));
 	}
-}
-
-TArray<TObjectPtr<UAttackBaseGameplayAbility>> UAttackBaseGameplayAbility::GetAbilityActiveInstances(FGameplayAbilitySpec* spec)
-{
-	TArray<TObjectPtr<UAttackBaseGameplayAbility>> returnVal;
-	auto instances = GetReplicationPolicy() == EGameplayAbilityReplicationPolicy::ReplicateNo
-		? spec->NonReplicatedInstances : spec->ReplicatedInstances;
-
-	for (auto instance : instances)
-	{
-		returnVal.Add(Cast<UAttackBaseGameplayAbility>(instance));
-	}
-
-	return returnVal;
 }
 
 void UAttackBaseGameplayAbility::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)

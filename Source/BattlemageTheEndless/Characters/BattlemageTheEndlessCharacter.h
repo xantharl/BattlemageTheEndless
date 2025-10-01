@@ -298,6 +298,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* LookAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	float SlideBrakingFactor = 0.1f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float BaseHalfHeight = 90.0f;
 
@@ -393,7 +396,7 @@ protected:
 	void OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
 	FTimerHandle ChargeSpellTimerHandle;
-	void ChargeSpell(TObjectPtr<UAttackBaseGameplayAbility> ability);
+	void ChargeSpell(UAttackBaseGameplayAbility* ability);
 
 	const int TickRate = 60;
 

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameFramework/Character.h"
 #include "../MovementAbility.h"
 #include "SlideAbility.generated.h"
 
@@ -55,6 +56,9 @@ protected:
 	/** Max Rate at which sliding uphill decelerates the player (cm/s^2). Max rate is applied at AccelerationLimitAngle degrees or greater. **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float MaxSlideDecelerationRate = 1200.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float RotationRateZ = 250.f;
 	
 	void Begin() override;
 	void End(bool bForce = false) override;
@@ -62,4 +66,6 @@ protected:
 
 private:
 	FVector _previousLocation;
+
+	float _priorRotationRateZ;
 };

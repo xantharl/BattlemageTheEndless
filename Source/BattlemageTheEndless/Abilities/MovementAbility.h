@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Abilities/GameplayAbility.h"
 #include "MovementAbilityInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
@@ -31,7 +32,7 @@ DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_OneParam(FMovementAbilityBeginSignatur
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_OneParam(FMovementAbilityEndSignature, UMovementAbility, OnMovementAbilityEnd, UMovementAbility*, MovementAbility);
 DECLARE_DYNAMIC_MULTICAST_SPARSE_DELEGATE_OneParam(FMovementAbilityShouldTransitionOutSignature, UMovementAbility, OnMovementAbilityShouldTransitionOut, UMovementAbility*, MovementAbility);
 UCLASS(Abstract)
-class BATTLEMAGETHEENDLESS_API UMovementAbility : public UObject
+class BATTLEMAGETHEENDLESS_API UMovementAbility : public UGameplayAbility
 {
 	GENERATED_BODY()
 protected:

@@ -16,6 +16,10 @@ void USlideAbility::Begin()
 	Super::Begin();
 	Movement->SetCrouchedHalfHeight(SlideHalfHeight);
 	_previousLocation = Movement->GetActorLocation();
+	_priorRotationRateZ = Movement->RotationRate.Yaw;
+	Movement->bUseControllerDesiredRotation = true;
+	Character->bUseControllerRotationYaw = false;
+ 	Movement->RotationRate.Yaw = RotationRateZ;
 }
 
 void USlideAbility::End(bool bForce)
@@ -25,6 +29,9 @@ void USlideAbility::End(bool bForce)
 	{
 		Movement->MaxWalkSpeed = Movement->MaxWalkSpeedCrouched;
 	}
+	Movement->bUseControllerDesiredRotation = false;
+	Character->bUseControllerRotationYaw = true;
+	Movement->RotationRate.Yaw = _priorRotationRateZ;
 	Super::End(bForce);
 }
 

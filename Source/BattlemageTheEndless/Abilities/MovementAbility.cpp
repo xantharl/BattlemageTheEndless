@@ -12,7 +12,7 @@ void UMovementAbility::onEndTransitionOut()
 {
 }
 
-UMovementAbility::UMovementAbility(const FObjectInitializer& X) : UObject(X)
+UMovementAbility::UMovementAbility(const FObjectInitializer& X) : UGameplayAbility(X)
 {
 }
 
@@ -50,7 +50,7 @@ void UMovementAbility::End(bool bForce)
 		return;
 
 	// If we need to transition out, inform the blueprint with the bool and set a timer to end the ability
-	if (!bForce && TransitionOutDuration > 0.00001f)
+	if (TransitionOutDuration > 0.00001f)
 	{
 		shouldTransitionOut = true;
 		OnMovementAbilityShouldTransitionOut.Broadcast(this);

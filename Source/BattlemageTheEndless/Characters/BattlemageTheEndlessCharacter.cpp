@@ -547,19 +547,31 @@ void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
-	if (Controller != nullptr)
+	if (Controller == nullptr)
+		return;
+
+	TObjectPtr<UBMageCharacterMovementComponent> movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
+	if (!movement)
+		return;
+
+	// add movement, only apply forward if we're wall running
+	if (movement->IsAbilityActive(MovementAbilityType::WallRun))
 	{
-		TObjectPtr<UBMageCharacterMovementComponent> movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
-		// add movement, only apply lateral if not wall running
-		if (!movement->IsAbilityActive(MovementAbilityType::WallRun))
-		{
-			AddMovementInput(GetActorRightVector(), MovementVector.X);
-		}
-
 		AddMovementInput(GetActorForwardVector(), MovementVector.Y);
-
-		movement->ApplyInput();
 	}
+	else if (movement->IsAbilityActive(MovementAbilityType::Slide))
+	{
+		// slide ignores lateral input and reduces impact of backward input
+		AddMovementInput(GetActorForwardVector(), MovementVector.Y * MovementVector.Y < 0.f ? SlideBrakingFactor : 1.0f);
+	}
+	else
+	{
+		AddMovementInput(GetActorForwardVector(), MovementVector.Y);
+		AddMovementInput(GetActorRightVector(), MovementVector.X);
+	}
+
+	movement->ApplyInput();
+
 }
 
 void ABattlemageTheEndlessCharacter::Look(const FInputActionValue& Value)
@@ -965,8 +977,11 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged(APickupActor* Pic
 		return;
 	}
 
-	auto activeInstances = Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability)->GetAbilityActiveInstances(selectedAbilitySpec);
-	TObjectPtr<UAttackBaseGameplayAbility> activeInstance = activeInstances.Num() > 0 ? activeInstances[0] : nullptr;
+	auto activeInstances = Cast<UGA_WithEffectsBase>(selectedAbilitySpec->Ability)->GetAbilityActiveInstances(selectedAbilitySpec);
+	TObjectPtr<UGA_WithEffectsBase> activeInstance = activeInstances.Num() > 0 ? activeInstances[0] : nullptr;
+	auto attackAbility = Cast<UAttackBaseGameplayAbility>(activeInstance);
+	if (!attackAbility)
+		return;
 
 	switch (triggerEvent)
 	{
@@ -976,7 +991,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged(APickupActor* Pic
 		if (!success && GEngine)
 			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Red, FString::Printf(TEXT("Ability %s failed to activate"), *selectedAbilitySpec->Ability->GetName()));
 
-		FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &ABattlemageTheEndlessCharacter::ChargeSpell, activeInstance);
+		FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &ABattlemageTheEndlessCharacter::ChargeSpell, attackAbility);
 		GetWorld()->GetTimerManager().SetTimer(ChargeSpellTimerHandle, TimerDelegate, 1.0f / (float)TickRate, true);
 
 		if (GEngine)
@@ -987,9 +1002,9 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged(APickupActor* Pic
 	{
 		// if charge spell and completed event, clear the charge timer
 		GetWorld()->GetTimerManager().ClearTimer(ChargeSpellTimerHandle);
-		PostAbilityActivation(activeInstance);
+		PostAbilityActivation(attackAbility);
 		// This is a hack to call EndAbility without needing to spoof up all the params
-		activeInstance->OnMontageCompleted();
+		attackAbility->OnMontageCompleted();
 		break;
 	}
 	// We don't need to do anything for ongoing since we've got the repeating timer handling it on a set interval
@@ -1187,7 +1202,8 @@ void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickup
 	if (instances.Num() == 0)
 		return;
 
-	PostAbilityActivation(instances[0]);
+	if (auto attackAbility = Cast<UAttackBaseGameplayAbility>(instances[0]))
+		PostAbilityActivation(attackAbility);
 }
 
 void ABattlemageTheEndlessCharacter::PostAbilityActivation(UAttackBaseGameplayAbility* ability)
@@ -1319,8 +1335,11 @@ void ABattlemageTheEndlessCharacter::HandleHitScan(UAttackBaseGameplayAbility* a
 	// floating point precision, woo
 	if (FMath::Abs(ability->ChainDelay) < 0.00001f)
 	{
-		for (auto applyTo : hitCharacters)
-			ability->ApplyEffects(applyTo, applyTo->AbilitySystemComponent, this);
+		if (hitCharacters.Num() != 0)
+		{
+			for (auto applyTo : hitCharacters)
+				ability->ApplyEffects(applyTo, applyTo->AbilitySystemComponent, this);
+		}
 	}
 	else
 	{
@@ -1447,7 +1466,7 @@ void ABattlemageTheEndlessCharacter::OnProjectileHit(UPrimitiveComponent* HitCom
 		projectile->Destroy();
 }
 
-void ABattlemageTheEndlessCharacter::ChargeSpell(TObjectPtr<UAttackBaseGameplayAbility> ability)
+void ABattlemageTheEndlessCharacter::ChargeSpell(UAttackBaseGameplayAbility* ability)
 {
 	bool isChargedBefore = ability->IsCharged();
 	ability->HandleChargeProgress();
