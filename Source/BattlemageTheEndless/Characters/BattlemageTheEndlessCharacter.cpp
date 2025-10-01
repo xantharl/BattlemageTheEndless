@@ -1335,8 +1335,11 @@ void ABattlemageTheEndlessCharacter::HandleHitScan(UAttackBaseGameplayAbility* a
 	// floating point precision, woo
 	if (FMath::Abs(ability->ChainDelay) < 0.00001f)
 	{
-		for (auto applyTo : hitCharacters)
-			ability->ApplyEffects(applyTo, applyTo->AbilitySystemComponent, this);
+		if (hitCharacters.Num() != 0)
+		{
+			for (auto applyTo : hitCharacters)
+				ability->ApplyEffects(applyTo, applyTo->AbilitySystemComponent, this);
+		}
 	}
 	else
 	{
