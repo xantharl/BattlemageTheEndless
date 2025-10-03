@@ -39,7 +39,8 @@ void ABattlemageTheEndlessProjectile::OnHit(UPrimitiveComponent* HitComp, AActor
 		return;
 
 	if (GEngine) {
-		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Projectile hit %s"), *OtherActor->GetName()));
+		auto otherName = OtherActor->GetName();
+		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Projectile hit %s"), *otherName));
 	}
 	Destroy();
 
