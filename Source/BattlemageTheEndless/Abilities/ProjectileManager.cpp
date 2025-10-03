@@ -55,14 +55,17 @@ TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::HandleSpawn(FTransf
 		auto newActor = world->SpawnActor<ABattlemageTheEndlessProjectile>(
 			configuration.ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
 
-		// This sets the damage manually for a Set By Caller type effect
-		if (spawningAbility->CurrentChargeDamageMultiplier > 1.f)
+		// This sets the damage manually for a charge spell
+		if (spawningAbility->ChargeDuration > 0.0f)
 		{
-			newActor->EffectiveDamage = -spawningAbility->ChargeSpellBaseDamage * spawningAbility->CurrentChargeDamageMultiplier;
+			newActor->EffectiveDamage = spawningAbility->CurrentChargeDamage;
+			newActor->ProjectileMovement->InitialSpeed *= spawningAbility->CurrentChargeProjectileSpeed;
+			newActor->ProjectileMovement->ProjectileGravityScale *= spawningAbility->CurrentChargeGravityScale;
 			if (GEngine)
 				GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow,
-					FString::Printf(TEXT("%s will hit for %f (base: %f, mult: %f)"), *spawningAbility->GetName(), newActor->EffectiveDamage,
-						spawningAbility->ChargeSpellBaseDamage, spawningAbility->CurrentChargeDamageMultiplier));
+					FString::Printf(TEXT("(%s) Spawned with Damage: %f, Speed: %f, GravityScale: %f"), 
+						*spawningAbility->GetName(), spawningAbility->CurrentChargeDamage, 
+						newActor->ProjectileMovement->InitialSpeed, newActor->ProjectileMovement->ProjectileGravityScale));
 		}
 
 		newActor->SpawningAbility = spawningAbility;

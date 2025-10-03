@@ -8,6 +8,7 @@
 #include "../Pickups/BattlemageTheEndlessProjectile.h"
 #include "../Abilities/PersistentAreaEffect.h"
 #include "../Abilities/AttackBaseGameplayAbility.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "ProjectileManager.generated.h"
 
 USTRUCT(BlueprintType)

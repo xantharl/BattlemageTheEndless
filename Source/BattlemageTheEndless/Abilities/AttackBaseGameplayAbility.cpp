@@ -194,7 +194,7 @@ void UAttackBaseGameplayAbility::HandleSetByCaller(TSubclassOf<UGameplayEffect> 
 	ABattlemageTheEndlessProjectile* projectile = Cast<ABattlemageTheEndlessProjectile>(effectCauser);
 	if (projectile && FMath::Abs(projectile->EffectiveDamage) > 0.0001f)
 	{
-		specHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Spells.Charge.Damage")), projectile->EffectiveDamage);
+		specHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Spells.Charge.Damage")), -projectile->EffectiveDamage);
 		if (GEngine)
 			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow,
 				FString::Printf(TEXT("%s hit for %f"), *effect->GetName(), projectile->EffectiveDamage));
@@ -209,7 +209,7 @@ void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Han
 		// reset charged status for next invocation
 		_bIsCharged = false;
 		CurrentChargeDuration = 0ms;
-		CurrentChargeDamageMultiplier = 1.f;
+		CurrentChargeDamage = 1.f;
 		if (ShouldCastOnPartialCharge)
 		{
 			auto owner = Cast<ACharacter>(ActorInfo->OwnerActor);
@@ -277,14 +277,15 @@ void UAttackBaseGameplayAbility::HandleChargeProgress()
 	// otherwise update the charge progress
 	CurrentChargeDuration = duration_cast<milliseconds>(system_clock::now().time_since_epoch()) - ActivationTime;
 	
-	// calculate the current charge damage multiplier, it will never be below 1
-	CurrentChargeDamageMultiplier = 1.f + ((CurrentChargeDuration / (ChargeDuration * 1000ms)) * (FullChargeDamageMultiplier - 1.f));
+	// get the current charge damage multiplier	from the curve
+	CurrentChargeDamage = ChargeDamageCurve->GetFloatValue(CurrentChargeDuration.count());
+	CurrentChargeProjectileSpeed = ChargeVelocityMultiplierCurve->GetFloatValue(CurrentChargeDuration.count());
+	CurrentChargeGravityScale = ChargeGravityMultiplierCurve->GetFloatValue(CurrentChargeDuration.count());
 	if (CurrentChargeDuration >= (ChargeDuration * 1000ms))
 	{
-		CurrentChargeDamageMultiplier = FullChargeDamageMultiplier;
 		_bIsCharged = true;
 		if (GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is now charged with multiplier of %f"), *GetName(), CurrentChargeDamageMultiplier));
+			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is now charged with multiplier of %f"), *GetName(), CurrentChargeDamage));
 	}
 }
 

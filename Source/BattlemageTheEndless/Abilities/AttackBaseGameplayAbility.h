@@ -74,26 +74,39 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectiles)
 	FProjectileConfiguration ProjectileConfiguration;
 
-	/** Required charge duration before ability can be fired **/
+	/** Required charge duration (s) before ability can be fired **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ChargeBehavior)
 	float ChargeDuration = 0.f;
 
 	/** Current charge duration **/
 	milliseconds CurrentChargeDuration;
 
+	/** Curve to control damage of projectile as it charges, X-Axis is MS, Y-Axis is damage **/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = ChargeBehavior)
-	float ChargeSpellBaseDamage = 5.f;
+	UCurveFloat* ChargeDamageCurve;
+
+	/** Curve to control speed of projectile as multiple on projectile's base velocity, X-Axis is MS, Y-Axis is Speed Multiplier **/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = ChargeBehavior)
+	UCurveFloat* ChargeVelocityMultiplierCurve;
+
+	/** Curve to control effect of gravity with time charged, X-Axis is MS, Y-Axis is Gravity Multiplier **/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = ChargeBehavior)
+	UCurveFloat* ChargeGravityMultiplierCurve;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = ChargeBehavior)
 	bool ShouldCastOnPartialCharge = true;
 
-	/** Currently Active Multiplier at full charge **/
+	/** Currently Active Damage for the ability (as of last tick) **/
 	UPROPERTY(BlueprintReadOnly, Category = ChargeBehavior)
-	float CurrentChargeDamageMultiplier = 1.f;
+	float CurrentChargeDamage = 1.f;
 
-	/** Damage Multiplier at full charge **/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ChargeBehavior)
-	float FullChargeDamageMultiplier = 3.f;
+	/** Currently Active Projectile Speed Multiple for the ability (as of last tick) **/
+	UPROPERTY(BlueprintReadOnly, Category = ChargeBehavior)
+	float CurrentChargeProjectileSpeed = 1.f;
+
+	/** Currently Active Gravity Scale Mulitple for the ability (as of last tick) **/
+	UPROPERTY(BlueprintReadOnly, Category = ChargeBehavior)
+	float CurrentChargeGravityScale = 1.f;
 
 	milliseconds ActivationTime;
 

@@ -6,10 +6,10 @@
 #include "GameFramework/Actor.h"
 #include "Components/SphereComponent.h"
 #include "Abilities/GameplayAbility.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 #include "BattlemageTheEndlessProjectile.generated.h"
 
 class USphereComponent;
-class UProjectileMovementComponent;
 
 UENUM(BlueprintType)
 enum class FTargetType : uint8
