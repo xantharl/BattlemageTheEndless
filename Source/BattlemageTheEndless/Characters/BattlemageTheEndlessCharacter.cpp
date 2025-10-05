@@ -1005,6 +1005,9 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged(APickupActor* Pic
 	case ETriggerEvent::Completed:
 	{
 		// if charge spell and completed event, clear the charge timer
+		if (attackAbility->CastSound)
+			UGameplayStatics::SpawnSoundAttached(attackAbility->CastSound, GetRootComponent());
+
 		GetWorld()->GetTimerManager().ClearTimer(ChargeSpellTimerHandle);
 		PostAbilityActivation(attackAbility);
 		// This is a hack to call EndAbility without needing to spoof up all the params

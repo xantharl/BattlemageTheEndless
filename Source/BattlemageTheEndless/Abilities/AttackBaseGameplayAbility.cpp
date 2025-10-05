@@ -64,8 +64,8 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	if (ChargeDuration > 0.001f) {
 		ActivationTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 	}
-
-	if (CastSound)
+	// charge abilities have a separate workflow for when to play the sound
+	else if (CastSound)
 		UGameplayStatics::SpawnSoundAttached(CastSound, character->GetRootComponent());
 
 	// Try and play a firing animation if specified
