@@ -65,6 +65,9 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		ActivationTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 	}
 
+	if (CastSound)
+		UGameplayStatics::SpawnSoundAttached(CastSound, character->GetRootComponent());
+
 	// Try and play a firing animation if specified
 	auto animInstance = character->GetMesh()->GetAnimInstance();
 	float montageDuration = 0.f;

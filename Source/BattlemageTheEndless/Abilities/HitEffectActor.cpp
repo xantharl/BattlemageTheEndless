@@ -238,7 +238,7 @@ void AHitEffectActor::OnAreaOfEffectBeginOverlap(UPrimitiveComponent* Overlapped
 		return;
 
 	// TODO: We might want some spells to be able to hit the owner, but for now we're disabling that
-	// technically, "Self" spells hit the owner, but we won't have hit effect actors on those
+	// technically, "Self" spellos hit the owner, but we won't have hit effect actors on those
 	if (Instigator && OtherActor == Instigator)
 		return;
 

@@ -51,9 +51,7 @@ void UExecutionCalculation_LaunchAt::Execute_Implementation(const FGameplayEffec
 
 		FVector directionToTarget = (actor->GetActorLocation() - sourceCharacter->GetActorLocation()).GetSafeNormal();
 
-		UCameraComponent* activeCamera = sourceCharacter->FirstPersonCamera->IsActive() ? sourceCharacter->FirstPersonCamera : sourceCharacter->ThirdPersonCamera;
-
-		FVector sourceForward = activeCamera->GetComponentRotation().Vector().GetSafeNormal();
+		FVector sourceForward = sourceCharacter->GetActiveCamera()->GetComponentRotation().Vector().GetSafeNormal();
 		float angleBetween = FMath::Acos(FVector::DotProduct(directionToTarget, sourceForward)) * (180.f / PI);
 		if (angleBetween > TargetingToleranceDeg)
 		{

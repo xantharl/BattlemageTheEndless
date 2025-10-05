@@ -42,10 +42,38 @@ void UUExecutionCalculation_KnockBack::Execute_Implementation(const FGameplayEff
 	else
 	{
 		FVector Direction = TargetCharacter->GetActorLocation() - SourceActor->GetActorLocation();
-		Direction.Z = 0; // just calculating horizontal direction right now
 		Direction.Normalize();
-		transformedKnockback = KnockBackVelocity.RotateAngleAxis(Direction.Rotation().Yaw, FVector::ZAxisVector);
+		if (!ConsiderZAxis) // this is for abilities which are placed on the ground
+		{
+			Direction.Z = 0; 
+		}
+		else
+		{
+			// attempt to get the camera's pitch, requires that sourceActor is a BattlemageTheEndlessCharacter
+			auto BMageCharacter = Cast<ABattlemageTheEndlessCharacter>(SourceActor);
+			if (BMageCharacter)
+			{
+				FVector cameraRotation = BMageCharacter->GetActiveCamera()->GetComponentRotation().Vector();
+				Direction.Z = cameraRotation.Z;
+			}
+		}
+		transformedKnockback = Direction.Rotation().RotateVector(KnockBackVelocity);
+
+		// If the target character is currently on the ground and we have negative Z, 0 it out
+		auto targetMovement = TargetCharacter->GetMovementComponent();
+		if (targetMovement && !targetMovement->IsFalling() && transformedKnockback.Z < 0)
+		{ 
+			transformedKnockback.Z = 0;
+		}
 	}
 
 	TargetCharacter->LaunchCharacter(transformedKnockback, true, true);
+
+	// check if target character's movement component is valid and is a BMageCharacterMovementComponent
+	if (GravityScaleOverTime)
+	{
+		UBMageCharacterMovementComponent* MovementComponent = Cast<UBMageCharacterMovementComponent>(TargetCharacter->GetCharacterMovement());
+		if (MovementComponent)
+			MovementComponent->BeginGravityOverTime(GravityScaleOverTime);
+	}
 }

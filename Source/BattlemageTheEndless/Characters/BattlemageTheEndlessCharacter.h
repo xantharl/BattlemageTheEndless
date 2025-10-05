@@ -10,6 +10,7 @@
 #include "GameplayCueNotify_Actor.h"
 #include <GameFramework/SpringArmComponent.h>
 #include "../Pickups/TP_WeaponComponent.h"
+#include "Camera/CameraComponent.h"
 #include "../Helpers/Traces.h"
 #include "cmath"
 #include <chrono>
@@ -39,7 +40,6 @@
 
 class UInputComponent;
 class USkeletalMeshComponent;
-class UCameraComponent;
 class UInputAction;
 class UInputMappingContext;
 struct FInputActionValue;
@@ -253,6 +253,10 @@ public:
 
 	APickupActor* ActiveSpellClass;
 
+	UCameraComponent* GetActiveCamera() const {
+		return FirstPersonCamera->IsActive() ? FirstPersonCamera : ThirdPersonCamera;
+	}
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivate))
 	TArray<TSubclassOf<class APickupActor>> DefaultEquipment;
 
@@ -383,7 +387,9 @@ protected:
 	void ProcessSpellInput_Charged(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
 	void ProcessSpellInput_Placed(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
 
-	void PositionGhostActor(UAttackBaseGameplayAbility* ability, AHitEffectActor* hitEffectActor);
+	void SpawnSpellActors(UAttackBaseGameplayAbility* ability, bool isGhost);
+
+	void PositionSpellActor(UAttackBaseGameplayAbility* ability, AHitEffectActor* hitEffectActor);
 
 	void HandleProjectileSpawn(UAttackBaseGameplayAbility* ability);
 	void HandleHitScan(UAttackBaseGameplayAbility* ability);

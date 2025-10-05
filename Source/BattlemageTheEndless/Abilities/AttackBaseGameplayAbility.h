@@ -44,7 +44,9 @@ enum class HitType : uint8
 	// Uses one or more projectiles to determine hit
 	Projectile UMETA(DisplayName = "Projectile"),
 	// For abilities which are placed at a location rather than casting at a target (e.g. Walls, ground effects, etc.)
-	Placed UMETA(DisplayName = "Placed")
+	Placed UMETA(DisplayName = "Placed"),
+	// Similar to placed but spawns immediately instead of using ghosts with HoldAndRelease
+	Actor UMETA(DisplayName = "Actor")
 };
 
 /**
@@ -140,12 +142,16 @@ public:
 	UAnimMontage* ChargeAnimation;
 
 	/** Sound to play during ability charge up, will be cancelled upon ability release */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sounds)
 	USoundWave* ChargeSound;
 
-	/** Sound to play during ability charge up, will be cancelled upon ability release */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
+	/** Sound to play when charge is complete */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sounds)
 	USoundWave* ChargeCompleteSound;
+
+	/** Sound to play on cast */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sounds)
+	USoundWave* CastSound;
 
 	/** AnimMontage to play when we fire the ability */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)

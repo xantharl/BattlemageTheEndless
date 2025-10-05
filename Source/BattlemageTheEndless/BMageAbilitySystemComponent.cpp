@@ -2,6 +2,7 @@
 
 
 #include "BMageAbilitySystemComponent.h"
+using namespace std::chrono;
 
 UBMageAbilitySystemComponent::UBMageAbilitySystemComponent()
 {

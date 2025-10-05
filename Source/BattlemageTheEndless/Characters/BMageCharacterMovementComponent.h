@@ -6,6 +6,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include <map>
 #include <string>
+#include <chrono>
 
 #include "../Abilities/MovementAbility.h"
 #include "../Abilities/Instances/WallRunAbility.h"
@@ -22,6 +23,7 @@
 #include "BMageCharacterMovementComponent.generated.h"
 
 using namespace std;
+using namespace std::chrono;
 /**
  * 
  */
@@ -157,4 +159,17 @@ public:
 
 	/** Called when abilities which preserve gained speed wear off **/
 	void ResetWalkSpeed();
+
+	/** Apply gravity modification over time, duration is determined by the curve in MS **/
+	UFUNCTION(BlueprintCallable, Category = Abilities)
+	void BeginGravityOverTime(UCurveFloat* gravityCurve);
+
+private:
+	// Gravity over time operations
+	void TickGravityOverTime(float DeltaTime);
+
+	UCurveFloat* _activeGravityCurve;
+	milliseconds _gravityCurveElapsed = milliseconds::zero();
+	milliseconds _gravityCurveDuration = milliseconds::zero();
+	float _initialGravityScale = 1.f;
 };

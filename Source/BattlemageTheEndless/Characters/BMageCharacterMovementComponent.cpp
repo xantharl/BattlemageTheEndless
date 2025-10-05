@@ -44,8 +44,36 @@ void UBMageCharacterMovementComponent::ApplyInput()
 	}
 }
 
+void UBMageCharacterMovementComponent::BeginGravityOverTime(UCurveFloat* gravityCurve)
+{
+	_initialGravityScale = GravityScale;
+	_activeGravityCurve = gravityCurve;
+	float _ = 0.f;
+	float maxTime = 0.f;
+	gravityCurve->GetTimeRange(_, maxTime);
+	_gravityCurveDuration = milliseconds((int)(maxTime));
+}
+
+void UBMageCharacterMovementComponent::TickGravityOverTime(float DeltaTime)
+{
+	if (_gravityCurveElapsed >= _gravityCurveDuration)
+	{
+		_activeGravityCurve = nullptr;
+		_gravityCurveElapsed = milliseconds::zero();
+		GravityScale = _initialGravityScale;
+		return;
+	}
+
+	_gravityCurveElapsed += milliseconds((int)(DeltaTime * 1000.f));
+	GravityScale = _activeGravityCurve->GetFloatValue(_gravityCurveElapsed.count());
+}
+
 void UBMageCharacterMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
+	// Some abilities have an impact on the target's gravity
+	if (_activeGravityCurve)
+		TickGravityOverTime(DeltaTime);
+
 	// TODO: determine these based on priority
 	if (IsAbilityActive(MovementAbilityType::Slide))
 	{
