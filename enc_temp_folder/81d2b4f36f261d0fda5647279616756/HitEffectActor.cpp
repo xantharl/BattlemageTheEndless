@@ -33,12 +33,8 @@ void AHitEffectActor::InitCollisionType()
 {
 	AreaOfEffect->SetCollisionProfileName(TEXT("OverlapAll"));
 	AreaOfEffect->SetGenerateOverlapEvents(true);
-	
-	if (bRootShouldApplyEffects)
-	{
-		AreaOfEffect->OnComponentBeginOverlap.AddDynamic(this, &AHitEffectActor::OnAreaOfEffectBeginOverlap);
-		AreaOfEffect->OnComponentEndOverlap.AddDynamic(this, &AHitEffectActor::OnAreaOfEffectEndOverlap);
-	}
+	//AreaOfEffect->OnComponentBeginOverlap.AddDynamic(this, &AHitEffectActor::OnAreaOfEffectBeginOverlap);
+	//AreaOfEffect->OnComponentEndOverlap.AddDynamic(this, &AHitEffectActor::OnAreaOfEffectEndOverlap);
 }
 
 void AHitEffectActor::SnapActorToGround(FHitResult hitResult)
@@ -83,9 +79,6 @@ void AHitEffectActor::BeginPlay()
 	auto components = this->GetComponents();
 	for (UActorComponent* child : components)
 	{
-		if (child == GetRootComponent())
-			continue;
-
 		auto childPrimitive = Cast<UShapeComponent>(child);
 		if (childPrimitive)
 		{
