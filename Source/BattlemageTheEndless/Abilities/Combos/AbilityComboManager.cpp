@@ -162,7 +162,7 @@ FGameplayAbilitySpecHandle UAbilityComboManager::DelegateToWeapon(APickupActor* 
 		return FGameplayAbilitySpecHandle();
 
 	auto spec = AbilitySystemComponent->FindAbilitySpecFromClass(abilityClass);
-	if (CheckCooldownAndTryActivate(*spec))
+	if (spec && CheckCooldownAndTryActivate(*spec))
 		return spec->Handle;
 
 	return FGameplayAbilitySpecHandle();

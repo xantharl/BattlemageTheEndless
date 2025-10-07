@@ -252,12 +252,6 @@ void AHitEffectActor::OnAreaOfEffectBeginOverlap(UPrimitiveComponent* Overlapped
 	if (Instigator && OtherActor == Instigator)
 		return;
 
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.5f, FColor::Yellow, 
-		FString::Printf(TEXT("HitEffectActor overlapped by %s, component %s"), *OtherActor->GetName(), *OtherComp->GetName()));
-	}
-
 	// if OtherActor does not have an AbilitySystemComponent, do nothing
 	if (!OtherActor || OtherActor == this || !OtherActor->FindComponentByClass<UAbilitySystemComponent>())
 		return;
