@@ -104,23 +104,4 @@ void UBMageAbilitySystemComponent::OnRemoveGameplayEffectCallback(const FActiveG
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Effect %s removed"), *EffectRemoved.Spec.Def->GetName()));
 
-	// Find tags granted by only this effect
-	FGameplayTagContainer tagsToRemove;
-	for(auto cue : EffectRemoved.Spec.Def->GameplayCues)
-		tagsToRemove.AppendTags(cue.GameplayCueTags);
-
-	if (tagsToRemove.Num() == 0)
-		return;
-
-	// Remove tags granted by this effect
-	for (auto tag : tagsToRemove)
-		ActiveGameplayCues.RemoveCue(tag);
-
-	//ActiveEffectHandles.Remove(RemovalInfo.ActiveEffect->Handle);
-	//if (ActiveEffectHandles.IsEmpty())
-	//{
-	//	if (GEngine)
-	//		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ending ability %s due to effect removal"), *GetName()));
-	//	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
-	//}
 }

@@ -111,17 +111,12 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	{
 		ApplyEffects(character, ActorInfo->AbilitySystemComponent.Get(), character, ActorInfo->AvatarActor.Get());
 
-		// If any duration effects were applied, don't set an end timer, let the effect tasks handle the end
 		auto durationEffects = EffectsToApply.FilterByPredicate([](TSubclassOf<UGameplayEffect> effect) {
 			return effect.GetDefaultObject()->DurationPolicy == EGameplayEffectDurationType::HasDuration;
 		});
 		if (durationEffects.Num() > 0)
 			return;
 	}
-	//else if (HitType == HitType::HitScan)
-	//{
-	//	// if we have a hit scan ability, we need to trace to find the target
-	//}
 
 	// if there is chain delay, set a timer to end the ability after that duration
 	if (ChainDelay > 0.001f && NumberOfChains > 0)
@@ -138,9 +133,8 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 		return;
 	}
-
-	// if the montage has the longer duration, set a timer to end the ability after that duration
-	// TODO: This should account for abilities with duration effects, probably take the longest duration effect and use that instead
+	
+	// otherwise set a timer to end the ability when the montage is done
 	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UAttackBaseGameplayAbility::EndAbility, Handle, ActorInfo, ActivationInfo, true, true);
 	world->GetTimerManager().SetTimer(EndTimerHandle, TimerDelegate, montageDuration, false);
 
