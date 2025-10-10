@@ -109,13 +109,36 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	// Apply effects to the character, these will in turn spawn any configured cues (Particles and/or sound)
 	if(HitType == HitType::Self)
 	{
+		auto asc = ActorInfo->AbilitySystemComponent.Get();
 		ApplyEffects(character, ActorInfo->AbilitySystemComponent.Get(), character, ActorInfo->AvatarActor.Get());
 
 		auto durationEffects = EffectsToApply.FilterByPredicate([](TSubclassOf<UGameplayEffect> effect) {
 			return effect.GetDefaultObject()->DurationPolicy == EGameplayEffectDurationType::HasDuration;
 		});
+
+		// if we have any duration effects, we need to keep the ability alive until they expire
 		if (durationEffects.Num() > 0)
+		{
+			auto maxDuration = 0.f;
+			TArray<FGameplayEffectSpec> specs;
+			asc->GetAllActiveGameplayEffectSpecs(specs);
+
+			for (auto effect : durationEffects)
+			{
+				auto activeEffect = specs.FindByPredicate([effect](const FGameplayEffectSpec& spec) {
+					return spec.Def == effect.GetDefaultObject();
+				});
+
+				float calculatedMagnitude = 0.f;
+				bool success = effect.GetDefaultObject()->DurationMagnitude.AttemptCalculateMagnitude(*activeEffect, calculatedMagnitude);
+				if (success && calculatedMagnitude > maxDuration)
+					maxDuration = calculatedMagnitude;
+			}
+
+			FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UAttackBaseGameplayAbility::EndSelf);
+			world->GetTimerManager().SetTimer(EndTimerHandle, TimerDelegate, maxDuration, false);
 			return;
+		}
 	}
 
 	// if there is chain delay, set a timer to end the ability after that duration
