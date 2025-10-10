@@ -86,22 +86,11 @@ void UGA_WithEffectsBase::EndSelf()
 		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Blue, FString::Printf(TEXT("Ability %s is not active, cannot end it"), *GetName()));
 }
 
-void UGA_WithEffectsBase::EndAbilityByTimeout(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
+void UGA_WithEffectsBase::EndAbilityByTimeout (const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Red, FString::Printf(TEXT("Ending ability %s due to timeout"), *GetName()));
 	EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
-}
-
-void UGA_WithEffectsBase::OnEffectRemoved(const FGameplayEffectRemovalInfo& GameplayEffectRemovalInfo)
-{
-	ActiveEffectHandles.Remove(GameplayEffectRemovalInfo.ActiveEffect->Handle);
-	if (ActiveEffectHandles.IsEmpty())
-	{
-		if (GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ending ability %s due to effect removal"), *GetName()));
-		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
-	}
 }
 
 bool UGA_WithEffectsBase::WillCancelAbility(FGameplayAbilitySpec* OtherAbility)

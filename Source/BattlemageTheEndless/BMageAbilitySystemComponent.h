@@ -39,4 +39,5 @@ private:
 	UFUNCTION(BlueprintCallable, Category = "Hit Effect")
 	virtual void OnMarkSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+	virtual void OnRemoveGameplayEffectCallback(const FActiveGameplayEffect& EffectRemoved);
 };

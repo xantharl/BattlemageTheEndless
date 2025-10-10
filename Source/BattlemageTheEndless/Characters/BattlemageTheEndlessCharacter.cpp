@@ -37,7 +37,6 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 	// See details of replication modes https://github.com/tranek/GASDocumentation?tab=readme-ov-file#concepts-asc-rm
 	// Defaulting to minimal, updates to Mixed on possession (which indicates this is a player character)
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
-	AbilitySystemComponent->OnAnyGameplayEffectRemovedDelegate().AddUObject(this, &ABattlemageTheEndlessCharacter::OnRemoveGameplayEffectCallback);
 
 	// Create the attribute set, this replicates by default
 	// Adding it as a subobject of the owning actor of an AbilitySystemComponent
@@ -1501,8 +1500,4 @@ void ABattlemageTheEndlessCharacter::ChargeSpell(UAttackBaseGameplayAbility* abi
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is charged"), *GetName()));
 	}
-}
-
-void ABattlemageTheEndlessCharacter::OnRemoveGameplayEffectCallback(const FActiveGameplayEffect& EffectRemoved)
-{
 }

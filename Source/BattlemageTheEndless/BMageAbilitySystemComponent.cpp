@@ -25,6 +25,8 @@ void UBMageAbilitySystemComponent::BeginPlay()
 		_markSphere->RegisterComponent();
 		_markSphere->AttachToComponent(GetOwner()->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 	}
+
+	OnAnyGameplayEffectRemovedDelegate().AddUObject(this, &UBMageAbilitySystemComponent::OnRemoveGameplayEffectCallback);
 }
 
 void UBMageAbilitySystemComponent::MarkOwner(AActor* instigator, float duration, float range, UMaterialInstance* markedMaterial, UMaterialInstance* markedMaterialOutOfRange)
@@ -95,4 +97,32 @@ void UBMageAbilitySystemComponent::OnMarkSphereEndOverlap(UPrimitiveComponent* O
 	{
 		TargetMesh->SetOverlayMaterial(_markedMaterialOutOfRange);
 	}
+}
+
+void UBMageAbilitySystemComponent::OnRemoveGameplayEffectCallback(const FActiveGameplayEffect& EffectRemoved)
+{
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Effect %s removed"), *EffectRemoved.Spec.Def->GetName()));
+
+	// Find tags granted by only this effect
+	FGameplayTagContainer tagsToRemove;
+	for(auto cue : EffectRemoved.Spec.Def->GameplayCues)
+		tagsToRemove.AppendTags(cue.GameplayCueTags);
+
+	if (tagsToRemove.Num() == 0)
+		return;
+
+	// Remove tags granted by this effect
+	for (auto tag : tagsToRemove)
+		ActiveGameplayCues.RemoveCue(tag);
+
+
+
+	//ActiveEffectHandles.Remove(RemovalInfo.ActiveEffect->Handle);
+	//if (ActiveEffectHandles.IsEmpty())
+	//{
+	//	if (GEngine)
+	//		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ending ability %s due to effect removal"), *GetName()));
+	//	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+	//}
 }

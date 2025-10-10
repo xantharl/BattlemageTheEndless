@@ -406,8 +406,6 @@ protected:
 
 	const int TickRate = 60;
 
-	virtual void OnRemoveGameplayEffectCallback(const FActiveGameplayEffect& EffectRemoved);
-
 	// Debug time to avoid spamming print messages
 	float _secondsSinceLastPrint = 0;
 };

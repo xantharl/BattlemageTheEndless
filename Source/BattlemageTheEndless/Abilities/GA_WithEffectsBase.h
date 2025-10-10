@@ -77,9 +77,6 @@ public:
 
 	void EndAbilityByTimeout(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled);
 
-	UFUNCTION()
-	void OnEffectRemoved(const FGameplayEffectRemovalInfo& GameplayEffectRemovalInfo);
-
 	bool WillCancelAbility(FGameplayAbilitySpec* OtherAbility);
 
 	TArray<TObjectPtr<UGA_WithEffectsBase>> GetAbilityActiveInstances(FGameplayAbilitySpec* spec);
