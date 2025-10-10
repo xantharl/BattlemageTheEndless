@@ -116,8 +116,6 @@ void UBMageAbilitySystemComponent::OnRemoveGameplayEffectCallback(const FActiveG
 	for (auto tag : tagsToRemove)
 		ActiveGameplayCues.RemoveCue(tag);
 
-
-
 	//ActiveEffectHandles.Remove(RemovalInfo.ActiveEffect->Handle);
 	//if (ActiveEffectHandles.IsEmpty())
 	//{

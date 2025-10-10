@@ -74,10 +74,6 @@ public:
 
 	virtual void HandleGameplayCue(AActor* MyTarget, EGameplayCueEvent::Type EventType, const FGameplayCueParameters& Parameters) override;
 
-	void TryDestroyNiagaraInstance();
-
-	void TryCreateNiagaraInstance(AActor* MyTarget);
-
 	FTimerHandle DestroyTimer;
 	
 protected:
