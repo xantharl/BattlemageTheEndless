@@ -94,7 +94,7 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
-	TMap<TSubclassOf<class UGA_WithEffectsBase>, UInputAction*> DefaultAbilities;
+	TMap<TSubclassOf<class UGameplayAbility>, UInputAction*> DefaultAbilities;
 
 	/** Third person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -339,6 +339,11 @@ public:
 
 	virtual void PawnClientRestart();
 
+	virtual void Crouch(bool bClientSimulation);
+
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	void RequestUnCrouch();
+
 protected:
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
@@ -356,15 +361,13 @@ protected:
 
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
-	void Crouch();
 	void EndSprint();
 	void LaunchJump();
-	void RequestUnCrouch();
 	void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction);
 	void DoUnCrouch(UBMageCharacterMovementComponent* movement);
 	void EndSlide(UCharacterMovementComponent* movement);
-	void AbilityInputPressed(TSubclassOf<class UGA_WithEffectsBase> ability);
-	void AbilityInputReleased(TSubclassOf<class UGA_WithEffectsBase> ability);
+	void AbilityInputPressed(TSubclassOf<class UGameplayAbility> ability);
+	void AbilityInputReleased(TSubclassOf<class UGameplayAbility> ability);
 	void SwitchCamera();
 	void DodgeInput();
 	void ToggleCastingMode();

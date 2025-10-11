@@ -352,8 +352,8 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 	EnhancedInputComponent->BindAction(LaunchJumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
 	// Crouching
-	EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::Crouch);
-	EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::RequestUnCrouch);
+	//EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::Crouch);
+	//EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::RequestUnCrouch);
 
 	// Sprinting
 	/*EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::StartSprint);
@@ -410,7 +410,7 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 	}
 }
 
-void ABattlemageTheEndlessCharacter::Crouch() 
+void ABattlemageTheEndlessCharacter::Crouch(bool bClientSimulation)
 {
 	// nothing to do if we're already crouching
 	if (bIsCrouched)
@@ -423,7 +423,7 @@ void ABattlemageTheEndlessCharacter::Crouch()
 		return;
 	}
 
-	ACharacter::Crouch(false);
+	ACharacter::Crouch(bClientSimulation);
 
 	if (!movement->IsAbilityActive(MovementAbilityType::Sprint) && !movement->IsAbilityActive(MovementAbilityType::Dodge))
 	{
@@ -477,10 +477,13 @@ void ABattlemageTheEndlessCharacter::EndSlide(UCharacterMovementComponent* movem
 		mageMovement->TryEndAbility(MovementAbilityType::Slide);
 }
 
-void ABattlemageTheEndlessCharacter::AbilityInputPressed(TSubclassOf<class UGA_WithEffectsBase> ability)
+void ABattlemageTheEndlessCharacter::AbilityInputPressed(TSubclassOf<class UGameplayAbility> ability)
 {
 	auto attributeSet = Cast<UBaseAttributeSet>(AbilitySystemComponent->GetAttributeSet(UBaseAttributeSet::StaticClass()));
 	auto speedBefore = attributeSet->GetMovementSpeed();
+	if (AbilitySystemComponent->FindAbilitySpecFromClass(ability)->IsActive())
+		return;
+
 	auto success = AbilitySystemComponent->TryActivateAbilityByClass(ability);
 	auto speedAfter = attributeSet->GetMovementSpeed();
 	if (success && GEngine)
@@ -489,7 +492,7 @@ void ABattlemageTheEndlessCharacter::AbilityInputPressed(TSubclassOf<class UGA_W
 	}
 }
 
-void ABattlemageTheEndlessCharacter::AbilityInputReleased(TSubclassOf<class UGA_WithEffectsBase> ability)
+void ABattlemageTheEndlessCharacter::AbilityInputReleased(TSubclassOf<class UGameplayAbility> ability)
 {
 	auto attributeSet = Cast<UBaseAttributeSet>(AbilitySystemComponent->GetAttributeSet(UBaseAttributeSet::StaticClass()));
 	auto speedBefore = attributeSet->GetMovementSpeed();
