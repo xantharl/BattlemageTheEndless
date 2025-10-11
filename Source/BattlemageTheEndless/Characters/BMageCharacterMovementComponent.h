@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameplayAbilities/Public/AbilitySystemComponent.h"
 #include "Camera/CameraComponent.h"
 #include <map>
 #include <string>
@@ -15,7 +16,6 @@
 #include "../Abilities/Instances/SlideAbility.h"
 #include "../Abilities/Instances/LaunchAbility.h"
 #include "../Abilities/Instances/DodgeAbility.h"
-//#include "../Abilities/Instances/DoubleJumpAbility.h"
 #include "../Abilities/Instances/SprintAbility.h"
 #include "../Abilities/Instances/SlideAbility.h"
 
@@ -92,7 +92,7 @@ public:
 	/// <param name="mesh"></param>
 	/// <returns></returns>
 	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
-	bool TryStartAbility(MovementAbilityType abilityType);
+	UMovementAbility* TryStartAbility(MovementAbilityType abilityType);
 
 	bool ShouldAbilityBegin(MovementAbilityType abilityType);
 

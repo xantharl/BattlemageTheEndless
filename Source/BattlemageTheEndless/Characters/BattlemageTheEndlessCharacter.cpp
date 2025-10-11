@@ -343,14 +343,6 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 
 	//EnhancedInputComponent->BindAction(MenuAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::ToggleMenu);
 
-	// Jumping
-	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::Jump);
-	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-
-	// Launch Jump
-	EnhancedInputComponent->BindAction(LaunchJumpAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::LaunchJump);
-	EnhancedInputComponent->BindAction(LaunchJumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-
 	// Moving
 	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::Move);
 
@@ -494,13 +486,6 @@ void ABattlemageTheEndlessCharacter::EndSprint()
 	{
 		movement->TryEndAbility(MovementAbilityType::Sprint);
 	}
-}
-
-void ABattlemageTheEndlessCharacter::LaunchJump()
-{
-	// get movement component as BMageCharacterMovementComponent
-	if (UBMageCharacterMovementComponent* mageMovement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement()))
-		mageMovement->TryStartAbility(MovementAbilityType::Launch);
 }
 
 void ABattlemageTheEndlessCharacter::RequestUnCrouch()

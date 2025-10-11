@@ -157,14 +157,14 @@ void UBMageCharacterMovementComponent::TickComponent(float DeltaTime, enum ELeve
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
-bool UBMageCharacterMovementComponent::TryStartAbility(MovementAbilityType abilityType)
+UMovementAbility* UBMageCharacterMovementComponent::TryStartAbility(MovementAbilityType abilityType)
 {
 	if (!MovementAbilities.Contains(abilityType))
-		return false;
+		return nullptr;
 
-	UMovementAbility* ability = MovementAbilities[abilityType];
-	if (!ability->IsEnabled || ability->IsActive || !ShouldAbilityBegin(abilityType))
-		return false;
+	TObjectPtr<UMovementAbility> ability = MovementAbilities[abilityType];
+	if (!ability->IsEnabled || ability->IsActive)// || !ShouldAbilityBegin(abilityType))
+		return ability;
 
 	// handle ability interactions
 	if (abilityType == MovementAbilityType::Sprint && IsCrouching())
@@ -180,14 +180,16 @@ bool UBMageCharacterMovementComponent::TryStartAbility(MovementAbilityType abili
 		if (LaunchesPerformed >= MaxLaunches)
 		{
 			CharacterOwner->Jump();
-			return false;
+			// this needs to account for jump
+			return nullptr;
 		}
 	}
 
 	ability->Begin();
-	return true;
+	return ability;
 }
 
+// TODO: Remove this after full migration
 bool UBMageCharacterMovementComponent::ShouldAbilityBegin(MovementAbilityType abilityType)
 {
 	// we check what we can at the ability level
@@ -316,6 +318,9 @@ void UBMageCharacterMovementComponent::OnMovementAbilityEnd(UMovementAbility* ab
 			UnCrouch();
 			ShouldUnCrouch = false;
 		}
+		//auto targetAsc = CharacterOwner->FindComponentByClass<UAbilitySystemComponent>();
+		//if (!targetAsc)
+		//	return;
 	}
 }
 
