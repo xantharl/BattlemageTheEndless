@@ -23,6 +23,8 @@ FGameplayTag UGA_WithEffectsBase::GetAbilityName()
 
 void UGA_WithEffectsBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+
 	// Default impl assumes applying effects to self, override if needed
 	if (EffectsToApply.Num() > 0)
 	{

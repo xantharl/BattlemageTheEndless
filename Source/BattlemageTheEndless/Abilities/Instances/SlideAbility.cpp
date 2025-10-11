@@ -15,6 +15,7 @@ void USlideAbility::Begin()
 {
 	Super::Begin();
 	Movement->SetCrouchedHalfHeight(SlideHalfHeight);
+	Movement->bWantsToCrouch = true;
 	_previousLocation = Movement->GetActorLocation();
 	_priorRotationRateZ = Movement->RotationRate.Yaw;
 	Movement->bUseControllerDesiredRotation = true;
@@ -32,6 +33,7 @@ void USlideAbility::End(bool bForce)
 	Movement->bUseControllerDesiredRotation = false;
 	Character->bUseControllerRotationYaw = true;
 	Movement->RotationRate.Yaw = _priorRotationRateZ;
+	Movement->bWantsToCrouch = false;
 	Super::End(bForce);
 }
 

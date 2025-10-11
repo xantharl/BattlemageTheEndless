@@ -424,14 +424,6 @@ void ABattlemageTheEndlessCharacter::Crouch(bool bClientSimulation)
 	}
 
 	ACharacter::Crouch(bClientSimulation);
-
-	if (!movement->IsAbilityActive(MovementAbilityType::Sprint) && !movement->IsAbilityActive(MovementAbilityType::Dodge))
-	{
-		return;
-	}
-
-	// Start a slide if we've made it this far
-	movement->TryStartAbility(MovementAbilityType::Slide);
 }
 
 void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction)
@@ -500,7 +492,7 @@ void ABattlemageTheEndlessCharacter::AbilityInputReleased(TSubclassOf<class UGam
 	auto speedAfter = attributeSet->GetMovementSpeed();
 	if (GEngine)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Canceled ability %s, speed before: %f, speed after: %f"), *ability->GetName(), speedBefore, speedAfter));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Canceled ability %s, speed before: %f, speed after: %f"), *ability->GetName(), speedBefore, speedAfter));
 	}
 }
 
