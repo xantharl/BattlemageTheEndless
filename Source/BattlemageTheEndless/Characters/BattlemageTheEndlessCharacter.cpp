@@ -351,14 +351,6 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 	EnhancedInputComponent->BindAction(LaunchJumpAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::LaunchJump);
 	EnhancedInputComponent->BindAction(LaunchJumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
-	// Crouching
-	//EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::Crouch);
-	//EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::RequestUnCrouch);
-
-	// Sprinting
-	/*EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::StartSprint);
-	EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::EndSprint);*/
-
 	// Moving
 	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::Move);
 
@@ -610,67 +602,12 @@ void ABattlemageTheEndlessCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
-// TODO: Figure out how to handle this with movement abilities
 void ABattlemageTheEndlessCharacter::Jump()
 {
-	// jump cooldown
-	milliseconds now = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
-	if (now - _lastJumpTime < (JumpCooldown*1000ms))
-		return;
-
 	// get movement component as BMageCharacterMovementComponent
 	UBMageCharacterMovementComponent* mageMovement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
-
-	_lastJumpTime = now;
-
-	if (mageMovement->IsAbilityActive(MovementAbilityType::Slide))
-		mageMovement->TryStartAbility(MovementAbilityType::Launch);
-	else if (bIsCrouched)
-		UnCrouch();
-
-	bool wallrunEnded = mageMovement->TryEndAbility(MovementAbilityType::WallRun);
-
-	// movement redirection logic
-	if (JumpCurrentCount < JumpMaxCount)
-		RedirectVelocityToLookDirection(wallrunEnded);
-
+	mageMovement->HandleJump(GetActiveCamera());
 	Super::Jump();
-}
-
-// TODO: Refactor this to movement component
-void ABattlemageTheEndlessCharacter::RedirectVelocityToLookDirection(bool wallrunEnded)
-{
-	UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
-	if (!movement || movement->MovementMode != EMovementMode::MOVE_Falling)
-		return;
-
-	// jumping past apex will have the different gravity scale, reset it to the base
-	if (movement->GravityScale != movement->CharacterBaseGravityScale)
-		movement->GravityScale = movement->CharacterBaseGravityScale;
-	
-	// use the already normalized rotation vector as the base
-	// NOTE: we are using the camera's rotation instead of the character's rotation to support wall running, which disables camera based character yaw control
-	FVector targetDirectionVector = GetActiveCamera()->GetComponentRotation().Vector();
-	//movement->GetLastUpdateRotation().Vector();
-
-	// we only want to apply the movement input if it hasn't already been consumed
-	if (ApplyMovementInputToJump && LastControlInputVector != FVector::ZeroVector && !wallrunEnded)
-	{
-		FVector movementImpact = LastControlInputVector;
-		targetDirectionVector += movementImpact;
-	}
-
-	// normalize both rotators to positive rotation so we can safely use them to calculate the yaw difference
-	FRotator targetRotator = targetDirectionVector.Rotation();
-	FRotator movementRotator = movement->Velocity.Rotation();
-	VectorMath::NormalizeRotator0To360(targetRotator);
-	VectorMath::NormalizeRotator0To360(movementRotator);
-
-	// calculate the yaw difference
-	float yawDifference = targetRotator.Yaw - movementRotator.Yaw;
-
-	// rotate the movement vector to the target direction
-	movement->Velocity = movement->Velocity.RotateAngleAxis(yawDifference, FVector::ZAxisVector);	
 }
 
 void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)

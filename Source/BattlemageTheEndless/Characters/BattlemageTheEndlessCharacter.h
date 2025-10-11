@@ -226,7 +226,6 @@ public:
 
 private:
 	milliseconds _lastCameraSwap;
-	milliseconds _lastJumpTime;
 
 public:
 	ABattlemageTheEndlessCharacter(const FObjectInitializer& ObjectInitializer);
@@ -317,13 +316,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float DoubleJumpHorizontalWeight = 1.5f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	bool ApplyMovementInputToJump = true;
-
-	/** Jump Cooldown expressed in seconds**/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	double JumpCooldown = 0.05;
-
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 	APickupActor* GetWeapon(EquipSlot SlotType);
 
@@ -360,9 +352,8 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
+	// this is an override but specifying it as such breaks compile for some reason
 	void Jump();
-
-	void RedirectVelocityToLookDirection(bool wallrunEnded);
 
 	void SetActivePickup(APickupActor* pickup);
 	// True = next, False = previous

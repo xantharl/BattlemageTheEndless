@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Camera/CameraComponent.h"
 #include <map>
 #include <string>
 #include <chrono>
@@ -18,6 +19,7 @@
 #include "../Abilities/Instances/SprintAbility.h"
 #include "../Abilities/Instances/SlideAbility.h"
 
+#include "../Helpers/VectorMath.h"
 #include "../Helpers/Traces.h"
 
 #include "BMageCharacterMovementComponent.generated.h"
@@ -167,6 +169,13 @@ public:
 	/** Apply gravity modification over time, duration is determined by the curve in MS **/
 	UFUNCTION(BlueprintCallable, Category = Abilities)
 	void BeginGravityOverTime(UCurveFloat* gravityCurve);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	bool ApplyMovementInputToJump = true;
+
+	void HandleJump(UCameraComponent* activeCamera);
+
+	void RedirectVelocityToLookDirection(bool wallrunEnded, UCameraComponent* activeCamera);
 
 private:
 	// Gravity over time operations

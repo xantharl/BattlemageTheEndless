@@ -54,6 +54,54 @@ void UBMageCharacterMovementComponent::BeginGravityOverTime(UCurveFloat* gravity
 	_gravityCurveDuration = milliseconds((int)(maxTime));
 }
 
+void UBMageCharacterMovementComponent::HandleJump(UCameraComponent* activeCamera)
+{
+	if (IsAbilityActive(MovementAbilityType::Slide))
+		TryStartAbility(MovementAbilityType::Launch);
+	else if (CharacterOwner->bIsCrouched)
+		CharacterOwner->UnCrouch();
+
+	bool wallrunEnded = TryEndAbility(MovementAbilityType::WallRun);
+
+	// movement redirection logic
+	if (CharacterOwner->JumpCurrentCount < CharacterOwner->JumpMaxCount)
+		RedirectVelocityToLookDirection(wallrunEnded, activeCamera);
+}
+
+void UBMageCharacterMovementComponent::RedirectVelocityToLookDirection(bool wallrunEnded, UCameraComponent* activeCamera)
+{
+	if (MovementMode != EMovementMode::MOVE_Falling)
+		return;
+
+	// jumping past apex will have the different gravity scale, reset it to the base
+	if (GravityScale != CharacterBaseGravityScale)
+		GravityScale = CharacterBaseGravityScale;
+
+	// use the already normalized rotation vector as the base
+	// NOTE: we are using the camera's rotation instead of the character's rotation to support wall running, which disables camera based character yaw control
+	FVector targetDirectionVector = activeCamera->GetComponentRotation().Vector();
+	//movement->GetLastUpdateRotation().Vector();
+
+	// we only want to apply the movement input if it hasn't already been consumed
+	if (ApplyMovementInputToJump && CharacterOwner->GetLastMovementInputVector() != FVector::ZeroVector && !wallrunEnded)
+	{
+		FVector movementImpact = CharacterOwner->GetLastMovementInputVector();
+		targetDirectionVector += movementImpact;
+	}
+
+	// normalize both rotators to positive rotation so we can safely use them to calculate the yaw difference
+	FRotator targetRotator = targetDirectionVector.Rotation();
+	FRotator movementRotator = Velocity.Rotation();
+	VectorMath::NormalizeRotator0To360(targetRotator);
+	VectorMath::NormalizeRotator0To360(movementRotator);
+
+	// calculate the yaw difference
+	float yawDifference = targetRotator.Yaw - movementRotator.Yaw;
+
+	// rotate the movement vector to the target direction
+	Velocity = Velocity.RotateAngleAxis(yawDifference, FVector::ZAxisVector);
+}
+
 void UBMageCharacterMovementComponent::TickGravityOverTime(float DeltaTime)
 {
 	if (_gravityCurveElapsed >= _gravityCurveDuration)
