@@ -24,6 +24,7 @@
 
 using namespace std;
 using namespace std::chrono;
+
 /**
  * 
  */
@@ -88,6 +89,7 @@ public:
 	/// <param name="Character"></param>
 	/// <param name="mesh"></param>
 	/// <returns></returns>
+	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
 	bool TryStartAbility(MovementAbilityType abilityType);
 
 	bool ShouldAbilityBegin(MovementAbilityType abilityType);
@@ -99,12 +101,14 @@ public:
 	/// <param name="Character"></param>
 	/// <param name="mesh"></param>
 	/// <returns></returns>
+	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
 	bool TryEndAbility(MovementAbilityType abilityType);
 
 	/// <summary>
 	/// Forces an ability to end if it is active
 	/// </summary>
 	/// <param name="abilityType"></param>
+	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
 	void ForceEndAbility(MovementAbilityType abilityType);
 
 	/// <summary>

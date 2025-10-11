@@ -92,6 +92,12 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
+private:
+	FGameplayTag _sprintTag = FGameplayTag::RequestGameplayTag(FName("Movement.Sprint"));
+	FGameplayTag _crouchTag = FGameplayTag::RequestGameplayTag(FName("Movement.Crouch"));
+	FGameplayTag _slideTag = FGameplayTag::RequestGameplayTag(FName("Movement.Slide"));
+	FGameplayTag _dodgeTag = FGameplayTag::RequestGameplayTag(FName("Movement.Dodge"));
+
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
 	TMap<TSubclassOf<class UGameplayAbility>, UInputAction*> DefaultAbilities;
@@ -343,6 +349,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	void RequestUnCrouch();
+
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	UBMageCharacterMovementComponent* GetBMageMovementComponent() { return Cast<UBMageCharacterMovementComponent>(GetCharacterMovement()); }
 
 protected:
 	/** Called for movement input */
