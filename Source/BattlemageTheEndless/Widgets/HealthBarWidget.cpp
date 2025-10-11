@@ -93,6 +93,12 @@ void UHealthBarWidget::SetVisibilityOfStatusAtIndex(int index, ESlateVisibility 
 	progressIconWidget->SetVisibility(visibility);
 	stackCounterWidget->SetVisibility(visibility);
 
+	// reset the size on hide to make sure we aren't shrinking it each time
+	if (visibility == ESlateVisibility::Hidden)
+	{
+		auto canvasPanelSlot = Cast<UCanvasPanelSlot>(progressIconWidget->Slot);
+		canvasPanelSlot->SetSize(StatusGrid[index].InitialProgressSize);
+	}
 }
 
 void UHealthBarWidget::MoveStatusElementsAfterIndexDown(int32 startIndex)
@@ -217,6 +223,7 @@ void UHealthBarWidget::AdjustProgressIndicatorSize(int statusGridItemIdx)
 	auto newSize = FVector2D(StatusGrid[statusGridItemIdx].InitialProgressSize.X, 
 		StatusGrid[statusGridItemIdx].InitialProgressSize.Y * (1.f - (StatusGrid[statusGridItemIdx].TimeElapsedStack / StatusGrid[statusGridItemIdx].TimeInitialStack)));
 
+	//newSize.Y = FMath::Clamp(newSize.Y, 0.f, StatusGrid[statusGridItemIdx].InitialProgressSize.Y);
 	canvasPanelSlot->SetSize(newSize);
 	
 }

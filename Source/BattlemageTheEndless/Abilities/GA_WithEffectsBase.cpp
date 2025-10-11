@@ -23,6 +23,11 @@ FGameplayTag UGA_WithEffectsBase::GetAbilityName()
 
 void UGA_WithEffectsBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
+	// Default impl assumes applying effects to self, override if needed
+	if (EffectsToApply.Num() > 0)
+	{
+		ApplyEffects(ActorInfo->OwnerActor.Get(), ActorInfo->AbilitySystemComponent.Get(), ActorInfo->OwnerActor.Get(), ActorInfo->AvatarActor.Get());
+	}
 }
 
 void UGA_WithEffectsBase::ApplyEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser)
@@ -67,6 +72,16 @@ void UGA_WithEffectsBase::ResetTimerAndClearEffects(const FGameplayAbilityActorI
 	if (world && world->GetTimerManager().IsTimerActive(EndTimerHandle))
 	{
 		world->GetTimerManager().ClearTimer(EndTimerHandle);
+	}
+
+	// remove any active effects we applied to OwnerActor
+	if (ActorInfo && ActorInfo->AbilitySystemComponent.IsValid())
+	{
+		for (auto handle : ActiveEffectHandles)
+		{
+			ActorInfo->AbilitySystemComponent->RemoveActiveGameplayEffect(handle);
+		}
+		ActiveEffectHandles.Empty();
 	}
 }
 void UGA_WithEffectsBase::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)

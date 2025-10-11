@@ -93,8 +93,8 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
-	TArray<TSubclassOf<class UGameplayAbility>> DefaultAbilities;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
+	TMap<TSubclassOf<class UGA_WithEffectsBase>, UInputAction*> DefaultAbilities;
 
 	/** Third person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -357,13 +357,14 @@ protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	void Crouch();
-	void StartSprint();
 	void EndSprint();
 	void LaunchJump();
 	void RequestUnCrouch();
 	void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction);
 	void DoUnCrouch(UBMageCharacterMovementComponent* movement);
 	void EndSlide(UCharacterMovementComponent* movement);
+	void AbilityInputPressed(TSubclassOf<class UGA_WithEffectsBase> ability);
+	void AbilityInputReleased(TSubclassOf<class UGA_WithEffectsBase> ability);
 	void SwitchCamera();
 	void DodgeInput();
 	void ToggleCastingMode();
@@ -373,7 +374,9 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "CheckPoint")
 	void OnBaseCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
-	virtual void HealthChanged(const FOnAttributeChangeData& Data);
+	virtual void OnHealthChanged(const FOnAttributeChangeData& Data);
+	virtual void OnMovementSpeedChanged(const FOnAttributeChangeData& Data);
+	virtual void OnCrouchedSpeedChanged(const FOnAttributeChangeData& Data);
 
 	void ProcessMeleeInput(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
 

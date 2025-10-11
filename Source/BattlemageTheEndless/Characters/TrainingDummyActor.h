@@ -36,5 +36,5 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	virtual void HealthChanged(const FOnAttributeChangeData& Data) override;
+	virtual void OnHealthChanged(const FOnAttributeChangeData& Data) override;
 };

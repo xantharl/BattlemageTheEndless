@@ -107,3 +107,19 @@ void UBMageAbilitySystemComponent::OnRemoveGameplayEffectCallback(const FActiveG
 	// if the applying ability is still active, check if this was the last effect
 		// Find all active effects on this ASC with the same 
 }
+
+TObjectPtr<UGameplayAbility> UBMageAbilitySystemComponent::GetActivatableAbilityByOwnedTag(FName abilityTag) 
+{
+	for (const FGameplayAbilitySpec& Spec : GetActivatableAbilities())
+	{
+		if (!Spec.Ability)
+			continue;
+
+		if (Spec.Ability->AbilityTags.HasTag(FGameplayTag::RequestGameplayTag(abilityTag)))
+		{
+			return Spec.Ability;
+		}
+	}
+
+	return nullptr;
+}

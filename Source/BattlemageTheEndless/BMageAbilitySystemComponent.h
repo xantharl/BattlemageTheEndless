@@ -40,4 +40,7 @@ private:
 	virtual void OnMarkSphereEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	virtual void OnRemoveGameplayEffectCallback(const FActiveGameplayEffect& EffectRemoved);
+
+	// return the first ability found with the specified owned tag
+	TObjectPtr<UGameplayAbility> GetActivatableAbilityByOwnedTag(FName abilityTag);
 };

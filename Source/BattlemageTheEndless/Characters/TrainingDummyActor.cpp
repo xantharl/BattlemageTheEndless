@@ -17,7 +17,7 @@ void ATrainingDummyActor::BeginPlay()
 	Super::BeginPlay();
 
 	HealthChangedDelegateHandle = AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute())
-		.AddUObject(this, &ATrainingDummyActor::HealthChanged);
+		.AddUObject(this, &ATrainingDummyActor::OnHealthChanged);
 }
 
 void ATrainingDummyActor::ResetHealth()
@@ -49,9 +49,9 @@ void ATrainingDummyActor::SetupPlayerInputComponent(UInputComponent* PlayerInput
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 }
 
-void ATrainingDummyActor::HealthChanged(const FOnAttributeChangeData& Data)
+void ATrainingDummyActor::OnHealthChanged(const FOnAttributeChangeData& Data)
 {
-	Super::HealthChanged(Data);
+	Super::OnHealthChanged(Data);
 
 	if (Data.NewValue <= AttributeSet->GetHealth())
 	{

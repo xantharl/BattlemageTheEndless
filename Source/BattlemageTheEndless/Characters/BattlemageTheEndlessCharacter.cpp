@@ -46,8 +46,6 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 	AttributeSet->InitMaxHealth(MaxHealth);
 	AttributeSet->InitHealthRegenRate(0.f);
 
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute()).AddUObject(this, &ABattlemageTheEndlessCharacter::HealthChanged);
-
 	ComboManager = CreateDefaultSubobject<UAbilityComboManager>(TEXT("ComboManager"));
 	AbilitySystemComponent->AbilityFailedCallbacks.AddUObject(ComboManager, &UAbilityComboManager::OnAbilityFailed);
 	ComboManager->AbilitySystemComponent = AbilitySystemComponent;
@@ -198,6 +196,8 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 	if (movement)
 	{
 		movement->InitAbilities(this, GetMesh());
+		AttributeSet->InitMovementSpeed(movement->MaxWalkSpeed);
+		AttributeSet->InitCrouchedSpeed(movement->MaxWalkSpeedCrouched);
 	}
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
@@ -211,7 +211,11 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 	}
 
 	HealthChangedDelegateHandle = AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute())
-		.AddUObject(this, &ABattlemageTheEndlessCharacter::HealthChanged);
+		.AddUObject(this, &ABattlemageTheEndlessCharacter::OnHealthChanged);
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetMovementSpeedAttribute())
+		.AddUObject(this, &ABattlemageTheEndlessCharacter::OnMovementSpeedChanged);
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetCrouchedSpeedAttribute())
+		.AddUObject(this, &ABattlemageTheEndlessCharacter::OnCrouchedSpeedChanged);
 
 	InitHealthbar();
 }
@@ -320,79 +324,89 @@ void ABattlemageTheEndlessCharacter::GiveDefaultAbilities()
 	}
 
 	// add default abilities
-	for (TSubclassOf<UGameplayAbility>& Ability : DefaultAbilities)
+	for (auto Ability : DefaultAbilities)
 	{
-		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability.Key, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
+
 	}
 }
 
 void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
-	TObjectPtr<UBMageCharacterMovementComponent> movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
 	// Set up action bindings
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
-	{
-		//EnhancedInputComponent->BindAction(MenuAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::ToggleMenu);
-
-		// Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::Jump);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-
-		// Launch Jump
-		EnhancedInputComponent->BindAction(LaunchJumpAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::LaunchJump);
-		EnhancedInputComponent->BindAction(LaunchJumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
-
-		// Crouching
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::Crouch);
-		EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::RequestUnCrouch);
-
-		// Sprinting
-		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::StartSprint);
-		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::EndSprint);
-
-		// Moving
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::Move);
-
-		// Looking
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::Look);
-
-		// Switch Camera
-		EnhancedInputComponent->BindAction(SwitchCameraAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::SwitchCamera);
-
-		// Dodge Actions
-		EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::DodgeInput);
-
-		EnhancedInputComponent->BindAction(RespawnAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::CallRestartPlayer);
-
-		// Equip spell class actions
-		EnhancedInputComponent->BindAction(SpellClassOneAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::EquipSpellClass, 1);
-		EnhancedInputComponent->BindAction(SpellClassTwoAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::EquipSpellClass, 2);
-		EnhancedInputComponent->BindAction(SpellClassThreeAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::EquipSpellClass, 3);
-		EnhancedInputComponent->BindAction(SpellClassFourAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::EquipSpellClass, 4);
-
-		EnhancedInputComponent->BindAction(NextSpellAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::SelectActiveSpell, true);
-		EnhancedInputComponent->BindAction(PreviousSpellAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::SelectActiveSpell, false);
-
-		// Casting Related Actions
-		EnhancedInputComponent->BindAction(CastingModeAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::ToggleCastingMode);
-
-		// Aim Mode
-		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::ToggleAimMode, ETriggerEvent::Triggered);
-		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::ToggleAimMode, ETriggerEvent::Completed);
-
-		// Bind abilities to input
-		if (AbilitySystemComponent) 
-		{
-			AbilitySystemComponent->BindAbilityActivationToInputComponent(
-				EnhancedInputComponent, FGameplayAbilityInputBinds(
-					"Confirm", "Cancel", "EGASAbilityInputID", 
-					static_cast<int32>(EGASAbilityInputId::Confirm), 
-					static_cast<int32>(EGASAbilityInputId::Cancel)));
-		}
-	}
-	else
+	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
+	if (!EnhancedInputComponent)
 	{
 		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input Component!"), *GetNameSafe(this));
+		return;
+	}
+
+	//EnhancedInputComponent->BindAction(MenuAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::ToggleMenu);
+
+	// Jumping
+	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::Jump);
+	EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+
+	// Launch Jump
+	EnhancedInputComponent->BindAction(LaunchJumpAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::LaunchJump);
+	EnhancedInputComponent->BindAction(LaunchJumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+
+	// Crouching
+	EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Started, this, &ABattlemageTheEndlessCharacter::Crouch);
+	EnhancedInputComponent->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::RequestUnCrouch);
+
+	// Sprinting
+	/*EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::StartSprint);
+	EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::EndSprint);*/
+
+	// Moving
+	EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::Move);
+
+	// Looking
+	EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::Look);
+
+	// Switch Camera
+	EnhancedInputComponent->BindAction(SwitchCameraAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::SwitchCamera);
+
+	// Dodge Actions
+	EnhancedInputComponent->BindAction(DodgeAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::DodgeInput);
+
+	EnhancedInputComponent->BindAction(RespawnAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::CallRestartPlayer);
+
+	// Equip spell class actions
+	EnhancedInputComponent->BindAction(SpellClassOneAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::EquipSpellClass, 1);
+	EnhancedInputComponent->BindAction(SpellClassTwoAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::EquipSpellClass, 2);
+	EnhancedInputComponent->BindAction(SpellClassThreeAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::EquipSpellClass, 3);
+	EnhancedInputComponent->BindAction(SpellClassFourAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::EquipSpellClass, 4);
+
+	EnhancedInputComponent->BindAction(NextSpellAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::SelectActiveSpell, true);
+	EnhancedInputComponent->BindAction(PreviousSpellAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::SelectActiveSpell, false);
+
+	// Casting Related Actions
+	EnhancedInputComponent->BindAction(CastingModeAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::ToggleCastingMode);
+
+	// Aim Mode
+	EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::ToggleAimMode, ETriggerEvent::Triggered);
+	EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::ToggleAimMode, ETriggerEvent::Completed);
+
+	// Handle Default Ability Bindings
+	for (auto entry : DefaultAbilities)
+	{
+		if (!entry.Value)
+			continue;
+		
+		EnhancedInputComponent->BindAction(entry.Value, ETriggerEvent::Triggered, this, &ABattlemageTheEndlessCharacter::AbilityInputPressed, entry.Key);
+		EnhancedInputComponent->BindAction(entry.Value, ETriggerEvent::Completed, this, &ABattlemageTheEndlessCharacter::AbilityInputReleased, entry.Key);
+	}
+
+	// Bind abilities to input
+	if (AbilitySystemComponent) 
+	{
+		AbilitySystemComponent->BindAbilityActivationToInputComponent(
+			EnhancedInputComponent, FGameplayAbilityInputBinds(
+				"Confirm", "Cancel", "EGASAbilityInputID", 
+				static_cast<int32>(EGASAbilityInputId::Confirm), 
+				static_cast<int32>(EGASAbilityInputId::Cancel)));
 	}
 }
 
@@ -463,13 +477,28 @@ void ABattlemageTheEndlessCharacter::EndSlide(UCharacterMovementComponent* movem
 		mageMovement->TryEndAbility(MovementAbilityType::Slide);
 }
 
-void ABattlemageTheEndlessCharacter::StartSprint()
+void ABattlemageTheEndlessCharacter::AbilityInputPressed(TSubclassOf<class UGA_WithEffectsBase> ability)
 {
-	TObjectPtr<UBMageCharacterMovementComponent> movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
-	if (!movement)
-		return;
+	auto attributeSet = Cast<UBaseAttributeSet>(AbilitySystemComponent->GetAttributeSet(UBaseAttributeSet::StaticClass()));
+	auto speedBefore = attributeSet->GetMovementSpeed();
+	auto success = AbilitySystemComponent->TryActivateAbilityByClass(ability);
+	auto speedAfter = attributeSet->GetMovementSpeed();
+	if (success && GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Activated ability %s, speed before: %f, speed after: %f"), *ability->GetName(), speedBefore, speedAfter));
+	}
+}
 
-	movement->TryStartAbility(MovementAbilityType::Sprint);
+void ABattlemageTheEndlessCharacter::AbilityInputReleased(TSubclassOf<class UGA_WithEffectsBase> ability)
+{
+	auto attributeSet = Cast<UBaseAttributeSet>(AbilitySystemComponent->GetAttributeSet(UBaseAttributeSet::StaticClass()));
+	auto speedBefore = attributeSet->GetMovementSpeed();
+	AbilitySystemComponent->CancelAbility(ability->GetDefaultObject<UGameplayAbility>());
+	auto speedAfter = attributeSet->GetMovementSpeed();
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Canceled ability %s, speed before: %f, speed after: %f"), *ability->GetName(), speedBefore, speedAfter));
+	}
 }
 
 void ABattlemageTheEndlessCharacter::EndSprint()
@@ -893,11 +922,27 @@ void ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap(UPrimitiveCompone
 		LastCheckPoint = checkpoint;
 }
 
-void ABattlemageTheEndlessCharacter::HealthChanged(const FOnAttributeChangeData& Data)
+void ABattlemageTheEndlessCharacter::OnHealthChanged(const FOnAttributeChangeData& Data)
 {
 	// If health isn't set up, exit
 	if (AttributeSet->GetMaxHealth() == 0)
 		return;
+}
+
+void ABattlemageTheEndlessCharacter::OnMovementSpeedChanged(const FOnAttributeChangeData& Data)
+{
+	if (auto movement = GetCharacterMovement())
+	{
+		movement->MaxWalkSpeed = Data.NewValue;
+	}
+}
+
+void ABattlemageTheEndlessCharacter::OnCrouchedSpeedChanged(const FOnAttributeChangeData& Data)
+{
+	if (auto movement = GetCharacterMovement())
+	{
+		movement->MaxWalkSpeedCrouched = Data.NewValue;
+	}
 }
 
 void ABattlemageTheEndlessCharacter::ProcessMeleeInput(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)

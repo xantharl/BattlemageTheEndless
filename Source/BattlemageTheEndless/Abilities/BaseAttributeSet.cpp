@@ -11,6 +11,8 @@ void UBaseAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME_CONDITION_NOTIFY(UBaseAttributeSet, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBaseAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBaseAttributeSet, HealthRegenRate, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UBaseAttributeSet, MovementSpeed, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UBaseAttributeSet, CrouchedSpeed, COND_None, REPNOTIFY_Always);
 }
 
 void UBaseAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
@@ -31,4 +33,9 @@ void UBaseAttributeSet::OnRep_HealthRegenRate(const FGameplayAttributeData& OldH
 void UBaseAttributeSet::OnRep_MovementSpeed(const FGameplayAttributeData& OldMovementSpeed)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, MovementSpeed, OldMovementSpeed);
+}
+
+void UBaseAttributeSet::OnRep_CrouchedSpeed(const FGameplayAttributeData& OldCrouchedSpeed)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, CrouchedSpeed, OldCrouchedSpeed);
 }

@@ -44,6 +44,10 @@ public:
 	FGameplayAttributeData MovementSpeed;
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, MovementSpeed)
 
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", ReplicatedUsing = OnRep_CrouchedSpeed)
+	FGameplayAttributeData CrouchedSpeed;
+	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, CrouchedSpeed)
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
@@ -62,4 +66,7 @@ protected:
 
 	UFUNCTION()
 	virtual void OnRep_MovementSpeed(const FGameplayAttributeData& OldMovementSpeed);
+
+	UFUNCTION()
+	virtual void OnRep_CrouchedSpeed(const FGameplayAttributeData& OldCrouchedSpeed);
 };
