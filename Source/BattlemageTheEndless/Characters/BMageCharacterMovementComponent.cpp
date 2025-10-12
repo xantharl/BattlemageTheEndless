@@ -163,7 +163,7 @@ UMovementAbility* UBMageCharacterMovementComponent::TryStartAbility(MovementAbil
 		return nullptr;
 
 	TObjectPtr<UMovementAbility> ability = MovementAbilities[abilityType];
-	if (!ability->IsEnabled || ability->IsActive)// || !ShouldAbilityBegin(abilityType))
+	if ((!ability->IsEnabled || ability->IsActive) || (abilityType == MovementAbilityType::WallRun && !ShouldAbilityBegin(abilityType)))
 		return ability;
 
 	// handle ability interactions
