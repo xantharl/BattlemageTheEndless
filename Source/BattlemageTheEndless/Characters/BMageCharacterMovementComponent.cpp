@@ -179,7 +179,7 @@ UMovementAbility* UBMageCharacterMovementComponent::TryStartAbility(MovementAbil
 		// If we can't launch anymore, redirect to jump logic (which checks jump count and handles appropriately)
 		if (LaunchesPerformed >= MaxLaunches)
 		{
-			CharacterOwner->Jump();
+			CharacterOwner->bPressedJump = true;
 			// this needs to account for jump
 			return nullptr;
 		}

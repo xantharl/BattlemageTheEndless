@@ -464,19 +464,22 @@ void ABattlemageTheEndlessCharacter::AbilityInputPressed(TSubclassOf<class UGame
 	auto speedAfter = attributeSet->GetMovementSpeed();
 	if (success && GEngine)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Activated ability %s, speed before: %f, speed after: %f"), *ability->GetName(), speedBefore, speedAfter));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Activated ability %s"), *ability->GetName()));
 	}
 }
 
 void ABattlemageTheEndlessCharacter::AbilityInputReleased(TSubclassOf<class UGameplayAbility> ability)
 {
+	if (!AbilitySystemComponent->FindAbilitySpecFromClass(ability)->IsActive())
+		return;
+
 	auto attributeSet = Cast<UBaseAttributeSet>(AbilitySystemComponent->GetAttributeSet(UBaseAttributeSet::StaticClass()));
 	auto speedBefore = attributeSet->GetMovementSpeed();
 	AbilitySystemComponent->CancelAbility(ability->GetDefaultObject<UGameplayAbility>());
 	auto speedAfter = attributeSet->GetMovementSpeed();
 	if (GEngine)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Canceled ability %s, speed before: %f, speed after: %f"), *ability->GetName(), speedBefore, speedAfter));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Canceled ability %s"), *ability->GetName()));
 	}
 }
 
