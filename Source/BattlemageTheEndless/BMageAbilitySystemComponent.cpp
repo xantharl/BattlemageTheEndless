@@ -103,9 +103,6 @@ void UBMageAbilitySystemComponent::OnRemoveGameplayEffectCallback(const FActiveG
 {
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Effect %s removed"), *EffectRemoved.Spec.Def->GetName()));
-
-	// if the applying ability is still active, check if this was the last effect
-		// Find all active effects on this ASC with the same 
 }
 
 TObjectPtr<UGameplayAbility> UBMageAbilitySystemComponent::GetActivatableAbilityByOwnedTag(FName abilityTag) 

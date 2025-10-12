@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemComponent.h"
+#include "Abilities/BaseAttributeSet.h"
 #include <Components/SphereComponent.h>
 #include <chrono>
 #include "BMageAbilitySystemComponent.generated.h"

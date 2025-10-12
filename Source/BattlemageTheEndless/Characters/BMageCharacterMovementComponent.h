@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameplayAbilities/Public/AbilitySystemComponent.h"
+#include "Camera/CameraComponent.h"
 #include <map>
 #include <string>
 #include <chrono>
@@ -14,16 +16,17 @@
 #include "../Abilities/Instances/SlideAbility.h"
 #include "../Abilities/Instances/LaunchAbility.h"
 #include "../Abilities/Instances/DodgeAbility.h"
-//#include "../Abilities/Instances/DoubleJumpAbility.h"
 #include "../Abilities/Instances/SprintAbility.h"
 #include "../Abilities/Instances/SlideAbility.h"
 
+#include "../Helpers/VectorMath.h"
 #include "../Helpers/Traces.h"
 
 #include "BMageCharacterMovementComponent.generated.h"
 
 using namespace std;
 using namespace std::chrono;
+
 /**
  * 
  */
@@ -88,7 +91,8 @@ public:
 	/// <param name="Character"></param>
 	/// <param name="mesh"></param>
 	/// <returns></returns>
-	bool TryStartAbility(MovementAbilityType abilityType);
+	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
+	UMovementAbility* TryStartAbility(MovementAbilityType abilityType);
 
 	bool ShouldAbilityBegin(MovementAbilityType abilityType);
 
@@ -99,12 +103,14 @@ public:
 	/// <param name="Character"></param>
 	/// <param name="mesh"></param>
 	/// <returns></returns>
+	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
 	bool TryEndAbility(MovementAbilityType abilityType);
 
 	/// <summary>
 	/// Forces an ability to end if it is active
 	/// </summary>
 	/// <param name="abilityType"></param>
+	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
 	void ForceEndAbility(MovementAbilityType abilityType);
 
 	/// <summary>
@@ -163,6 +169,13 @@ public:
 	/** Apply gravity modification over time, duration is determined by the curve in MS **/
 	UFUNCTION(BlueprintCallable, Category = Abilities)
 	void BeginGravityOverTime(UCurveFloat* gravityCurve);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	bool ApplyMovementInputToJump = true;
+
+	void HandleJump(UCameraComponent* activeCamera);
+
+	void RedirectVelocityToLookDirection(bool wallrunEnded, UCameraComponent* activeCamera);
 
 private:
 	// Gravity over time operations

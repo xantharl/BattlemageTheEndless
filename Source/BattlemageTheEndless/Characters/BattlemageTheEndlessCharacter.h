@@ -92,9 +92,15 @@ class ABattlemageTheEndlessCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
+private:
+	FGameplayTag _sprintTag = FGameplayTag::RequestGameplayTag(FName("Movement.Sprint"));
+	FGameplayTag _crouchTag = FGameplayTag::RequestGameplayTag(FName("Movement.Crouch"));
+	FGameplayTag _slideTag = FGameplayTag::RequestGameplayTag(FName("Movement.Slide"));
+	FGameplayTag _dodgeTag = FGameplayTag::RequestGameplayTag(FName("Movement.Dodge"));
+
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
-	TMap<TSubclassOf<class UGA_WithEffectsBase>, UInputAction*> DefaultAbilities;
+	TMap<TSubclassOf<class UGameplayAbility>, UInputAction*> DefaultAbilities;
 
 	/** Third person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -220,7 +226,6 @@ public:
 
 private:
 	milliseconds _lastCameraSwap;
-	milliseconds _lastJumpTime;
 
 public:
 	ABattlemageTheEndlessCharacter(const FObjectInitializer& ObjectInitializer);
@@ -311,13 +316,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float DoubleJumpHorizontalWeight = 1.5f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	bool ApplyMovementInputToJump = true;
-
-	/** Jump Cooldown expressed in seconds**/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
-	double JumpCooldown = 0.05;
-
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 	APickupActor* GetWeapon(EquipSlot SlotType);
 
@@ -339,6 +337,14 @@ public:
 
 	virtual void PawnClientRestart();
 
+	virtual void Crouch(bool bClientSimulation);
+
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	void RequestUnCrouch();
+
+	UFUNCTION(BlueprintCallable, Category = "Input")
+	UBMageCharacterMovementComponent* GetBMageMovementComponent() { return Cast<UBMageCharacterMovementComponent>(GetCharacterMovement()); }
+
 protected:
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
@@ -346,9 +352,8 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
+	// this is an override but specifying it as such breaks compile for some reason
 	void Jump();
-
-	void RedirectVelocityToLookDirection(bool wallrunEnded);
 
 	void SetActivePickup(APickupActor* pickup);
 	// True = next, False = previous
@@ -356,15 +361,13 @@ protected:
 
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
-	void Crouch();
 	void EndSprint();
 	void LaunchJump();
-	void RequestUnCrouch();
 	void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction);
 	void DoUnCrouch(UBMageCharacterMovementComponent* movement);
 	void EndSlide(UCharacterMovementComponent* movement);
-	void AbilityInputPressed(TSubclassOf<class UGA_WithEffectsBase> ability);
-	void AbilityInputReleased(TSubclassOf<class UGA_WithEffectsBase> ability);
+	void AbilityInputPressed(TSubclassOf<class UGameplayAbility> ability);
+	void AbilityInputReleased(TSubclassOf<class UGameplayAbility> ability);
 	void SwitchCamera();
 	void DodgeInput();
 	void ToggleCastingMode();

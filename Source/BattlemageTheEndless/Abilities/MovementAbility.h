@@ -94,7 +94,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	virtual bool ShouldTransitionOut() { return shouldTransitionOut; }
 
+	UPROPERTY(BlueprintAssignable, Category = "MovementAbility")
 	FMovementAbilityBeginSignature OnMovementAbilityBegin;
+	UPROPERTY(BlueprintAssignable, Category = "MovementAbility")
 	FMovementAbilityEndSignature OnMovementAbilityEnd;
+	UPROPERTY(BlueprintAssignable, Category = "MovementAbility")
 	FMovementAbilityShouldTransitionOutSignature OnMovementAbilityShouldTransitionOut;
 };
