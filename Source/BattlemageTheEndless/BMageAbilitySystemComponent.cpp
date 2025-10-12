@@ -103,42 +103,6 @@ void UBMageAbilitySystemComponent::OnRemoveGameplayEffectCallback(const FActiveG
 {
 	if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Effect %s removed"), *EffectRemoved.Spec.Def->GetName()));
-
-	auto attributeSet = Cast<UBaseAttributeSet>(GetAttributeSet(UBaseAttributeSet::StaticClass()));
-	if (!attributeSet)
-		return;
-
-	// handle restoration of Attribute Values related to movement
-	auto movement = GetOwnerActor()->FindComponentByClass<UCharacterMovementComponent>();
-	if (!movement)
-	{
-		UE_LOG(LogTemp, Error, TEXT("BMageAbilitySystemComponent: Owner has no CharacterMovementComponent"));
-		return;
-	}
-
-	/*for (auto modifier : EffectRemoved.Spec.Def->Modifiers)
-	{
-		float magnitude;
-		bool success = modifier.ModifierMagnitude.AttemptCalculateMagnitude(EffectRemoved.Spec, magnitude);
-		if (success && modifier.Attribute == attributeSet->GetMovementSpeedAttribute())
-		{
-			switch (modifier.ModifierOp)
-			{
-			case EGameplayModOp::Additive:
-				movement->MaxWalkSpeed -= magnitude;
-				break;
-			case EGameplayModOp::Multiplicitive:
-				movement->MaxWalkSpeed /= magnitude;
-				break;
-			case EGameplayModOp::Division:
-				movement->MaxWalkSpeed *= magnitude;
-				break;
-			default:
-				UE_LOG(LogTemp, Warning, TEXT("BMageAbilitySystemComponent: Unsupported ModifierOp on MovementSpeed"));
-				break;
-			}
-		}
-	}*/
 }
 
 TObjectPtr<UGameplayAbility> UBMageAbilitySystemComponent::GetActivatableAbilityByOwnedTag(FName abilityTag) 
