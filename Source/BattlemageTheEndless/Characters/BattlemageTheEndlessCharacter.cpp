@@ -916,7 +916,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput(APickupActor* PickupActor
 
 	if (ability->HitType == HitType::Actor)
 	{
-		SpawnSpellActors(ability, false);
+		SpawnSpellActors(ability, false, true);
 	}
 
 	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("ProcessSpellInput: Ability %s"),
@@ -1092,7 +1092,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 	}
 }
 
-void ABattlemageTheEndlessCharacter::SpawnSpellActors(UAttackBaseGameplayAbility* ability, bool isGhost)
+void ABattlemageTheEndlessCharacter::SpawnSpellActors(UAttackBaseGameplayAbility* ability, bool isGhost, bool attachToCharacter)
 {
 	auto defaultLocation = FVector(0, 0, -9999);
 	// TODO: Add an animation for placing a spell, can probably reuse the charging animation?
@@ -1103,6 +1103,9 @@ void ABattlemageTheEndlessCharacter::SpawnSpellActors(UAttackBaseGameplayAbility
 	{
 		// spawn the actor way below the world and then reposition it (we need the instance to calculate dimensions)
 		auto spellActor = GetWorld()->SpawnActor<AHitEffectActor>(hitEffectActor, defaultLocation, GetCharacterMovement()->GetLastUpdateRotation());
+		if (attachToCharacter)
+			spellActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+
 		// required for calculations of positional differences between instigator and target
 		spellActor->Instigator = this;
 		if (spellActor && IsValid(spellActor))

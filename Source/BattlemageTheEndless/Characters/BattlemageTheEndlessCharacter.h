@@ -393,7 +393,7 @@ protected:
 	void ProcessSpellInput_Charged(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
 	void ProcessSpellInput_Placed(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
 
-	void SpawnSpellActors(UAttackBaseGameplayAbility* ability, bool isGhost);
+	void SpawnSpellActors(UAttackBaseGameplayAbility* ability, bool isGhost, bool attachToCharacter = false);
 
 	void PositionSpellActor(UAttackBaseGameplayAbility* ability, AHitEffectActor* hitEffectActor);
 
