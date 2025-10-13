@@ -1429,7 +1429,13 @@ void ABattlemageTheEndlessCharacter::OnAbilityCancelled(const FAbilityEndedData&
 	if (!endData.bWasCancelled)
 		return;
 
-	auto ability = Cast<UAttackBaseGameplayAbility>(AbilitySystemComponent->FindAbilitySpecFromHandle(endData.AbilitySpecHandle)->Ability);
+	auto ability = Cast<UGA_WithEffectsBase>(AbilitySystemComponent->FindAbilitySpecFromHandle(endData.AbilitySpecHandle)->Ability);
+	if (!ability)
+	{
+		// if it's not our implementation with effects, there's nothing to do
+		return;
+	}
+
 	for (TSubclassOf<UGameplayEffect> effect : ability->EffectsToApply)
 	{
 		if (effect->GetDefaultObject<UGameplayEffect>()->DurationPolicy != EGameplayEffectDurationType::HasDuration)
