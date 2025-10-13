@@ -233,6 +233,14 @@ void UBMageCharacterMovementComponent::ForceEndAbility(MovementAbilityType abili
 	MovementAbilities[abilityType]->End(true);
 }
 
+bool UBMageCharacterMovementComponent::IsAbilityActive(FGameplayTag abilityTag)
+{
+	FGameplayTagContainer ownedTags;
+	CharacterOwner->FindComponentByClass<UAbilitySystemComponent>()->GetOwnedGameplayTags(ownedTags);
+
+	return ownedTags.HasTag(abilityTag);
+}
+
 // TODO: Update this with begin/end calls instead of having to iterate every tick
 MovementAbilityType UBMageCharacterMovementComponent::MostImportantActiveAbilityType()
 { 

@@ -761,11 +761,7 @@ void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMov
 			GetActorLocation(), 1.0f);
 
 		UBMageCharacterMovementComponent* movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
-		if (movement->bWantsToCrouch && movement->IsAbilityActive(MovementAbilityType::Sprint))
-		{
-			movement->TryStartAbility(MovementAbilityType::Slide);
-		}
-		else
+		if (!movement->IsAbilityActive(_sprintTag))
 			movement->ResetWalkSpeed();
 	}
 

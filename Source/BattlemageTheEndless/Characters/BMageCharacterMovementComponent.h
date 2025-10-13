@@ -120,6 +120,13 @@ public:
 	/// <returns></returns>
 	bool IsAbilityActive(MovementAbilityType abilityType) { return MovementAbilities.Contains(abilityType) && MovementAbilities[abilityType]->IsActive; }
 
+	/// <summary>
+	/// Checks whether the provided ability type is currently active
+	/// </summary>
+	/// <param name="abilityTag"></param>
+	/// <returns></returns>
+	bool IsAbilityActive(FGameplayTag abilityTag);
+
 	UPROPERTY(BlueprintReadOnly, Category = CharacterMovement)
 	UMovementAbility* MostImportantActiveAbility;
 
