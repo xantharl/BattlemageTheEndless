@@ -910,11 +910,6 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput(APickupActor* PickupActor
 		return;
 	}
 
-	if (ability->HitType == HitType::Actor)
-	{
-		SpawnSpellActors(ability, false, true);
-	}
-
 	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("ProcessSpellInput: Ability %s"),
 		*(ability->GetAbilityName().ToString())));
 
@@ -1018,7 +1013,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 		// The button was pressed for the first time
 		case ETriggerEvent::Started:
 		{
-			SpawnSpellActors(ability, true);
+			ability->SpawnSpellActors(true, false);
 			break;
 		}
 		// The button is being held
@@ -1028,7 +1023,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 			{
 				if (ghostActor && IsValid(ghostActor))
 				{
-					PositionSpellActor(ability, ghostActor);
+					ability->PositionSpellActor(ghostActor, this);
 				}
 			}
 			break;
@@ -1086,96 +1081,6 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 		default:
 			break;
 	}
-}
-
-void ABattlemageTheEndlessCharacter::SpawnSpellActors(UAttackBaseGameplayAbility* ability, bool isGhost, bool attachToCharacter)
-{
-	auto defaultLocation = FVector(0, 0, -9999);
-	// TODO: Add an animation for placing a spell, can probably reuse the charging animation?
-
-	// A Placed spell will produce one or more hit effect actors at the target location, so we need to ghost all of them
-	// to do that, we need to create actor(s) at the target location and store them 
-	for (auto hitEffectActor : ability->HitEffectActors)
-	{
-		// spawn the actor way below the world and then reposition it (we need the instance to calculate dimensions)
-		auto spellActor = GetWorld()->SpawnActor<AHitEffectActor>(hitEffectActor, defaultLocation, GetCharacterMovement()->GetLastUpdateRotation());
-		if (attachToCharacter)
-			spellActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
-
-		// required for calculations of positional differences between instigator and target
-		spellActor->Instigator = this;
-		if (spellActor && IsValid(spellActor))
-		{
-			spellActor->SetOwner(this);
-
-			if (isGhost)
-				spellActor->SetActorEnableCollision(false);
-
-			PositionSpellActor(ability, spellActor);
-
-			// for each Static Mesh Component on this actor, check if there is an instance of the material with Translucent blend mode
-			for (UActorComponent* component : spellActor->GetComponents())
-			{
-				// check if the component is a mesh component
-				auto meshComponent = Cast<UStaticMeshComponent>(component);
-				if (!meshComponent)
-					continue;
-
-				if (isGhost)
-				{
-					auto material = meshComponent->GetMaterial(0);
-					meshComponent->SetMaterial(0, spellActor->PlacementGhostMaterial);
-				}
-			}
-
-			if (isGhost)
-				ability->RegisterPlacementGhost(spellActor);
-		}
-	}
-}
-
-void ABattlemageTheEndlessCharacter::PositionSpellActor(UAttackBaseGameplayAbility* ability, AHitEffectActor* hitEffectActor)
-{
-	// perform a ray cast up to max spell range to find a valid spawn location
-	auto ignoreActors = TArray<AActor*>();
-	ignoreActors.Add(hitEffectActor);
-
-	auto CastHit = Traces::LineTraceFromCharacter(this, GetMesh(), FName("cameraSocket"), GetActiveCamera()->GetComponentRotation(), ability->MaxRange, ignoreActors);
-	auto hitComponent = CastHit.GetComponent();
-	FVector spawnLocation;
-
-	// if we hit a character, place the effect just shy of them and SnapActorToGround will handle the rest
-	auto isDirectHit = CastHit.GetActor() && CastHit.GetActor()->IsA<ACharacter>();
-	if (isDirectHit)
-	{
-		auto castNormal = CastHit.Location - GetMesh()->GetSocketLocation(FName("cameraSocket"));
-		castNormal.Normalize();
-		spawnLocation = CastHit.Location - castNormal * 30.f;
-	}
-	else
-		spawnLocation = hitComponent ? CastHit.Location : CastHit.TraceEnd;
-
-	// move the spawn location up by half the height of the hit effect actor if we are placing on the ground
-	//if (hitComponent && hitComponent->IsA<UPrimitiveComponent>())
-	//{
-	//	// we need to consider all components since we have collision disabled at this point
-	//	//	this can be a performance issue if actors get too complex
-	//	auto bounding = hitEffectActor->GetComponentsBoundingBox(true);
-	//	spawnLocation.Z += (bounding.Max.Z - bounding.Min.Z) / 2.f;
-	//}
-
-	hitEffectActor->SetActorLocation(spawnLocation);
-
-	auto rotation = GetCharacterMovement()->GetLastUpdateRotation();
-	// Use look rotation if actor isn't meant to snap to ground
-	if (!hitEffectActor->SnapToGround)
-		rotation.Pitch = GetActiveCamera()->GetComponentRotation().Pitch;
-
-	hitEffectActor->SetActorRotation(rotation);
-	hitEffectActor->SnapActorToGround(isDirectHit ? FHitResult() : CastHit);
-
-	// handle niagara user parameters which need to rotate with character
-	//hitEffectActor->GetComponentByClass<UNiagaraComponent>()->SetWorldRotation(rotation);
 }
 
 void ABattlemageTheEndlessCharacter::ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)

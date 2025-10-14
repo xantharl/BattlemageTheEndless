@@ -362,7 +362,6 @@ protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	void EndSprint();
-	void LaunchJump();
 	void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction);
 	void DoUnCrouch(UBMageCharacterMovementComponent* movement);
 	void EndSlide(UCharacterMovementComponent* movement);
@@ -392,10 +391,6 @@ protected:
 	void ProcessSpellInput(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
 	void ProcessSpellInput_Charged(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
 	void ProcessSpellInput_Placed(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
-
-	void SpawnSpellActors(UAttackBaseGameplayAbility* ability, bool isGhost, bool attachToCharacter = false);
-
-	void PositionSpellActor(UAttackBaseGameplayAbility* ability, AHitEffectActor* hitEffectActor);
 
 	void HandleProjectileSpawn(UAttackBaseGameplayAbility* ability);
 	void HandleHitScan(UAttackBaseGameplayAbility* ability);

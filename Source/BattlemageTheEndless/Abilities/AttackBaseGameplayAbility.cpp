@@ -140,6 +140,10 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 			return;
 		}
 	}
+	else if (HitType == HitType::Actor)
+	{		
+		SpawnSpellActors(false, true);
+	}
 
 	// if there is chain delay, set a timer to end the ability after that duration
 	if (ChainDelay > 0.001f && NumberOfChains > 0)
@@ -407,4 +411,114 @@ void UAttackBaseGameplayAbility::OnPlacementGhostDestroyed(AActor* PlacementGhos
 
 	_placementGhosts.Remove(Cast<AHitEffectActor>(PlacementGhost));
 	PlacementGhost->OnDestroyed.RemoveDynamic(this, &UAttackBaseGameplayAbility::OnPlacementGhostDestroyed);
+}
+
+void UAttackBaseGameplayAbility::SpawnSpellActors(bool isGhost, bool attachToCharacter)
+{
+	auto defaultLocation = FVector(0, 0, -9999);
+	// TODO: Add an animation for placing a spell, can probably reuse the charging animation?
+
+	auto character = Cast<ACharacter>(GetOwningActorFromActorInfo());
+	if(!character)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Owning actor is not a character, cannot spawn spell actors"));
+		return;
+	}
+
+	// A Placed spell will produce one or more hit effect actors at the target location, so we need to ghost all of them
+	// to do that, we need to create actor(s) at the target location and store them 
+	for (auto hitEffectActor : HitEffectActors)
+	{
+		// spawn the actor way below the world and then reposition it (we need the instance to calculate dimensions)
+		auto spellActor = GetWorld()->SpawnActor<AHitEffectActor>(hitEffectActor, defaultLocation, character->GetCharacterMovement()->GetLastUpdateRotation());
+		if (attachToCharacter)
+			spellActor->AttachToActor(character, FAttachmentTransformRules::KeepWorldTransform);
+
+		// required for calculations of positional differences between instigator and target
+		spellActor->Instigator = character;
+		if (spellActor && IsValid(spellActor))
+		{
+			spellActor->SetOwner(character);
+
+			if (isGhost)
+				spellActor->SetActorEnableCollision(false);
+
+			PositionSpellActor(spellActor, character);
+
+			// for each Static Mesh Component on this actor, check if there is an instance of the material with Translucent blend mode
+			for (UActorComponent* component : spellActor->GetComponents())
+			{
+				// check if the component is a mesh component
+				auto meshComponent = Cast<UStaticMeshComponent>(component);
+				if (!meshComponent)
+					continue;
+
+				if (isGhost)
+				{
+					auto material = meshComponent->GetMaterial(0);
+					meshComponent->SetMaterial(0, spellActor->PlacementGhostMaterial);
+				}
+			}
+
+			if (isGhost)
+				RegisterPlacementGhost(spellActor);
+		}
+	}
+}
+
+void UAttackBaseGameplayAbility::PositionSpellActor(AHitEffectActor* hitEffectActor, ACharacter* character)
+{
+	// perform a ray cast up to max spell range to find a valid spawn location
+	auto ignoreActors = TArray<AActor*>();
+	ignoreActors.Add(hitEffectActor);
+
+	auto CastHit = Traces::LineTraceFromCharacter(character, character->GetMesh(), FName("cameraSocket"), character->GetViewRotation(), MaxRange, ignoreActors);
+	auto hitComponent = CastHit.GetComponent();
+	FVector spawnLocation;
+
+	// if we hit a character, place the effect just shy of them and SnapActorToGround will handle the rest
+	auto isDirectHit = CastHit.GetActor() && CastHit.GetActor()->IsA<ACharacter>();
+	if (isDirectHit)
+	{
+		auto castNormal = CastHit.Location - character->GetMesh()->GetSocketLocation(FName("cameraSocket"));
+		castNormal.Normalize();
+		spawnLocation = CastHit.Location - castNormal * 30.f;
+	}
+	else
+		spawnLocation = hitComponent ? CastHit.Location : CastHit.TraceEnd;
+
+	// move the spawn location up by half the height of the hit effect actor if we are placing on the ground
+	//if (hitComponent && hitComponent->IsA<UPrimitiveComponent>())
+	//{
+	//	// we need to consider all components since we have collision disabled at this point
+	//	//	this can be a performance issue if actors get too complex
+	//	auto bounding = hitEffectActor->GetComponentsBoundingBox(true);
+	//	spawnLocation.Z += (bounding.Max.Z - bounding.Min.Z) / 2.f;
+	//}
+
+	hitEffectActor->SetActorLocation(spawnLocation);
+
+	auto rotation = character->GetCharacterMovement()->GetLastUpdateRotation();
+	// Use look rotation if actor isn't meant to snap to ground
+	if (!hitEffectActor->SnapToGround)
+	{
+		UCameraComponent* camera;
+		do {
+			camera = character->GetComponentByClass<UCameraComponent>();
+		} while (camera && !camera->IsActive());
+
+		if (!camera)
+		{
+			UE_LOG(LogTemp, Error, TEXT("No active camera found for character %s, cannot orient spell actor"), *character->GetName());
+			return;
+		}
+
+		rotation.Pitch = camera->GetComponentRotation().Pitch;
+	}
+
+	hitEffectActor->SetActorRotation(rotation);
+	hitEffectActor->SnapActorToGround(isDirectHit ? FHitResult() : CastHit);
+
+	// handle niagara user parameters which need to rotate with character
+	//hitEffectActor->GetComponentByClass<UNiagaraComponent>()->SetWorldRotation(rotation);
 }

@@ -10,11 +10,13 @@
 #include "Engine/EngineTypes.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
+#include "Camera/CameraComponent.h"
 #include "GA_WithEffectsBase.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEffectRemoved.h"
 #include "GameFramework/Character.h"
 #include "../Pickups/BattlemageTheEndlessProjectile.h"
+#include "../Helpers/Traces.h"
 #include "GameplayAbilities/Public/AbilitySystemComponent.h"
 #include "HitScanChainEffect.h"
 #include "InputTriggers.h"
@@ -250,6 +252,10 @@ public:
 
 	UFUNCTION()
 	void OnPlacementGhostDestroyed(AActor* PlacementGhost);
+
+	void SpawnSpellActors(bool isGhost, bool attachToCharacter = false);
+
+	void PositionSpellActor(AHitEffectActor* hitEffectActor, ACharacter* character);
 
 private:
 	/** Timer handles for chained abilities, do not reference directly without ensuring it is initialized
