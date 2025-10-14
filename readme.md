@@ -6,3 +6,6 @@
 
 # Fixing CommonUI failures to load
 set loading phase to PreDefault in CommonUI.uplugin for all modules
+
+# Fixing a bricked build
+[Use this post](https://forums.unrealengine.com/t/cannot-open-source-file-name-generated-hc/413312/2)
