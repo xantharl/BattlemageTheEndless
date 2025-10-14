@@ -44,6 +44,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Interaction")
 	EPickupType PickupType = EPickupType::Weapon;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Abilities")
+	FGameplayTagContainer GrantedTags;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

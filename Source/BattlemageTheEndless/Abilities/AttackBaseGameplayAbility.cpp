@@ -352,6 +352,15 @@ void UAttackBaseGameplayAbility::SpawnHitEffectActors(FHitResult HitResult)
 
 	for (auto effect : HitEffectActors)
 	{
+		auto defaultObject = effect->GetDefaultObject<AHitEffectActor>();
+		// only spawn if we meet the required tags
+		if (defaultObject->RequiredTags.Num() > 0)
+		{
+			FGameplayTagQuery query = FGameplayTagQuery::MakeQuery_MatchAllTags(defaultObject->RequiredTags);
+			if (!GetAbilitySystemComponentFromActorInfo_Ensured()->MatchesGameplayTagQuery(query))
+				continue;
+		}
+
 		auto rotation = HitResult.ImpactNormal.Rotation();
 		rotation.Pitch = 0.f;
 		rotation.Roll = 0.f;
@@ -359,7 +368,7 @@ void UAttackBaseGameplayAbility::SpawnHitEffectActors(FHitResult HitResult)
 
 		auto newActor = world->SpawnActor<AHitEffectActor>(effect, HitResult.ImpactPoint, rotation, ActorSpawnParams);
 		newActor->SnapActorToGround(FHitResult()); // TODO: Figure out if all hit effects should be able to be on any surface
-		newActor->ActivateEffect(effect->GetDefaultObject<AHitEffectActor>()->VisualEffectSystem);
+		newActor->ActivateEffect(newActor->VisualEffectSystem);
 		newActor->SpawningAbility = this;
 		newActor->Instigator = CurrentActorInfo->OwnerActor.Get();
 	}
@@ -429,6 +438,15 @@ void UAttackBaseGameplayAbility::SpawnSpellActors(bool isGhost, bool attachToCha
 	// to do that, we need to create actor(s) at the target location and store them 
 	for (auto hitEffectActor : HitEffectActors)
 	{
+		auto defaultObject = hitEffectActor->GetDefaultObject<AHitEffectActor>();
+		// only spawn if we meet the required tags
+		if (defaultObject->RequiredTags.Num() > 0)
+		{
+			FGameplayTagQuery query = FGameplayTagQuery::MakeQuery_MatchAllTags(defaultObject->RequiredTags);
+			if (!GetAbilitySystemComponentFromActorInfo_Ensured()->MatchesGameplayTagQuery(query))
+				continue;
+		}
+
 		// spawn the actor way below the world and then reposition it (we need the instance to calculate dimensions)
 		auto spellActor = GetWorld()->SpawnActor<AHitEffectActor>(hitEffectActor, defaultLocation, character->GetCharacterMovement()->GetLastUpdateRotation());
 		if (attachToCharacter)

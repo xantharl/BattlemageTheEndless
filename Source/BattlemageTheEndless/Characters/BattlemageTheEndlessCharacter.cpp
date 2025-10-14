@@ -635,6 +635,11 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 
 		EquipmentBindingHandles.Remove(currentItem);
 		EquipmentAbilityHandles[currentItem->Weapon->SlotType].Handles.Empty();
+
+		if (currentItem->GrantedTags.Num() > 0)
+		{
+			AbilitySystemComponent->RemoveLooseGameplayTags(currentItem->GrantedTags);
+		}
 	}
 
 	// unhide newly activated weapon
@@ -721,6 +726,11 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 				.GetHandle());
 		}
 		EquipmentBindingHandles.Add(pickup, bindingHandles);
+	}
+
+	if (pickup->GrantedTags.Num() > 0)
+	{
+		AbilitySystemComponent->AddLooseGameplayTags(pickup->GrantedTags);
 	}
 	// todo: make this work
 	// Grant abilities, but only on the server	

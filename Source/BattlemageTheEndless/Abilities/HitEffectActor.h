@@ -72,6 +72,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hit Effect")
 	EOnApplyEffectsBehavior OnApplyEffectsBehavior = EOnApplyEffectsBehavior::None;
 
+	/** Some abilities have different behavior based on active tags, this actor will only spawn if all required tags are met **/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hit Effect")
+	FGameplayTagContainer RequiredTags;
+
 	UFUNCTION(BlueprintCallable, Category = "Hit Effect")
 	virtual void OnAreaOfEffectBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
