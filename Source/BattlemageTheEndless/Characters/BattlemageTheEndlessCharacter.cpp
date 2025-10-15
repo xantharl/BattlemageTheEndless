@@ -470,8 +470,18 @@ void ABattlemageTheEndlessCharacter::AbilityInputPressed(TSubclassOf<class UGame
 
 void ABattlemageTheEndlessCharacter::AbilityInputReleased(TSubclassOf<class UGameplayAbility> ability)
 {
+	// Nothing to do if it's not active
 	if (!AbilitySystemComponent->FindAbilitySpecFromClass(ability)->IsActive())
 		return;
+	// Do not end the ability if it has duration effects, that's up to the ability to end itself
+	if (auto abilityWithEffects = Cast<UGA_WithEffectsBase>(ability->GetDefaultObject()))
+	{
+		auto hasDurationEffects = abilityWithEffects->EffectsToApply.FilterByPredicate([](TSubclassOf<UGameplayEffect> effect) {
+			return effect.GetDefaultObject()->DurationPolicy == EGameplayEffectDurationType::HasDuration;
+		}).Num() > 0;
+		if (hasDurationEffects)
+			return;
+	}
 
 	auto attributeSet = Cast<UBaseAttributeSet>(AbilitySystemComponent->GetAttributeSet(UBaseAttributeSet::StaticClass()));
 	auto speedBefore = attributeSet->GetMovementSpeed();

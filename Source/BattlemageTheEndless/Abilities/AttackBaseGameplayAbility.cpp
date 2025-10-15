@@ -129,6 +129,10 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 					return spec.Def == effect.GetDefaultObject();
 				});
 
+				// this can happen if a required tag on the GE is not met, thus the ability was applied but not the effect
+				if (!activeEffect)
+					continue;
+
 				float calculatedMagnitude = 0.f;
 				bool success = effect.GetDefaultObject()->DurationMagnitude.AttemptCalculateMagnitude(*activeEffect, calculatedMagnitude);
 				if (success && calculatedMagnitude > maxDuration)
