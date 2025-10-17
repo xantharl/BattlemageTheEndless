@@ -192,6 +192,8 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 
+	CheckRequiredObjects();
+
 	TObjectPtr<UBMageCharacterMovementComponent> movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
 	if (movement)
 	{
@@ -205,10 +207,9 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 		{
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
-
-		GiveDefaultAbilities();
-		GiveStartingEquipment();
 	}
+	GiveDefaultAbilities();
+	GiveStartingEquipment();
 
 	HealthChangedDelegateHandle = AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute())
 		.AddUObject(this, &ABattlemageTheEndlessCharacter::OnHealthChanged);
@@ -555,6 +556,22 @@ void ABattlemageTheEndlessCharacter::PawnClientRestart()
 	Super::PawnClientRestart();
 }
 
+void ABattlemageTheEndlessCharacter::CheckRequiredObjects()
+{
+	// This is kind of a hack, for AI the attributes are getting set in the CTOR but somehow becoming null by BeginPlay
+	if (!AttributeSet)
+		AttributeSet = NewObject<UBaseAttributeSet>(this, TEXT("AttributeSet"));
+
+	if (!ComboManager)
+		ComboManager = NewObject<UAbilityComboManager>(this, TEXT("ComboManager"));
+
+	if (!ProjectileManager)
+	{
+		ProjectileManager = NewObject<UProjectileManager>(this, TEXT("ProjectileManager"));
+		ProjectileManager->Initialize(this);
+	}
+}
+
 void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
@@ -683,20 +700,20 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 		pickup->Weapon->SelectedAbility = pickup->Weapon->GrantedAbilities[0];
 	}
 
-	// add the mapping context and bindings if applicable
-	if (pickup->Weapon->WeaponMappingContext)
-	{
-		APlayerController* PlayerController = Cast<APlayerController>(Controller);
-		UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
-		if (PlayerController && Subsystem)
-		{
-			Subsystem->AddMappingContext(pickup->Weapon->WeaponMappingContext, 0);
-		}
-	}	
-
 	// track key bindings for the new weapon
 	if (EnhancedInputComponent)
 	{
+		// add the mapping context and bindings if applicable
+		if (pickup->Weapon->WeaponMappingContext)
+		{
+			APlayerController* PlayerController = Cast<APlayerController>(Controller);
+			UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
+			if (PlayerController && Subsystem)
+			{
+				Subsystem->AddMappingContext(pickup->Weapon->WeaponMappingContext, 0);
+			}
+		}
+
 		auto bindingHandles = FBindingHandles();
 		for (ETriggerEvent triggerEvent : TEnumRange<ETriggerEvent>())
 		{

@@ -345,6 +345,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	UBMageCharacterMovementComponent* GetBMageMovementComponent() { return Cast<UBMageCharacterMovementComponent>(GetCharacterMovement()); }
 
+	// This method checks that all required objects are set and valid, and creates them if not
+	// NOTE: This isn't needed for the player character, but objects set in the CTOR are becoming null by BeginPlay for AI characters
+	void CheckRequiredObjects();
+
 protected:
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
