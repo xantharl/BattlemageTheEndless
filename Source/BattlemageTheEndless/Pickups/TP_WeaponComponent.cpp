@@ -196,6 +196,12 @@ void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 
 	LastHitCharacters.Add(hitActor);
 
+	auto ability = attacker->AbilitySystemComponent->FindAbilitySpecFromHandle(attacker->ComboManager->LastActivatedAbilityHandle);
+	if (!ability)
+	{
+		UE_LOG(LogTemp, Error, TEXT("LastActivatedAbility Not found, if you hit this ActivateAbility was probably called directly, use UFUNCTION ProcessInputAndBindAbilityCancelled"));
+		return;
+	}
 	// get the active ability
 	auto abilitySpec = Cast<UAttackBaseGameplayAbility>(
 		attacker->AbilitySystemComponent->FindAbilitySpecFromHandle(attacker->ComboManager->LastActivatedAbilityHandle)->Ability);

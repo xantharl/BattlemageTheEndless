@@ -4,8 +4,12 @@
 #include "ProjectileManager.h"
 
 TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::SpawnProjectiles_Actor(
-	UAttackBaseGameplayAbility* spawningAbility, const FProjectileConfiguration& configuration, AActor* actor)
+	UAttackBaseGameplayAbility* spawningAbility, const FProjectileConfiguration& configuration, AActor* actor = nullptr)
 {
+	if (!actor)
+	{
+		actor = OwnerCharacter;
+	}
 	auto returnArray = TArray<ABattlemageTheEndlessProjectile*>();
 	auto spawnLocations = GetSpawnLocations(configuration, actor->GetTransform());
 	TArray<ABattlemageTheEndlessProjectile*> projectiles = HandleSpawn(spawnLocations, configuration, spawningAbility, actor);

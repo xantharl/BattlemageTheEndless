@@ -288,11 +288,6 @@ protected:
 
 	FDelegateHandle HealthChangedDelegateHandle;
 
-	/// <summary>
-	/// Manages projectile spawn and hit for abilities
-	/// </summary>
-	UProjectileManager* ProjectileManager;
-
 	void ToggleAimMode(ETriggerEvent triggerType);
 	void AdjustAimModeFov(float DeltaTime);
 
@@ -300,9 +295,6 @@ protected:
 	FTimerHandle AimModeTimerHandle;
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UAbilityComboManager* ComboManager;
-
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* LookAction;
@@ -386,22 +378,10 @@ protected:
 
 	void ProcessMeleeInput(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
 
-	/** Handles attack input for pickups using GAS abilities **/
-	virtual void ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
-
-	void PostAbilityActivation(UAttackBaseGameplayAbility* ability);
-
 	/** Spell specific handler which decides whether to call ProcessInputAndBindAbilityCancelled or do nothing **/
 	void ProcessSpellInput(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
 	void ProcessSpellInput_Charged(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
 	void ProcessSpellInput_Placed(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
-
-	void HandleProjectileSpawn(UAttackBaseGameplayAbility* ability);
-	void HandleHitScan(UAttackBaseGameplayAbility* ability);
-	TArray<ABattlemageTheEndlessCharacter*> GetChainTargets(int NumberOfChains, float ChainDistance, ABattlemageTheEndlessCharacter* HitActor);
-	ABattlemageTheEndlessCharacter* GetNextChainTarget(float ChainDistance, AActor* ChainActor, TArray<AActor*> Candidates);
-
-	void OnAbilityCancelled(const FAbilityEndedData& endData);
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	void OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
