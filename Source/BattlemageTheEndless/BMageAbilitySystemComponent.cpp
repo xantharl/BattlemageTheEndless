@@ -45,7 +45,6 @@ void UBMageAbilitySystemComponent::EnsureInitSubObjects()
 	if (!ComboManager)
 		ComboManager = NewObject<UAbilityComboManager>(this, TEXT("ComboManager"));
 
-	ComboManager = CreateDefaultSubobject<UAbilityComboManager>(TEXT("ComboManager"));
 	AbilityFailedCallbacks.AddUObject(ComboManager, &UAbilityComboManager::OnAbilityFailed);
 	ComboManager->AbilitySystemComponent = this;
 
@@ -244,7 +243,7 @@ void UBMageAbilitySystemComponent::HandleProjectileSpawn(UAttackBaseGameplayAbil
 	// if the projectiles are spawned from an actor, use that entry point
 	if (ability->ProjectileConfiguration.SpawnLocation == FSpawnLocation::Player)
 	{
-		projectiles = ProjectileManager->SpawnProjectiles_Actor(ability, ability->ProjectileConfiguration);
+		projectiles = ProjectileManager->SpawnProjectiles_Actor(ability, ability->ProjectileConfiguration, nullptr);
 	}
 	// We can only spawn at last ability location if we have a niagara instance
 	//  TODO: support spawning projectiles based on a previous ability's actor(s) as well
@@ -372,7 +371,7 @@ void UBMageAbilitySystemComponent::HandleHitScan(UAttackBaseGameplayAbility* abi
 			// No delay for the first target
 			if (i == 0)
 			{
-				ability->ApplyEffects(hitCharacters[i], asc, this);
+				ability->ApplyEffects(hitCharacters[i], asc, ownerCharacter);
 				continue;
 			}
 

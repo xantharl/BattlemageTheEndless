@@ -876,7 +876,7 @@ void ABattlemageTheEndlessCharacter::ProcessMeleeInput(APickupActor* PickupActor
 			if (PickupActor)
 			{
 				//ProcessSpellInput(PickupActor, AttackType, triggerEvent);
-				ProcessInputAndBindAbilityCancelled(PickupActor, AttackType, triggerEvent);
+				AbilitySystemComponent->ProcessInputAndBindAbilityCancelled(PickupActor, AttackType, triggerEvent);
 			}
 			else
 			{
@@ -906,7 +906,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput(APickupActor* PickupActor
 
 	auto selectedAbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(PickupActor->Weapon->SelectedAbility);
 	auto ability = Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability);
-	auto isComboActive = ComboManager->Combos.Contains(PickupActor) && 1->Combos[PickupActor].ActiveCombo;
+	auto isComboActive = AbilitySystemComponent->ComboManager->Combos.Contains(PickupActor) && AbilitySystemComponent->ComboManager->Combos[PickupActor].ActiveCombo;
 
 	if (ability && (ability->ChargeDuration > 0.001f || (ability->HitType == HitType::Placed && !isComboActive)))
 	{
@@ -917,7 +917,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput(APickupActor* PickupActor
 	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("ProcessSpellInput: Ability %s"),
 		*(ability->GetAbilityName().ToString())));
 
-	ProcessInputAndBindAbilityCancelled(PickupActor, AttackType, triggerEvent);
+	AbilitySystemComponent->ProcessInputAndBindAbilityCancelled(PickupActor, AttackType, triggerEvent);
 }
 
 void ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)
@@ -968,7 +968,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged(APickupActor* Pic
 			UGameplayStatics::SpawnSoundAttached(attackAbility->CastSound, GetRootComponent());
 
 		GetWorld()->GetTimerManager().ClearTimer(ChargeSpellTimerHandle);
-		PostAbilityActivation(attackAbility);
+		AbilitySystemComponent->PostAbilityActivation(attackAbility);
 		// This is a hack to call EndAbility without needing to spoof up all the params
 		attackAbility->OnMontageCompleted();
 		break;
@@ -1000,7 +1000,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 	}
 
 	// check if this ability has a combo and we are past the first part
-	if (ComboManager->Combos.Contains(PickupActor) && ComboManager->Combos[PickupActor].ActiveCombo)
+	if (AbilitySystemComponent->ComboManager->Combos.Contains(PickupActor) && AbilitySystemComponent->ComboManager->Combos[PickupActor].ActiveCombo)
 	{
 		// if we are in a combo, we should not be placing spells
 		return;
@@ -1043,7 +1043,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 		// Casting was confirmed by releasing button
 		case ETriggerEvent::Triggered:
 		{			
-			ComboManager->ProcessInput(PickupActor, AttackType);
+			AbilitySystemComponent->ComboManager->ProcessInput(PickupActor, AttackType);
 			// reset materials on all placement ghosts
 			for (auto ghostActor : ability->GetPlacementGhosts())
 			{

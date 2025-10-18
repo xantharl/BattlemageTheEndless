@@ -175,16 +175,18 @@ void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 		LastAttackAnimationName = attackAnimationName;
 	}
 
-	// if either actor involed is not a Battlemage, exit
-	auto attacker = Cast<ABattlemageTheEndlessCharacter>(character);
-	auto hitActor = Cast<ABattlemageTheEndlessCharacter>(Hit.GetActor());
-	if (!attacker || !hitActor)
+	if (!Hit.GetActor())
 	{
 		return;
 	}
 
+	// if either actor involed does not have an ASC, exit
+	auto attackerAsc = character->FindComponentByClass<UBMageAbilitySystemComponent>();
+	auto hitActor = Hit.GetActor();
+	auto hitActorAsc = hitActor->FindComponentByClass<UAbilitySystemComponent>();
+
 	// If this character has already been hit by this stage of the combo, don't hit them again
-	if (LastHitCharacters.Contains(hitActor) || hitActor == attacker) 	// Stop hitting yourself
+	if (!attackerAsc || !hitActorAsc || LastHitCharacters.Contains(hitActor) || hitActor == character)
 	{
 		return;
 	}
@@ -196,7 +198,7 @@ void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 
 	LastHitCharacters.Add(hitActor);
 
-	auto ability = attacker->AbilitySystemComponent->FindAbilitySpecFromHandle(attacker->ComboManager->LastActivatedAbilityHandle);
+	auto ability = attackerAsc->FindAbilitySpecFromHandle(attackerAsc->ComboManager->LastActivatedAbilityHandle);
 	if (!ability)
 	{
 		UE_LOG(LogTemp, Error, TEXT("LastActivatedAbility Not found, if you hit this ActivateAbility was probably called directly, use UFUNCTION ProcessInputAndBindAbilityCancelled"));
@@ -204,8 +206,8 @@ void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 	}
 	// get the active ability
 	auto abilitySpec = Cast<UAttackBaseGameplayAbility>(
-		attacker->AbilitySystemComponent->FindAbilitySpecFromHandle(attacker->ComboManager->LastActivatedAbilityHandle)->Ability);
+		attackerAsc->FindAbilitySpecFromHandle(attackerAsc->ComboManager->LastActivatedAbilityHandle)->Ability);
 
 	// apply any on hit effects from the weapon attack, all effects on a weapon are assumed to be on hit
-	abilitySpec->ApplyEffects(hitActor, hitActor->AbilitySystemComponent, attacker);
+	abilitySpec->ApplyEffects(hitActor, hitActorAsc, character);
 }

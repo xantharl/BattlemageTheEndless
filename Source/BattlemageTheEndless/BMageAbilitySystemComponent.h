@@ -53,6 +53,13 @@ public:
 
 	TArray<APickupActor*> ActivePickups;
 
+	void PostAbilityActivation(UAttackBaseGameplayAbility* ability);
+	void HandleProjectileSpawn(UAttackBaseGameplayAbility* ability);
+	void HandleHitScan(UAttackBaseGameplayAbility* ability);
+	TArray<ACharacter*> GetChainTargets(int NumberOfChains, float ChainDistance, ACharacter* HitActor);
+	ACharacter* GetNextChainTarget(float ChainDistance, AActor* ChainActor, TArray<AActor*> Candidates);
+	void OnAbilityCancelled(const FAbilityEndedData& endData);
+
 private:
 	void UnmarkOwner();
 
@@ -77,12 +84,4 @@ private:
 
 	// return the first ability found with the specified owned tag
 	TObjectPtr<UGameplayAbility> GetActivatableAbilityByOwnedTag(FName abilityTag);
-	
-	void PostAbilityActivation(UAttackBaseGameplayAbility* ability);
-
-	void HandleProjectileSpawn(UAttackBaseGameplayAbility* ability);
-	void HandleHitScan(UAttackBaseGameplayAbility* ability);
-	TArray<ACharacter*> GetChainTargets(int NumberOfChains, float ChainDistance, ACharacter* HitActor);
-	ACharacter* GetNextChainTarget(float ChainDistance, AActor* ChainActor, TArray<AActor*> Candidates);
-	void OnAbilityCancelled(const FAbilityEndedData& endData);
 };
