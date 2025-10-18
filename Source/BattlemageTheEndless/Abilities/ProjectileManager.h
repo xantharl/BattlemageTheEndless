@@ -62,6 +62,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = ProjectileConstants, meta = (AllowPrivateAccess = "true"))
 	float RingDiameter = 50.f;
 
+	UPROPERTY(Instanced)
 	ACharacter* OwnerCharacter;
 private:
 

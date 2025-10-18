@@ -259,18 +259,9 @@ void UBMageAbilitySystemComponent::HandleProjectileSpawn(UAttackBaseGameplayAbil
 	else if (ability->ProjectileConfiguration.SpawnLocation == FSpawnLocation::SpellFocus)
 	{
 		auto controller = Cast<APlayerController>(ownerCharacter->GetController());
-		if (!controller)
-		{
-			UE_LOG(LogExec, Error, TEXT("'%s' Attempted to spawn projectiles from SpellFocus but has no controller!"), *GetNameSafe(this));
-			return;
-		}
-		const FRotator spawnRotation = controller->PlayerCameraManager->GetCameraRotation();
+		const FRotator spawnRotation = controller ? controller->PlayerCameraManager->GetCameraRotation() : ownerCharacter->GetTransform().Rotator();
 		auto socketName = IsLeftHanded ? FName("gripRight") : FName("gripLeft");
-		auto activeSpellClass = *ActivePickups.FindByPredicate(
-			[](APickupActor* pickup) {
-				return pickup->Weapon->SlotType == EquipSlot::Secondary;
-			}
-		);
+		auto activeSpellClass = GetActivePickup(EquipSlot::Secondary);
 		if (!activeSpellClass)
 		{
 			UE_LOG(LogExec, Error, TEXT("'%s' Attempted to spawn projectiles from SpellFocus but has no active spell class!"), *GetNameSafe(this));
