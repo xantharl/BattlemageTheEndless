@@ -125,5 +125,5 @@ protected:
 	FString LastAttackAnimationName;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
-	TArray<ABattlemageTheEndlessCharacter*> LastHitCharacters;
+	TArray<AActor*> LastHitCharacters;
 };

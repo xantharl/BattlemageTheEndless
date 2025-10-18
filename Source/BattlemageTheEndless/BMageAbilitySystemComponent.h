@@ -6,8 +6,20 @@
 #include "AbilitySystemComponent.h"
 #include "Abilities/BaseAttributeSet.h"
 #include <Components/SphereComponent.h>
+#include "Pickups/PickupActor.h"
+#include "Abilities/Combos/AbilityComboManager.h"
+#include "Abilities/AttackBaseGameplayAbility.h"
+#include "Abilities/ProjectileManager.h"
 #include <chrono>
 #include "BMageAbilitySystemComponent.generated.h"
+
+UENUM(BlueprintType)
+enum class EGASAbilityInputId : uint8
+{
+	None UMETA(DisplayName = "None"),
+	Confirm UMETA(DisplayName = "Confirm"),
+	Cancel UMETA(DisplayName = "Cancel")
+};
 
 /**
  * 
@@ -20,10 +32,40 @@ class BATTLEMAGETHEENDLESS_API UBMageAbilitySystemComponent : public UAbilitySys
 public:
 	UBMageAbilitySystemComponent();
 
+	void DeactivatePickup(APickupActor* pickup);
+
+	void ActivatePickup(APickupActor* activePickup);
+
 	void MarkOwner(AActor* instigator, float duration, float range, UMaterialInstance* markedMaterial, UMaterialInstance* markedMaterialOutOfRange);
+
+	/** Handles attack input for pickups using GAS abilities **/
+	UFUNCTION(BlueprintCallable, Category = "Combo Handler Passthru")
+	void ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"), Instanced)
+	UAbilityComboManager* ComboManager;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UProjectileManager* ProjectileManager;
+
+	// Owned by character by character and set in ASC on init for convenience
+	bool IsLeftHanded;
+
+	TArray<APickupActor*> ActivePickups;
+	UFUNCTION(BlueprintCallable, Category = "Pickup")
+	APickupActor* GetActivePickup(EquipSlot Slot);
+
+	void PostAbilityActivation(UAttackBaseGameplayAbility* ability);
+	void HandleProjectileSpawn(UAttackBaseGameplayAbility* ability);
+	void HandleHitScan(UAttackBaseGameplayAbility* ability);
+	TArray<ACharacter*> GetChainTargets(int NumberOfChains, float ChainDistance, ACharacter* HitActor);
+	ACharacter* GetNextChainTarget(float ChainDistance, AActor* ChainActor, TArray<AActor*> Candidates);
+	void OnAbilityCancelled(const FAbilityEndedData& endData);
 
 private:
 	void UnmarkOwner();
+
+	void EnsureInitSubObjects();
 	FTimerHandle _unmarkTimerHandle = FTimerHandle();
 
 	USphereComponent* _markSphere;

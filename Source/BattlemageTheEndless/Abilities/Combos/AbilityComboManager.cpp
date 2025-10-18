@@ -143,6 +143,12 @@ FGameplayAbilitySpecHandle UAbilityComboManager::ProcessInput(APickupActor* Pick
 	}
 	else
 	{
+		auto spec = AbilitySystemComponent->FindAbilitySpecFromHandle(*toActivate);
+		if (!spec)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("No ability spec found for handle in combo activation"));
+			return FGameplayAbilitySpecHandle();
+		}
 		ActivateAbilityAndResetTimer(*AbilitySystemComponent->FindAbilitySpecFromHandle(*toActivate));
 	}
 
@@ -152,6 +158,11 @@ FGameplayAbilitySpecHandle UAbilityComboManager::ProcessInput(APickupActor* Pick
 // TODO: Separate the logic for spell and melee
 FGameplayAbilitySpecHandle UAbilityComboManager::DelegateToWeapon(APickupActor* PickupActor, EAttackType AttackType)
 {
+	if (!PickupActor)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No PickupActor provided to DelegateToWeapon"));
+		return FGameplayAbilitySpecHandle();
+	}
 	TSubclassOf<UGameplayAbility> abilityClass;
 	if (PickupActor->Weapon->SlotType == EquipSlot::Secondary)
 		abilityClass = PickupActor->Weapon->SelectedAbility;

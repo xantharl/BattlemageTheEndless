@@ -76,6 +76,7 @@ public:
 	// one second in std::chrono::milliseconds
 	double ComboExpiryTime = 1.0;
 
+	UPROPERTY(Instanced)
 	UAbilitySystemComponent* AbilitySystemComponent;
 
 	UAbilityCombo* FindComboByTag(APickupActor* PickupActor, const FGameplayTag& ComboTag);
