@@ -876,7 +876,7 @@ void ABattlemageTheEndlessCharacter::ProcessMeleeInput(APickupActor* PickupActor
 			if (PickupActor)
 			{
 				//ProcessSpellInput(PickupActor, AttackType, triggerEvent);
-				AbilitySystemComponent->ProcessInputAndBindAbilityCancelled(PickupActor, AttackType, triggerEvent);
+				AbilitySystemComponent->ProcessInputAndBindAbilityCancelled(PickupActor, AttackType);
 			}
 			else
 			{
@@ -917,7 +917,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput(APickupActor* PickupActor
 	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("ProcessSpellInput: Ability %s"),
 		*(ability->GetAbilityName().ToString())));
 
-	AbilitySystemComponent->ProcessInputAndBindAbilityCancelled(PickupActor, AttackType, triggerEvent);
+	AbilitySystemComponent->ProcessInputAndBindAbilityCancelled(PickupActor, AttackType);
 }
 
 void ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)

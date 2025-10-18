@@ -40,9 +40,9 @@ public:
 
 	/** Handles attack input for pickups using GAS abilities **/
 	UFUNCTION(BlueprintCallable, Category = "Combo Handler Passthru")
-	void ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent);
+	void ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType);
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"), Instanced)
 	UAbilityComboManager* ComboManager;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -52,6 +52,8 @@ public:
 	bool IsLeftHanded;
 
 	TArray<APickupActor*> ActivePickups;
+	UFUNCTION(BlueprintCallable, Category = "Pickup")
+	APickupActor* GetActivePickup(EquipSlot Slot);
 
 	void PostAbilityActivation(UAttackBaseGameplayAbility* ability);
 	void HandleProjectileSpawn(UAttackBaseGameplayAbility* ability);

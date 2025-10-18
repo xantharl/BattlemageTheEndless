@@ -168,7 +168,7 @@ TObjectPtr<UGameplayAbility> UBMageAbilitySystemComponent::GetActivatableAbility
 	return nullptr;
 }
 
-void UBMageAbilitySystemComponent::ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)
+void UBMageAbilitySystemComponent::ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType)
 {
 	// Let combo manager resolve and dispatch ability as needed
 	auto specHandle = ComboManager->ProcessInput(PickupActor, AttackType);
@@ -186,6 +186,15 @@ void UBMageAbilitySystemComponent::ProcessInputAndBindAbilityCancelled(APickupAc
 
 	if (auto attackAbility = Cast<UAttackBaseGameplayAbility>(instance))
 		PostAbilityActivation(attackAbility);
+}
+
+APickupActor* UBMageAbilitySystemComponent::GetActivePickup(EquipSlot Slot)
+{
+	return *ActivePickups.FindByPredicate(
+		[Slot](APickupActor* pickup) {
+			return pickup->Weapon->SlotType == Slot;
+		}
+	);
 }
 
 void UBMageAbilitySystemComponent::PostAbilityActivation(UAttackBaseGameplayAbility* ability)
