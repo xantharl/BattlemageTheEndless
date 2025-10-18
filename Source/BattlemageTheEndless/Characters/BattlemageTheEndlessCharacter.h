@@ -52,14 +52,6 @@ DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 // Needed for iteration in input mapping, this intentionally skips None
 ENUM_RANGE_BY_FIRST_AND_LAST(ETriggerEvent, ETriggerEvent::Triggered, ETriggerEvent::Completed);
 
-UENUM(BlueprintType)
-enum class EGASAbilityInputId : uint8
-{
-	None UMETA(DisplayName = "None"),
-	Confirm UMETA(DisplayName = "Confirm"),
-	Cancel UMETA(DisplayName = "Cancel")
-};
-
 USTRUCT(BlueprintType)
 struct FPickups
 {
@@ -318,8 +310,6 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Casting, meta = (AllowPrivateAccess = "true"))
 	UAnimMontage* CastingModeMontage;
-
-	FVector CurrentGripOffset(FName SocketName);
 
 	UFUNCTION(BlueprintCallable, Category = Equipment)
 	void EquipSpellClass(int slotNumber);

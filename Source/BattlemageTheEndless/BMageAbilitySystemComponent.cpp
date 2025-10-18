@@ -16,6 +16,29 @@ UBMageAbilitySystemComponent::UBMageAbilitySystemComponent()
 	EnsureInitSubObjects();
 }
 
+void UBMageAbilitySystemComponent::DeactivatePickup(APickupActor* pickup)
+{
+	ActivePickups.Remove(pickup);
+}
+
+void UBMageAbilitySystemComponent::ActivatePickup(APickupActor* pickup) 
+{
+	// The handles in GAS change each time we grant an ability, so we need to reset them each time we equip a new weapon
+	// TODO: We should be able to assign all abilities on begin play and not have to do this since we're explicit when activating an ability
+	if (ComboManager->Combos.Contains(pickup))
+		ComboManager->Combos.Remove(pickup);
+
+	// grant abilities for the new weapon
+	// Needs to happen before bindings since bindings look up assigned abilities
+	for (TSubclassOf<UGameplayAbility>& ability : pickup->Weapon->GrantedAbilities)
+	{
+		FGameplayAbilitySpecHandle handle = GiveAbility(FGameplayAbilitySpec(ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
+		ComboManager->AddAbilityToCombo(pickup, ability->GetDefaultObject<UAttackBaseGameplayAbility>(), handle);
+	}
+
+	ActivePickups.Add(pickup);
+}
+
 void UBMageAbilitySystemComponent::EnsureInitSubObjects()
 {
 	// This is kind of a hack, for AI the attributes are getting set in the CTOR but somehow becoming null by BeginPlay
@@ -213,7 +236,7 @@ void UBMageAbilitySystemComponent::HandleProjectileSpawn(UAttackBaseGameplayAbil
 			return;
 		}
 
-		ProjectileManager->OwnerCharacter = Cast<ACharacter>(GetOwnerActor());
+		ProjectileManager->OwnerCharacter = ownerCharacter;
 	}
 
 	TArray<ABattlemageTheEndlessProjectile*> projectiles;
@@ -234,12 +257,23 @@ void UBMageAbilitySystemComponent::HandleProjectileSpawn(UAttackBaseGameplayAbil
 			return;
 		}
 		const FRotator spawnRotation = controller->PlayerCameraManager->GetCameraRotation();
-		auto socketName = LeftHanded ? FName("gripRight") : FName("gripLeft");
-		auto spawnLocation = GetMesh()->GetSocketLocation(socketName) + spawnRotation.RotateVector(CurrentGripOffset(socketName));
+		auto socketName = IsLeftHanded ? FName("gripRight") : FName("gripLeft");
+		auto activeSpellClass = *ActivePickups.FindByPredicate(
+			[](APickupActor* pickup) {
+				return pickup->Weapon->SlotType == EquipSlot::Secondary;
+			}
+		);
+		if (!activeSpellClass)
+		{
+			UE_LOG(LogExec, Error, TEXT("'%s' Attempted to spawn projectiles from SpellFocus but has no active spell class!"), *GetNameSafe(this));
+			return;
+
+		}
+		auto spawnLocation = ownerCharacter->GetMesh()->GetSocketLocation(socketName) + spawnRotation.RotateVector(activeSpellClass->Weapon->MuzzleOffset);
 
 		// We are making the potentially dangerous assumption that there is only 1 instance
 		projectiles = ProjectileManager->SpawnProjectiles_Location(ability, ability->ProjectileConfiguration,
-			spawnRotation, spawnLocation, FVector::OneVector, ActiveSpellClass);
+			spawnRotation, spawnLocation, FVector::OneVector, activeSpellClass);
 	}
 	else if (ability->ProjectileConfiguration.SpawnLocation == FSpawnLocation::PreviousAbility)
 	{
@@ -258,7 +292,7 @@ void UBMageAbilitySystemComponent::HandleProjectileSpawn(UAttackBaseGameplayAbil
 
 	for (auto projectile : projectiles)
 	{
-		GetCapsuleComponent()->IgnoreActorWhenMoving(projectile, true);
+		ownerCharacter->GetCapsuleComponent()->IgnoreActorWhenMoving(projectile, true);
 		projectile->GetCollisionComp()->OnComponentHit.AddDynamic(ability, &UAttackBaseGameplayAbility::OnHit);
 	}
 
@@ -266,39 +300,45 @@ void UBMageAbilitySystemComponent::HandleProjectileSpawn(UAttackBaseGameplayAbil
 
 void UBMageAbilitySystemComponent::HandleHitScan(UAttackBaseGameplayAbility* ability)
 {
+	auto ownerCharacter = Cast<ACharacter>(GetOwnerActor());
+
 	// perform a line trace to determine if the ability hits anything
 	// Uses camera socket as the start location
-	FVector startLocation = GetMesh()->GetSocketLocation(FName("cameraSocket"));
+	FVector startLocation = ownerCharacter->GetMesh()->GetSocketLocation(FName("cameraSocket"));
 
 	// Figure out the end location based on the ability's max range and current look direction
-	UCharacterMovementComponent* movement = GetCharacterMovement();
+	UCharacterMovementComponent* movement = ownerCharacter->GetCharacterMovement();
 	auto rotation = movement->GetLastUpdateRotation();
 
-	// always use first person camera for the pitch since it's tied to the character's look direction
-	rotation.Pitch = FirstPersonCamera->GetComponentRotation().Pitch;
+	if (ownerCharacter->IsPlayerControlled()) {
+		rotation.Pitch = Cast<APlayerController>(ownerCharacter->Controller)->PlayerCameraManager->GetCameraRotation().Pitch;
+		// TODO: Figure out what this needs to be instead for AI
+	}
+
 	FVector endLocation = startLocation + (rotation.Vector() * ability->MaxRange);
 
 	//DrawDebugLine(GetWorld(), startLocation, endLocation, FColor::Red, false, 5.0f, 0, 1.0f);
 
-	auto params = FCollisionQueryParams(FName(TEXT("LineTrace")), true, this);
+	auto params = FCollisionQueryParams(FName(TEXT("LineTrace")), true, ownerCharacter);
 	FHitResult hit = Traces::LineTraceGeneric(GetWorld(), params, startLocation, endLocation);
 
 	auto hitActor = hit.GetActor();
 	if (!hitActor)
 		return;
 
-	ABattlemageTheEndlessCharacter* hitCharacter = Cast<ABattlemageTheEndlessCharacter>(hit.GetActor());
+	ACharacter* hitCharacter = Cast<ACharacter>(hit.GetActor());
 	// if we hit something other than a character and this is a chain attack, render the hit at that location
 	if (hitActor && !hitCharacter && ability->ChainSystem)
 	{
 		// We don't need to keep the reference, UE will handle disposing when it is destroyed
-		auto chainEffectActor = GetWorld()->SpawnActor<AHitScanChainEffect>(AHitScanChainEffect::StaticClass(), GetActorLocation(), FRotator::ZeroRotator);
-		chainEffectActor->Init(this, hitActor, ability->ChainSystem, hit.Location);
+		auto chainEffectActor = GetWorld()->SpawnActor<AHitScanChainEffect>(AHitScanChainEffect::StaticClass(),
+			ownerCharacter->GetActorLocation(), FRotator::ZeroRotator);
+		chainEffectActor->Init(chainEffectActor, hitActor, ability->ChainSystem, hit.Location);
 		return;
 	}
 
 	// if we hit a character apply effects to them (and chain if needed)
-	TArray<ABattlemageTheEndlessCharacter*> hitCharacters = { hitCharacter };
+	TArray<ACharacter*> hitCharacters = { hitCharacter };
 	if (ability->NumberOfChains > 0)
 	{
 		hitCharacters.Append(GetChainTargets(ability->NumberOfChains, ability->ChainDistance, hitCharacter));
@@ -314,17 +354,25 @@ void UBMageAbilitySystemComponent::HandleHitScan(UAttackBaseGameplayAbility* abi
 		if (hitCharacters.Num() != 0)
 		{
 			for (auto applyTo : hitCharacters)
-				ability->ApplyEffects(applyTo, applyTo->AbilitySystemComponent, this);
+			{
+				if (auto asc = applyTo->FindComponentByClass<UBMageAbilitySystemComponent>())
+					ability->ApplyEffects(applyTo, asc, ownerCharacter);
+			}
 		}
 	}
 	else
 	{
 		for (int i = 0; i < hitCharacters.Num(); ++i)
 		{
+			auto asc = hitCharacters[i]->FindComponentByClass<UBMageAbilitySystemComponent>();
+			// If the chain target doesn't have an ASC we can't apply effects to them
+			if (!asc)
+				continue;
+
 			// No delay for the first target
 			if (i == 0)
 			{
-				ability->ApplyEffects(hitCharacters[i], hitCharacters[i]->AbilitySystemComponent, this);
+				ability->ApplyEffects(hitCharacters[i], asc, this);
 				continue;
 			}
 
@@ -333,7 +381,7 @@ void UBMageAbilitySystemComponent::HandleHitScan(UAttackBaseGameplayAbility* abi
 				ability,
 				&UAttackBaseGameplayAbility::ApplyChainEffects,
 				(AActor*)hitCharacters[i],
-				(UAbilitySystemComponent*)hitCharacters[i]->AbilitySystemComponent,
+				(UAbilitySystemComponent*)asc,
 				(AActor*)hitCharacters[i - 1],
 				(AActor*)nullptr,
 				i == ability->NumberOfChains
@@ -345,26 +393,33 @@ void UBMageAbilitySystemComponent::HandleHitScan(UAttackBaseGameplayAbility* abi
 }
 
 
-TArray<ABattlemageTheEndlessCharacter*> UBMageAbilitySystemComponent::GetChainTargets(int NumberOfChains, float ChainDistance, ABattlemageTheEndlessCharacter* HitActor)
+TArray<ACharacter*> UBMageAbilitySystemComponent::GetChainTargets(int NumberOfChains, float ChainDistance, ACharacter* HitActor)
 {
+	auto ownerCharacter = Cast<ACharacter>(GetOwnerActor());
 	auto allBMages = TArray<AActor*>();
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABattlemageTheEndlessCharacter::StaticClass(), allBMages);
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACharacter::StaticClass(), allBMages);
+
+	// only keep potential targets which have an ASC
+	allBMages = allBMages.FilterByPredicate(
+		[](const AActor* a) {
+			return a->FindComponentByClass<UBMageAbilitySystemComponent>() != nullptr;
+		});
 
 	auto theoreticalMaxDistance = NumberOfChains * ChainDistance;
 
 	// Filter down to only the BMages within the theoreticalMaxDistance
 	allBMages = allBMages.FilterByPredicate(
-		[&HitActor, theoreticalMaxDistance, this](const AActor* a) {
-			return a != this && a->GetDistanceTo(HitActor) <= theoreticalMaxDistance;
+		[&HitActor, theoreticalMaxDistance, ownerCharacter](const AActor* a) {
+			return a != ownerCharacter && a->GetDistanceTo(HitActor) <= theoreticalMaxDistance;
 		});
 
 	// If there's nothing to chain to, return an empty array
 	if (allBMages.Num() == 0)
-		return TArray<ABattlemageTheEndlessCharacter*>();
+		return TArray<ACharacter*>();
 
 	int remainingChains = NumberOfChains;
-	auto chainTargets = TArray<ABattlemageTheEndlessCharacter*>();
-	ABattlemageTheEndlessCharacter* nextChainTarget = HitActor;
+	auto chainTargets = TArray<ACharacter*>();
+	ACharacter* nextChainTarget = HitActor;
 	while (remainingChains > 0)
 	{
 		nextChainTarget = GetNextChainTarget(ChainDistance, nextChainTarget, allBMages);
@@ -380,7 +435,7 @@ TArray<ABattlemageTheEndlessCharacter*> UBMageAbilitySystemComponent::GetChainTa
 	return chainTargets;
 }
 
-ABattlemageTheEndlessCharacter* UBMageAbilitySystemComponent::GetNextChainTarget(float ChainDistance, AActor* ChainActor, TArray<AActor*> Candidates)
+ACharacter* UBMageAbilitySystemComponent::GetNextChainTarget(float ChainDistance, AActor* ChainActor, TArray<AActor*> Candidates)
 {
 	// If it's 0 we shouldn't have gotten here, if it's 1 then only ChainActor was passed
 	if (Candidates.Num() <= 1)
@@ -404,7 +459,7 @@ ABattlemageTheEndlessCharacter* UBMageAbilitySystemComponent::GetNextChainTarget
 			continue;
 
 		// If we've passed the checks, this is the best candidate
-		return Cast<ABattlemageTheEndlessCharacter>(actor);
+		return Cast<ACharacter>(actor);
 	}
 
 	// we will only hit this if none of the candidates are in line of sight
@@ -416,7 +471,7 @@ void UBMageAbilitySystemComponent::OnAbilityCancelled(const FAbilityEndedData& e
 	if (!endData.bWasCancelled)
 		return;
 
-	auto ability = Cast<UGA_WithEffectsBase>(AbilitySystemComponent->FindAbilitySpecFromHandle(endData.AbilitySpecHandle)->Ability);
+	auto ability = Cast<UGA_WithEffectsBase>(FindAbilitySpecFromHandle(endData.AbilitySpecHandle)->Ability);
 	if (!ability)
 	{
 		// if it's not our implementation with effects, there's nothing to do
@@ -428,6 +483,6 @@ void UBMageAbilitySystemComponent::OnAbilityCancelled(const FAbilityEndedData& e
 		if (effect->GetDefaultObject<UGameplayEffect>()->DurationPolicy != EGameplayEffectDurationType::HasDuration)
 			continue;
 
-		AbilitySystemComponent->RemoveActiveGameplayEffectBySourceEffect(effect, AbilitySystemComponent, 1);
+		RemoveActiveGameplayEffectBySourceEffect(effect, this, 1);
 	}
 }

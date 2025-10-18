@@ -13,6 +13,14 @@
 #include <chrono>
 #include "BMageAbilitySystemComponent.generated.h"
 
+UENUM(BlueprintType)
+enum class EGASAbilityInputId : uint8
+{
+	None UMETA(DisplayName = "None"),
+	Confirm UMETA(DisplayName = "Confirm"),
+	Cancel UMETA(DisplayName = "Cancel")
+};
+
 /**
  * 
  */
@@ -23,6 +31,10 @@ class BATTLEMAGETHEENDLESS_API UBMageAbilitySystemComponent : public UAbilitySys
 
 public:
 	UBMageAbilitySystemComponent();
+
+	void DeactivatePickup(APickupActor* pickup);
+
+	void ActivatePickup(APickupActor* activePickup);
 
 	void MarkOwner(AActor* instigator, float duration, float range, UMaterialInstance* markedMaterial, UMaterialInstance* markedMaterialOutOfRange);
 
@@ -35,6 +47,11 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UProjectileManager* ProjectileManager;
+
+	// Owned by character by character and set in ASC on init for convenience
+	bool IsLeftHanded;
+
+	TArray<APickupActor*> ActivePickups;
 
 private:
 	void UnmarkOwner();
@@ -65,7 +82,7 @@ private:
 
 	void HandleProjectileSpawn(UAttackBaseGameplayAbility* ability);
 	void HandleHitScan(UAttackBaseGameplayAbility* ability);
-	TArray<ABattlemageTheEndlessCharacter*> GetChainTargets(int NumberOfChains, float ChainDistance, ABattlemageTheEndlessCharacter* HitActor);
-	ABattlemageTheEndlessCharacter* GetNextChainTarget(float ChainDistance, AActor* ChainActor, TArray<AActor*> Candidates);
+	TArray<ACharacter*> GetChainTargets(int NumberOfChains, float ChainDistance, ACharacter* HitActor);
+	ACharacter* GetNextChainTarget(float ChainDistance, AActor* ChainActor, TArray<AActor*> Candidates);
 	void OnAbilityCancelled(const FAbilityEndedData& endData);
 };

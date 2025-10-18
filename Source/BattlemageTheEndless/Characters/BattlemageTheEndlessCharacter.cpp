@@ -45,9 +45,6 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 	AttributeSet->InitHealth(MaxHealth);
 	AttributeSet->InitMaxHealth(MaxHealth);
 	AttributeSet->InitHealthRegenRate(0.f);
-
-	ProjectileManager = CreateDefaultSubobject<UProjectileManager>(TEXT("ProjectileManager"));
-	ProjectileManager->Initialize(this);
 }
 
 void ABattlemageTheEndlessCharacter::PossessedBy(AController* NewController)
@@ -60,6 +57,8 @@ void ABattlemageTheEndlessCharacter::PossessedBy(AController* NewController)
 		// See details of replication modes https://github.com/tranek/GASDocumentation?tab=readme-ov-file#concepts-asc-rm
 		// Update to mixed since this is a player character
 		AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
+
+		AbilitySystemComponent->IsLeftHanded = LeftHanded;
 	}
 
 	// ASC MixedMode replication requires that the ASC Owner's Owner be the Controller.
@@ -504,11 +503,6 @@ void ABattlemageTheEndlessCharacter::RequestUnCrouch()
 		mageMovement->RequestUnCrouch();
 }
 
-FVector ABattlemageTheEndlessCharacter::CurrentGripOffset(FName SocketName)
-{
-	return GetWeapon(LeftHanded ? EquipSlot::Primary : EquipSlot::Secondary)->Weapon->MuzzleOffset;
-}
-
 void ABattlemageTheEndlessCharacter::EquipSpellClass(int slotNumber)
 {
 	// invalid state
@@ -654,6 +648,8 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 		{
 			AbilitySystemComponent->RemoveLooseGameplayTags(currentItem->GrantedTags);
 		}
+
+		AbilitySystemComponent->DeactivatePickup(currentItem);
 	}
 
 	// unhide newly activated weapon
@@ -663,28 +659,17 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 	// set it to the appropriate hand
 	isRightHand ? RightHandWeapon = pickup : LeftHandWeapon = pickup;
 
-	// The handles in GAS change each time we grant an ability, so we need to reset them each time we equip a new weapon
-	// TODO: We should be able to assign all abilities on begin play and not have to do this since we're explicit when activating an ability
-	if (ComboManager->Combos.Contains(pickup))
-		ComboManager->Combos.Remove(pickup);
+	AbilitySystemComponent->ActivatePickup(pickup);
 
-	// grant abilities for the new weapon
-	// Needs to happen before bindings since bindings look up assigned abilities
-	for (TSubclassOf<UGameplayAbility>& ability : pickup->Weapon->GrantedAbilities)
-	{
-		FGameplayAbilitySpecHandle handle = AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
-		ComboManager->AddAbilityToCombo(pickup, ability->GetDefaultObject<UAttackBaseGameplayAbility>(), handle);
-	}
 	// to avoid nullptr
-	if (pickup->Weapon->GrantedAbilities.Num() > 0)
+	if (!pickup->Weapon->SelectedAbility && pickup->Weapon->GrantedAbilities.Num() > 0)
 	{
 		pickup->Weapon->SelectedAbility = pickup->Weapon->GrantedAbilities[0];
 	}
 
-	// Set the active spell to the first granted ability if it is not already set and the item is a spell focus
-	if (pickup->Weapon->SlotType == EquipSlot::Secondary && pickup->Weapon->GrantedAbilities.Num() > 0 && !pickup->Weapon->SelectedAbility)
+	if (pickup->GrantedTags.Num() > 0)
 	{
-		pickup->Weapon->SelectedAbility = pickup->Weapon->GrantedAbilities[0];
+		AbilitySystemComponent->AddLooseGameplayTags(pickup->GrantedTags);
 	}
 
 	// track key bindings for the new weapon
@@ -740,11 +725,6 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 				.GetHandle());
 		}
 		EquipmentBindingHandles.Add(pickup, bindingHandles);
-	}
-
-	if (pickup->GrantedTags.Num() > 0)
-	{
-		AbilitySystemComponent->AddLooseGameplayTags(pickup->GrantedTags);
 	}
 	// todo: make this work
 	// Grant abilities, but only on the server	
