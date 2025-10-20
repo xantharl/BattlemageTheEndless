@@ -42,9 +42,6 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 	// Adding it as a subobject of the owning actor of an AbilitySystemComponent
 	// automatically registers the AttributeSet with the AbilitySystemComponent
 	AttributeSet = CreateDefaultSubobject<UBaseAttributeSet>(TEXT("AttributeSet"));
-	AttributeSet->InitHealth(MaxHealth);
-	AttributeSet->InitMaxHealth(MaxHealth);
-	AttributeSet->InitHealthRegenRate(0.f);
 }
 
 void ABattlemageTheEndlessCharacter::PossessedBy(AController* NewController)
@@ -95,17 +92,23 @@ void ABattlemageTheEndlessCharacter::CallRestartPlayer()
 	if (LastCheckPoint)
 		controllerRef->StartSpot = LastCheckPoint;
 
-	//Destroy the Player.   
-	Destroy();
+	//// Unpossess the controller before destroying the pawn, required to prevent nullptr Controller references.
+	//if (controllerRef && controllerRef->GetPawn() == this)
+	//{
+	//	controllerRef->UnPossess();
+	//}
 
-	//Destroy the Player's equipment
-	for (auto& slot : Equipment)
-	{
-		for (auto& pickup : slot.Value.Pickups)
-		{
-			pickup->Destroy();
-		}
-	}
+	////Destroy the Player.   
+	//Destroy();
+
+	////Destroy the Player's equipment
+	//for (auto& slot : Equipment)
+	//{
+	//	for (auto& pickup : slot.Value.Pickups)
+	//	{
+	//		pickup->Destroy();
+	//	}
+	//}
 
 	//Get the World and GameMode in the world to invoke its restart player function.
 	if (UWorld* World = GetWorld())
@@ -458,10 +461,10 @@ void ABattlemageTheEndlessCharacter::AbilityInputPressed(TSubclassOf<class UGame
 
 	auto success = AbilitySystemComponent->TryActivateAbilityByClass(ability);
 	auto speedAfter = attributeSet->GetMovementSpeed();
-	if (success && GEngine)
+	/*if (success && GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Activated ability %s"), *ability->GetName()));
-	}
+	}*/
 }
 
 void ABattlemageTheEndlessCharacter::AbilityInputReleased(TSubclassOf<class UGameplayAbility> ability)
@@ -551,6 +554,16 @@ void ABattlemageTheEndlessCharacter::CheckRequiredObjects()
 	// This is kind of a hack, for AI the attributes are getting set in the CTOR but somehow becoming null by BeginPlay
 	if (!AttributeSet)
 		AttributeSet = NewObject<UBaseAttributeSet>(this, TEXT("AttributeSet"));
+
+	AttributeSet->InitHealth(MaxHealth);
+	AttributeSet->InitMaxHealth(MaxHealth);
+	AttributeSet->InitHealthRegenRate(0.f);
+	TArray<FGameplayAttribute> attrSets;
+
+	// The attributes are failing to init for AI, so we'll do it manually if needed
+	AbilitySystemComponent->GetAllAttributes(attrSets);
+	if (attrSets.Num() == 0)
+		AbilitySystemComponent->AddAttributeSetSubobject(AttributeSet);
 }
 
 void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)
@@ -755,6 +768,11 @@ APickupActor* ABattlemageTheEndlessCharacter::GetWeapon(EquipSlot SlotType)
 	
 }
 
+bool ABattlemageTheEndlessCharacter::HasWeapon(EquipSlot SlotType)
+{
+	return GetWeapon(SlotType) != nullptr;
+}
+
 void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
 {
 	if (PrevMovementMode == EMovementMode::MOVE_Falling && GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Walking)
@@ -844,9 +862,32 @@ void ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap(UPrimitiveCompone
 
 void ABattlemageTheEndlessCharacter::OnHealthChanged(const FOnAttributeChangeData& Data)
 {
+	auto isPlayerControlled = GetController()->IsPlayerController();
+
 	// If health isn't set up, exit
 	if (AttributeSet->GetMaxHealth() == 0)
 		return;
+
+	// If health is zero or below, die
+	if (Data.NewValue <= 0.f)
+	{
+		if (isPlayerControlled)
+		{
+			CallRestartPlayer();
+		}
+		else
+		{
+			Destroy();
+			// Destroy the Enemy's equipment
+			for (auto& slot : Equipment)
+			{
+				for (auto& pickup : slot.Value.Pickups)
+				{
+					pickup->Destroy();
+				}
+			}
+		}
+	}
 }
 
 void ABattlemageTheEndlessCharacter::OnMovementSpeedChanged(const FOnAttributeChangeData& Data)
@@ -914,8 +955,8 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput(APickupActor* PickupActor
 		return;
 	}
 
-	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("ProcessSpellInput: Ability %s"),
-		*(ability->GetAbilityName().ToString())));
+	/*GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("ProcessSpellInput: Ability %s"),
+		*(ability->GetAbilityName().ToString())));*/
 
 	AbilitySystemComponent->ProcessInputAndBindAbilityCancelled(PickupActor, AttackType);
 }
@@ -931,8 +972,8 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged(APickupActor* Pic
 	auto selectedAbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(ActiveSpellClass->Weapon->SelectedAbility);
 	auto ability = Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability);
 
-	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("ProcessSpellInput_Charged: Ability %s"),
-		*(ability->GetAbilityName().ToString())));
+	//GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("ProcessSpellInput_Charged: Ability %s"),
+	//	*(ability->GetAbilityName().ToString())));
 
 	if (!ability || ability->ChargeDuration <= 0.0001f)
 	{
@@ -993,8 +1034,8 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 	_secondsSinceLastPrint += GetWorld()->GetTime().GetDeltaWorldTimeSeconds();
 	if (_secondsSinceLastPrint > 0.33f)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("ProcessSpellInput_Placed: Ability %s"),
-			*(ability->GetAbilityName().ToString())));
+	/*	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("ProcessSpellInput_Placed: Ability %s"),
+			*(ability->GetAbilityName().ToString())));*/
 
 		_secondsSinceLastPrint = 0;
 	}

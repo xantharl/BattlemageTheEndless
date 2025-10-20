@@ -285,8 +285,8 @@ void UAttackBaseGameplayAbility::OnMontageCompleted()
 	if (ActiveEffectHandles.Num() > 0)
 		return;
 
-	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ending ability %s due to montage finish"), *GetName()));
+	/*if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ending ability %s due to montage finish"), *GetName()));*/
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 

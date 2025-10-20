@@ -191,10 +191,10 @@ void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 		return;
 	}
 
-	if (GEngine)
+	/*if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("Hit by Animation %s"), *LastAttackAnimationName));
-	}
+	}*/
 
 	LastHitCharacters.Add(hitActor);
 

@@ -49,10 +49,10 @@ FGameplayAbilitySpecHandle UAbilityComboManager::ProcessInput(APickupActor* Pick
 		&& Combos[PickupActor].ActiveCombo->BaseComboIdentifier.GetTagName().ToString().Contains(*UEnum::GetDisplayValueAsText(AttackType).ToString());
 	if (NextAbilityHandle && activeComboContainsRequestedAttack)
 	{
-		if (GEngine)
+		/*if (GEngine)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, TEXT("Ignoring input, requested action already queued"));
-		}
+		}*/
 		return FGameplayAbilitySpecHandle();
 	}
 
@@ -221,12 +221,12 @@ void UAbilityComboManager::ActivateAbilityAndResetTimer(FGameplayAbilitySpec abi
 	if (activated)
 		LastActivatedAbilityHandle = abilitySpec.Handle;
 
-	if (GEngine && abilitySpec.Ability)
-	{
-		FString abilityName = abilitySpec.Ability->GetName();
-		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("Ability %s activated? %s"), 
-			*abilityName, *FString(activated ? "true": "false")));
-	}
+	//if (GEngine && abilitySpec.Ability)
+	//{
+	//	FString abilityName = abilitySpec.Ability->GetName();
+	//	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("Ability %s activated? %s"), 
+	//		*abilityName, *FString(activated ? "true": "false")));
+	//}
 
 	if (!activated)
 		return;

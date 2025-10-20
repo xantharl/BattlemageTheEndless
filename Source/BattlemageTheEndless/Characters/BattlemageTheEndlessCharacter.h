@@ -222,10 +222,10 @@ private:
 public:
 	ABattlemageTheEndlessCharacter(const FObjectInitializer& ObjectInitializer);
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"), Instanced)
 	class UBMageAbilitySystemComponent* AbilitySystemComponent;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"), Instanced)
 	UBaseAttributeSet* AttributeSet;
 
 	virtual void PossessedBy(AController* NewController) override;
@@ -302,6 +302,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = Weapon)
 	APickupActor* GetWeapon(EquipSlot SlotType);
+
+	UFUNCTION(BlueprintCallable, Category = Weapon)
+	bool HasWeapon(EquipSlot SlotType);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Inventory, meta = (AllowPrivateAccess = "true"))
 	bool LeftHanded = false;

@@ -148,8 +148,8 @@ void UBMageAbilitySystemComponent::OnMarkSphereEndOverlap(UPrimitiveComponent* O
 
 void UBMageAbilitySystemComponent::OnRemoveGameplayEffectCallback(const FActiveGameplayEffect& EffectRemoved)
 {
-	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Effect %s removed"), *EffectRemoved.Spec.Def->GetName()));
+	/*if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Effect %s removed"), *EffectRemoved.Spec.Def->GetName()));*/
 }
 
 TObjectPtr<UGameplayAbility> UBMageAbilitySystemComponent::GetActivatableAbilityByOwnedTag(FName abilityTag) 
