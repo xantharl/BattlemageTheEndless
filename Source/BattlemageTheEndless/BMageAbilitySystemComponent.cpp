@@ -64,7 +64,7 @@ void UBMageAbilitySystemComponent::BeginPlay()
 	if (GetWorld())
 	{
 		_markSphere->SetVisibility(true);
-		_markSphere->SetHiddenInGame(false);
+		_markSphere->SetHiddenInGame(true);
 		_markSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		_markSphere->SetGenerateOverlapEvents(false);
 		_markSphere->RegisterComponent();
