@@ -627,7 +627,7 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 	bool isRightHand = pickup->Weapon->SlotType == EquipSlot::Primary != LeftHanded;
 
 	APickupActor* currentItem = isRightHand ? RightHandWeapon : LeftHandWeapon;
-	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(Controller->InputComponent);
+	UEnhancedInputComponent* EnhancedInputComponent = Controller != nullptr ? Cast<UEnhancedInputComponent>(Controller->InputComponent) : nullptr;
 
 	// if there is an equipped item in the requested slot, unequip it and remove abilities it grants
 	if (currentItem)
@@ -649,9 +649,12 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 		}
 
 		// remove bindings for the current weapon
-		for(auto handle: EquipmentBindingHandles[currentItem].Handles)
+		if (EnhancedInputComponent)
 		{
-			EnhancedInputComponent->RemoveBindingByHandle(handle);
+			for (auto handle : EquipmentBindingHandles[currentItem].Handles)
+			{
+				EnhancedInputComponent->RemoveBindingByHandle(handle);
+			}
 		}
 
 		EquipmentBindingHandles.Remove(currentItem);
@@ -862,8 +865,6 @@ void ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap(UPrimitiveCompone
 
 void ABattlemageTheEndlessCharacter::OnHealthChanged(const FOnAttributeChangeData& Data)
 {
-	auto isPlayerControlled = GetController()->IsPlayerController();
-
 	// If health isn't set up, exit
 	if (AttributeSet->GetMaxHealth() == 0)
 		return;
@@ -871,7 +872,8 @@ void ABattlemageTheEndlessCharacter::OnHealthChanged(const FOnAttributeChangeDat
 	// If health is zero or below, die
 	if (Data.NewValue <= 0.f)
 	{
-		if (isPlayerControlled)
+		auto controller = GetController();
+		if (controller && controller->IsPlayerController())
 		{
 			CallRestartPlayer();
 		}
