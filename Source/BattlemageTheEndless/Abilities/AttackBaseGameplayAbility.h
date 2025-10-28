@@ -163,12 +163,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	UAnimMontage* ComboPauseAnimation;
 
-	bool HasComboTag();
-
-	bool IsFirstInCombo();
-
-	FGameplayTagContainer GetComboTags();
-
 	/// <summary>
 	/// override of the ActivateAbility method to apply effects and spawn projectiles
 	/// </summary>

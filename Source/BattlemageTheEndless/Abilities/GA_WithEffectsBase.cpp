@@ -64,6 +64,7 @@ void UGA_WithEffectsBase::HandleSetByCaller(TSubclassOf<UGameplayEffect> effect,
 void UGA_WithEffectsBase::CancelAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateCancelAbility)
 {
 	ResetTimerAndClearEffects(ActorInfo, true);
+	// Super calls end
 	Super::CancelAbility(Handle, ActorInfo, ActivationInfo, bReplicateCancelAbility);
 }
 
@@ -130,4 +131,28 @@ TArray<TObjectPtr<UGA_WithEffectsBase>> UGA_WithEffectsBase::GetAbilityActiveIns
 	}
 
 	return returnVal;
+}
+
+bool UGA_WithEffectsBase::HasComboTag()
+{
+	return GetComboTags().Num() > 0;
+}
+
+bool UGA_WithEffectsBase::IsFirstInCombo()
+{
+	auto comboTags = GetComboTags();
+	return comboTags.Num() > 0 && comboTags.First().ToString().EndsWith(".1");
+}
+
+FGameplayTagContainer UGA_WithEffectsBase::GetComboTags()
+{
+	FGameplayTagContainer comboStateTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("State.Combo")));
+	auto comboTags = AbilityTags.Filter(comboStateTags);
+
+	if (comboTags.Num() > 1)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Ability %s has more than one State.Combo tag. This is not supported."), *GetName());
+	}
+
+	return comboTags;
 }

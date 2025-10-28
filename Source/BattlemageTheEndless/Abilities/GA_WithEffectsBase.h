@@ -81,6 +81,12 @@ public:
 
 	TArray<TObjectPtr<UGA_WithEffectsBase>> GetAbilityActiveInstances(FGameplayAbilitySpec* spec);
 
+	bool HasComboTag();
+
+	bool IsFirstInCombo();
+
+	FGameplayTagContainer GetComboTags();
+
 protected:
 	FTimerHandle EndTimerHandle;
 

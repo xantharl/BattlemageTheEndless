@@ -96,9 +96,12 @@ public:
 
 	void BindAbilityActivate(FGameplayAbilitySpecHandle abilityHandle, UAbilitySystemComponent* abilityComponent);
 
-	/** Drop Weapon Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	/** DEPRECATED - USE TRANSFORM */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AttachmentBehavior, meta = (AllowPrivateAccess = "true"))
 	FVector AttachmentOffset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AttachmentBehavior, meta = (AllowPrivateAccess = "true"))
+	FTransform AttachmentTransform;
 
 	/** Light attack damage */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Damage)

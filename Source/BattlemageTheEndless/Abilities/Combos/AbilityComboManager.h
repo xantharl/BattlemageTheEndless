@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
+#include "../GA_WithEffectsBase.h"
 #include <BattlemageTheEndless/Pickups/PickupActor.h>
 #include "AbilityCombo.h"
 #include "NiagaraFunctionLibrary.h"
@@ -65,7 +66,7 @@ public:
 	TMap<APickupActor*, FPickupCombos> Combos;
 
 	// Adds a single ability to a combo, or creates a new combo if the ability is the first in a combo
-	void AddAbilityToCombo(APickupActor* PickupActor, UAttackBaseGameplayAbility* Ability, FGameplayAbilitySpecHandle Handle);
+	void AddAbilityToCombo(APickupActor* PickupActor, UGA_WithEffectsBase* Ability, FGameplayAbilitySpecHandle Handle);
 
 	/** Processes input from the player, can activate immediately or queue an action. Returns an invalid handle if no ability was activated. **/
 	FGameplayAbilitySpecHandle ProcessInput(APickupActor* PickupActor, EAttackType AttackType);

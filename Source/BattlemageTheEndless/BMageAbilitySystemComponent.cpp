@@ -33,7 +33,7 @@ void UBMageAbilitySystemComponent::ActivatePickup(APickupActor* pickup)
 	for (TSubclassOf<UGameplayAbility>& ability : pickup->Weapon->GrantedAbilities)
 	{
 		FGameplayAbilitySpecHandle handle = GiveAbility(FGameplayAbilitySpec(ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
-		ComboManager->AddAbilityToCombo(pickup, ability->GetDefaultObject<UAttackBaseGameplayAbility>(), handle);
+		ComboManager->AddAbilityToCombo(pickup, ability->GetDefaultObject<UGA_WithEffectsBase>(), handle);
 	}
 
 	ActivePickups.Add(pickup);

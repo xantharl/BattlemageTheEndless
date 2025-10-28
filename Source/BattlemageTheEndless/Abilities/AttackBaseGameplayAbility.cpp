@@ -26,30 +26,6 @@ UAttackBaseGameplayAbility::UAttackBaseGameplayAbility()
 {
 }
 
-bool UAttackBaseGameplayAbility::HasComboTag()
-{
-	return GetComboTags().Num() > 0;
-}
-
-bool UAttackBaseGameplayAbility::IsFirstInCombo()
-{	
-	auto comboTags = GetComboTags();
-	return comboTags.Num() > 0 && comboTags.First().ToString().EndsWith(".1");
-}
-
-FGameplayTagContainer UAttackBaseGameplayAbility::GetComboTags()
-{
-	FGameplayTagContainer comboStateTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("State.Combo")));
-	auto comboTags = AbilityTags.Filter(comboStateTags);
-
-	if (comboTags.Num() > 1)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Ability %s has more than one State.Combo tag. This is not supported."), *GetName());
-	}
-
-	return comboTags;
-}
-
 void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	UWorld* const world = GetWorld();

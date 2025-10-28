@@ -281,9 +281,12 @@ void ABattlemageTheEndlessCharacter::GiveStartingEquipment()
 		FName socketName = isRightHand ? FName("GripRight") : FName("GripLeft");
 		pickup->Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), socketName);
 
-		// offset the weapon from the socket if needed
+		// TODO: deprecate this -- offset the weapon from the socket if needed
 		if (pickup->Weapon->AttachmentOffset != FVector::ZeroVector && pickup->Weapon->GetRelativeLocation() == FVector::ZeroVector)
 			pickup->Weapon->AddLocalOffset(pickup->Weapon->AttachmentOffset);
+
+		if (pickup->Weapon->AttachmentTransform.IsValid())
+			pickup->Weapon->AddLocalTransform(pickup->Weapon->AttachmentTransform);
 
 		// hide if this isn't the first item (since the first item is equipped by default)
 		if (Equipment[pickup->Weapon->SlotType].Pickups.Num() > 0)

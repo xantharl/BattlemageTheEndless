@@ -4,7 +4,7 @@
 #include "Abilities/GameplayAbility.h"
 #include <BattlemageTheEndless/Abilities/AttackBaseGameplayAbility.h>
 
-void UAbilityComboManager::AddAbilityToCombo(APickupActor* PickupActor, UAttackBaseGameplayAbility* Ability, FGameplayAbilitySpecHandle Handle)
+void UAbilityComboManager::AddAbilityToCombo(APickupActor* PickupActor, UGA_WithEffectsBase* Ability, FGameplayAbilitySpecHandle Handle)
 {
 	// We build combos for each pickup the first time it is equipped and assume they will not change during gameplay
 	// TODO: If we want to allow for dynamic combos, we will need an event this can subscribe to for a rebuild
