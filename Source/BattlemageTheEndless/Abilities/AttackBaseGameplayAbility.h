@@ -214,6 +214,9 @@ public:
 	UFUNCTION()
 	void OnMontageCompleted();
 
+	UFUNCTION()
+	void OnMontageBlendOut();
+
 	UFUNCTION(BlueprintCallable, Category="ChainBehavior")
 	TArray<FTimerHandle>& GetChainTimerHandles() 
 	{

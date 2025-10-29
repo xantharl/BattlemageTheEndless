@@ -141,6 +141,12 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		return;
 	}
 	
+	// if there is a looping montage, assume ability end is handled elsewhere
+	if (FireAnimation->bLoop)
+	{
+		return;
+	}
+
 	// otherwise set a timer to end the ability when the montage is done
 	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UAttackBaseGameplayAbility::EndAbility, Handle, ActorInfo, ActivationInfo, true, true);
 	world->GetTimerManager().SetTimer(EndTimerHandle, TimerDelegate, montageDuration, false);
@@ -166,6 +172,7 @@ void UAttackBaseGameplayAbility::CreateAndDispatchMontageTask()
 	auto task = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, FireAnimation,
 		1.0f, NAME_None, true, 1.0f, 0.f, true);
 	task->OnCompleted.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCompleted);
+	task->OnBlendOut.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageBlendOut);
 	task->OnInterrupted.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCancelled);
 	task->OnCancelled.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCancelled);
 	task->ReadyForActivation();
@@ -257,6 +264,10 @@ void UAttackBaseGameplayAbility::OnMontageCancelled()
 
 void UAttackBaseGameplayAbility::OnMontageCompleted()
 {
+	// we should hit blend out before this check, but return for safety
+	if (FireAnimation->bLoop)
+		return;
+
 	// check if effects are still active, if so keep the ability alive
 	if (ActiveEffectHandles.Num() > 0)
 		return;
@@ -264,6 +275,19 @@ void UAttackBaseGameplayAbility::OnMontageCompleted()
 	/*if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ending ability %s due to montage finish"), *GetName()));*/
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+}
+
+void UAttackBaseGameplayAbility::OnMontageBlendOut()
+{
+	if (FireAnimation->bLoop)
+	{
+		// if the montage is looping, we don't end the ability here, just spin up another task
+		// can this lead to stack overflow? probably, but we're going to ignore that for now
+		if (GEngine)
+			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Restarting looping montage for ability %s"), *GetName()));
+		CreateAndDispatchMontageTask();
+		return;
+	}
 }
 
 bool UAttackBaseGameplayAbility::IsCharged()
