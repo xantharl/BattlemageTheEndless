@@ -268,6 +268,10 @@ void ABattlemageTheEndlessCharacter::GiveStartingEquipment()
 	{
 		// create the actor
 		APickupActor* pickup = GetWorld()->SpawnActor<APickupActor>(PickupType, GetActorLocation(), GetActorRotation());
+		pickup->SetOwner(this);
+
+		if (pickup->Weapon)
+			AbilitySystemComponent->OnAbilityEnded.AddUObject(pickup->Weapon, &UTP_WeaponComponent::OnAbilityCancelled);
 
 		if (!pickup || !pickup->Weapon)
 			continue;

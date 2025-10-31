@@ -107,9 +107,12 @@ public:
 
 	TSubclassOf<UGameplayAbility> GetAbilityByAttackType(EAttackType AttackType);
 
+	void OnAbilityCancelled(const FAbilityEndedData& endData);
 	void ResetHits();
 
 	void NextOrPreviousSpell(bool nextOrPrevious);
+
+	virtual void BeginPlay() override;
 
 protected:
 	/** Ends gameplay for this component. */

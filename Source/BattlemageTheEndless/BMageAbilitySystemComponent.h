@@ -42,6 +42,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combo Handler Passthru")
 	void ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType);
 
+	UFUNCTION(BlueprintCallable, Category = "Abilities")
+	bool CancelAbilityByOwnedTag(FGameplayTag abilityTag);
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"), Instanced)
 	UAbilityComboManager* ComboManager;
 

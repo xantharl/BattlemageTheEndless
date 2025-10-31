@@ -188,6 +188,16 @@ void UBMageAbilitySystemComponent::ProcessInputAndBindAbilityCancelled(APickupAc
 		PostAbilityActivation(attackAbility);
 }
 
+bool UBMageAbilitySystemComponent::CancelAbilityByOwnedTag(FGameplayTag abilityTag)
+{
+	auto ability = GetActivatableAbilityByOwnedTag(abilityTag.GetTagName());
+	if (!ability || !ability->IsActive())
+		return false;
+
+	CancelAbility(ability);
+	return true;
+}
+
 APickupActor* UBMageAbilitySystemComponent::GetActivePickup(EquipSlot Slot)
 {
 	return *ActivePickups.FindByPredicate(

@@ -18,6 +18,12 @@ UTP_WeaponComponent::UTP_WeaponComponent()
 	MuzzleOffset = FVector(10.0f, 0.0f, 10.0f);
 }
 
+void UTP_WeaponComponent::BeginPlay()
+{
+	// this needs to be before any returns because we break the engine if we return without routing to the super
+	Super::BeginPlay();
+}
+
 // TODO: Split out melee and spells, the use cases are too divergent
 TSubclassOf<UGameplayAbility> UTP_WeaponComponent::GetAbilityByAttackType(EAttackType AttackType)
 {
@@ -48,10 +54,15 @@ TSubclassOf<UGameplayAbility> UTP_WeaponComponent::GetAbilityByAttackType(EAttac
 	return matches[0];
 }
 
+void UTP_WeaponComponent::OnAbilityCancelled(const FAbilityEndedData& endData)
+{
+	ResetHits();
+}
+
 void UTP_WeaponComponent::ResetHits()
 {
 	LastHitCharacters.Empty();
-	LastAttackAnimationName = "";
+	LastAttackAnimationName = FString();
 }
 
 void UTP_WeaponComponent::NextOrPreviousSpell(bool nextOrPrevious)
