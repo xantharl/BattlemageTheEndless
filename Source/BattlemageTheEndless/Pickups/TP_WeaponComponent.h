@@ -92,10 +92,6 @@ public:
 
 	void RemoveContext(ACharacter* character);
 
-	void AddBindings(ACharacter* character, UAbilitySystemComponent* abilityComponent);
-
-	void BindAbilityActivate(FGameplayAbilitySpecHandle abilityHandle, UAbilitySystemComponent* abilityComponent);
-
 	/** DEPRECATED - USE TRANSFORM */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AttachmentBehavior, meta = (AllowPrivateAccess = "true"))
 	FVector AttachmentOffset;

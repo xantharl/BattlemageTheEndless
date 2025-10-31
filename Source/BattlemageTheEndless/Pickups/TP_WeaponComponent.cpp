@@ -109,69 +109,16 @@ void UTP_WeaponComponent::RemoveContext(ACharacter* character)
 	}
 }
 
-// Deprecated in favor of combo manager
-// TODO: remove this once the combo manager is fully implemented
-void UTP_WeaponComponent::AddBindings(ACharacter* character, UAbilitySystemComponent* abilityComponent)
-{
-	if (!character)
-	{
-		return;
-	}
-	APlayerController* PlayerController = Cast<APlayerController>(character->GetController());
-	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent);
-
-	if (!PlayerController || !EnhancedInputComponent)
-	{
-		return;
-	}
-
-	auto bindableActions = TArray<FGameplayAbilitySpecHandle>();
-	FName targetTag = SlotType == EquipSlot::Primary ? FName("Weapons.Attack") : FName("Spells.Types.Quick");
-	auto tags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(targetTag));
-	abilityComponent->FindAllAbilitiesWithTags(	bindableActions, tags, false);
-
-	if (bindableActions.Num() == 0)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("No quick spells found"));
-		return;
-	}
-
-	// We are binding them all to the same action and relying on proper config of blocking tags to determine which one to use
-	for(auto action : bindableActions)
-	{
-		EnhancedInputComponent->BindAction(FireActionTap, ETriggerEvent::Triggered, this, &UTP_WeaponComponent::BindAbilityActivate, action, abilityComponent);
-	}
-}
-
-// Deprecated in favor of combo manager
-// TODO: remove this once the combo manager is fully implemented
-void UTP_WeaponComponent::BindAbilityActivate(FGameplayAbilitySpecHandle abilityHandle, UAbilitySystemComponent* abilityComponent)
-{
-	// TODO: make this less horrible
-	// handle the combo state so we only invoke the current attack
-	// get the combo number from the ability
-	auto baseComboTag = FGameplayTag::RequestGameplayTag(FName("State.Combo"));
-	auto comboAttackNumber = abilityComponent->GetTagCount(baseComboTag);
-
-	auto ability = abilityComponent->FindAbilitySpecFromHandle(abilityHandle); 
-	auto abilityComboTags = ability->Ability->AbilityTags.Filter(FGameplayTagContainer(baseComboTag));
-	if (abilityComboTags.Num() == 0)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Ability has no State.Combo.# tag"));
-		return;
-	}
-	int abilityComboNumber = FCString::Atoi(*abilityComboTags.First().GetTagName().ToString().Right(1));
-
-	if (comboAttackNumber == abilityComboNumber-1)
-		abilityComponent->TryActivateAbility(abilityHandle, true);
-}
-
 // This is called by the AnimNotify_Collision Blueprint
 void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult& Hit, FString attackAnimationName)
 {
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("%s hit character %s"),
+			*(character->GetName()), *(Hit.GetActor()->GetName())));
+
 	if (attackAnimationName != LastAttackAnimationName)
 	{
-		LastHitCharacters.Empty();
+		ResetHits();
 		LastAttackAnimationName = attackAnimationName;
 	}
 
