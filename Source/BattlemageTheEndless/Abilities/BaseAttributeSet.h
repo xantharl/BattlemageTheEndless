@@ -14,6 +14,8 @@
 	GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
 	GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnAttributeChangedDelegate, const FGameplayAttribute&, Attribute, float, OldValue, float, NewValue);
+
 /**
  * 
  */
@@ -23,6 +25,9 @@ class BATTLEMAGETHEENDLESS_API UBaseAttributeSet : public UAttributeSet
 	GENERATED_BODY()
 	
 public:
+	UPROPERTY(BlueprintAssignable, Category = "Attributes")
+	FOnAttributeChangedDelegate OnAttributeChanged;
+
 	// Current Health, when 0 we expect owner to die unless prevented by an ability. Capped by MaxHealth.
 	// Positive changes can directly use this.
 	// Negative changes to Health should go through Damage meta attribute.
@@ -49,6 +54,8 @@ public:
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, CrouchedSpeed)
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
 
 protected:
 	/**

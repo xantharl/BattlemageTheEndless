@@ -187,9 +187,6 @@ void ABattlemageTheEndlessCharacter::AdjustAimModeFov(float DeltaTime)
 
 void ABattlemageTheEndlessCharacter::BeginPlay()
 {
-	// Call the base class  
-	Super::BeginPlay();
-
 	CheckRequiredObjects();
 
 	TObjectPtr<UBMageCharacterMovementComponent> movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
@@ -217,6 +214,7 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 		.AddUObject(this, &ABattlemageTheEndlessCharacter::OnCrouchedSpeedChanged);
 
 	InitHealthbar();
+	Super::BeginPlay();
 }
 
 void ABattlemageTheEndlessCharacter::InitHealthbar()
