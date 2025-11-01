@@ -270,11 +270,14 @@ protected:
 
 	void SetupCameras();
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Character)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Attributes)
 	float Health = 100;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Character)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
 	float MaxHealth = 100;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
+	float HealthRegenRate = 2.f;
 
 	ACheckPoint* LastCheckPoint;
 

@@ -10,6 +10,7 @@
 #include "Abilities/Combos/AbilityComboManager.h"
 #include "Abilities/AttackBaseGameplayAbility.h"
 #include "Abilities/ProjectileManager.h"
+#include "Abilities/GE_RegenHealth.h"
 #include <chrono>
 #include "BMageAbilitySystemComponent.generated.h"
 
@@ -35,6 +36,8 @@ public:
 	void DeactivatePickup(APickupActor* pickup);
 
 	void ActivatePickup(APickupActor* activePickup);
+	virtual bool GetShouldTick() const override;
+	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	void MarkOwner(AActor* instigator, float duration, float range, UMaterialInstance* markedMaterial, UMaterialInstance* markedMaterialOutOfRange);
 

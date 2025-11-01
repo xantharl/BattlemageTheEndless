@@ -30,18 +30,24 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 
 	JumpMaxCount = 2;
 
+	auto ascComp = GetComponentByClass<UBMageAbilitySystemComponent>();
 	// init gas
-	AbilitySystemComponent = CreateDefaultSubobject<UBMageAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
-	AbilitySystemComponent->SetIsReplicated(true);
+	if (!ascComp)
+	{
+		AbilitySystemComponent = CreateDefaultSubobject<UBMageAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+		AbilitySystemComponent->SetIsReplicated(true);
 
-	// See details of replication modes https://github.com/tranek/GASDocumentation?tab=readme-ov-file#concepts-asc-rm
-	// Defaulting to minimal, updates to Mixed on possession (which indicates this is a player character)
-	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
+		// See details of replication modes https://github.com/tranek/GASDocumentation?tab=readme-ov-file#concepts-asc-rm
+		// Defaulting to minimal, updates to Mixed on possession (which indicates this is a player character)
+		AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 
-	// Create the attribute set, this replicates by default
-	// Adding it as a subobject of the owning actor of an AbilitySystemComponent
-	// automatically registers the AttributeSet with the AbilitySystemComponent
-	AttributeSet = CreateDefaultSubobject<UBaseAttributeSet>(TEXT("AttributeSet"));
+		// Create the attribute set, this replicates by default
+		// Adding it as a subobject of the owning actor of an AbilitySystemComponent
+		// automatically registers the AttributeSet with the AbilitySystemComponent
+		AttributeSet = CreateDefaultSubobject<UBaseAttributeSet>(TEXT("AttributeSet"));
+	}
+	else if (!AbilitySystemComponent)
+		AbilitySystemComponent = ascComp;
 }
 
 void ABattlemageTheEndlessCharacter::PossessedBy(AController* NewController)
@@ -332,6 +338,12 @@ void ABattlemageTheEndlessCharacter::GiveDefaultAbilities()
 	{
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability.Key, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
 
+		// Abilities with input actions will not be activated immediately
+		if (Ability.Value)
+			continue;
+
+		// Try to activate abilities that don't require input
+		AbilitySystemComponent->TryActivateAbilityByClass(Ability.Key);
 	}
 }
 
@@ -562,7 +574,7 @@ void ABattlemageTheEndlessCharacter::CheckRequiredObjects()
 
 	AttributeSet->InitHealth(MaxHealth);
 	AttributeSet->InitMaxHealth(MaxHealth);
-	AttributeSet->InitHealthRegenRate(0.f);
+	AttributeSet->InitHealthRegenRate(HealthRegenRate);
 	TArray<FGameplayAttribute> attrSets;
 
 	// The attributes are failing to init for AI, so we'll do it manually if needed
@@ -873,6 +885,8 @@ void ABattlemageTheEndlessCharacter::OnHealthChanged(const FOnAttributeChangeDat
 	// If health isn't set up, exit
 	if (AttributeSet->GetMaxHealth() == 0)
 		return;
+
+	AbilitySystemComponent->UpdateShouldTick();
 
 	// If health is zero or below, die
 	if (Data.NewValue <= 0.f)

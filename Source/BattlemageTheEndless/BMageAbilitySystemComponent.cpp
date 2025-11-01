@@ -6,13 +6,19 @@ using namespace std::chrono;
 
 UBMageAbilitySystemComponent::UBMageAbilitySystemComponent()
 {
-	_markSphere = CreateDefaultSubobject<USphereComponent>(TEXT("MarkSphere"));
-	_markSphere->OnComponentBeginOverlap.AddDynamic(this, &UBMageAbilitySystemComponent::OnMarkSphereBeginOverlap);
-	_markSphere->OnComponentEndOverlap.AddDynamic(this, &UBMageAbilitySystemComponent::OnMarkSphereEndOverlap);
-	_markSphere->SetCollisionResponseToAllChannels(ECR_Overlap);
+	if (!_markSphere)
+	{
+		_markSphere = CreateDefaultSubobject<USphereComponent>(TEXT("MarkSphere"));
+		_markSphere->OnComponentBeginOverlap.AddDynamic(this, &UBMageAbilitySystemComponent::OnMarkSphereBeginOverlap);
+		_markSphere->OnComponentEndOverlap.AddDynamic(this, &UBMageAbilitySystemComponent::OnMarkSphereEndOverlap);
+		_markSphere->SetCollisionResponseToAllChannels(ECR_Overlap);
+	}
 
-	ComboManager = CreateDefaultSubobject<UAbilityComboManager>(TEXT("ComboManager"));
-	ProjectileManager = CreateDefaultSubobject<UProjectileManager>(TEXT("ProjectileManager"));
+	if (!ComboManager)
+		ComboManager = CreateDefaultSubobject<UAbilityComboManager>(TEXT("ComboManager"));
+
+	if (!ProjectileManager)
+		ProjectileManager = CreateDefaultSubobject<UProjectileManager>(TEXT("ProjectileManager"));
 	EnsureInitSubObjects();
 }
 
@@ -37,6 +43,20 @@ void UBMageAbilitySystemComponent::ActivatePickup(APickupActor* pickup)
 	}
 
 	ActivePickups.Add(pickup);
+}
+
+bool UBMageAbilitySystemComponent::GetShouldTick() const
+{
+	if (auto attributes = GetAttributeSet(UBaseAttributeSet::StaticClass()))
+	{
+		auto baseAttributes = Cast<UBaseAttributeSet>(attributes);
+		if (baseAttributes && baseAttributes->GetHealthRegenRate() > 0.0f && baseAttributes->GetHealth() < baseAttributes->GetMaxHealth())
+		{
+			return true;
+		}
+	}
+
+	return Super::GetShouldTick();
 }
 
 void UBMageAbilitySystemComponent::EnsureInitSubObjects()
@@ -105,6 +125,28 @@ void UBMageAbilitySystemComponent::MarkOwner(AActor* instigator, float duration,
 	AddLooseGameplayTag(FGameplayTag::RequestGameplayTag("GameplayCue.Status.Marked"));
 
 	GetWorld()->GetTimerManager().SetTimer(_unmarkTimerHandle, this, &UBMageAbilitySystemComponent::UnmarkOwner, duration, false);
+}
+
+void UBMageAbilitySystemComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	
+	auto attrs = Cast<UBaseAttributeSet>(GetAttributeSet(UBaseAttributeSet::StaticClass()));
+	if (!attrs)
+		return;
+
+	if (attrs->GetHealthRegenRate() > 0.0f && attrs->GetHealth() < attrs->GetMaxHealth())
+	{
+		float AmountToAdd = FMath::Clamp(attrs->GetHealthRegenRate() * DeltaTime, 0.f, attrs->GetMaxHealth() - attrs->GetHealth());
+		auto specHandle = MakeOutgoingSpec(UGE_RegenHealth::StaticClass(), 1.f, MakeEffectContext());
+
+		if (specHandle.IsValid())
+		{
+			specHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Attributes.HealthToRegen")), AmountToAdd);
+			ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
+			attrs->OnAttributeChanged.Broadcast(attrs->GetHealthAttribute(), attrs->GetHealth() - AmountToAdd, attrs->GetHealth());
+		}
+	}
 }
 
 void UBMageAbilitySystemComponent::UnmarkOwner()
