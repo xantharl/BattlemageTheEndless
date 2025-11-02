@@ -368,7 +368,10 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "CheckPoint")
 	void OnBaseCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
+	UFUNCTION()
+	virtual void OnAttributeChanged(const FGameplayAttribute& Attribute, float OldValue, float NewValue);
 	virtual void OnHealthChanged(const FOnAttributeChangeData& Data);
+	virtual void OnHealthRegenRateChanged(const FOnAttributeChangeData& Data);
 	virtual void OnMovementSpeedChanged(const FOnAttributeChangeData& Data);
 	virtual void OnCrouchedSpeedChanged(const FOnAttributeChangeData& Data);
 

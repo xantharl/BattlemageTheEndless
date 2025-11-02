@@ -212,12 +212,7 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 	GiveDefaultAbilities();
 	GiveStartingEquipment();
 
-	HealthChangedDelegateHandle = AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetHealthAttribute())
-		.AddUObject(this, &ABattlemageTheEndlessCharacter::OnHealthChanged);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetMovementSpeedAttribute())
-		.AddUObject(this, &ABattlemageTheEndlessCharacter::OnMovementSpeedChanged);
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(AttributeSet->GetCrouchedSpeedAttribute())
-		.AddUObject(this, &ABattlemageTheEndlessCharacter::OnCrouchedSpeedChanged);
+	AttributeSet->OnAttributeChanged.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnAttributeChanged);
 
 	InitHealthbar();
 	Super::BeginPlay();
@@ -880,11 +875,40 @@ void ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap(UPrimitiveCompone
 		LastCheckPoint = checkpoint;
 }
 
+void ABattlemageTheEndlessCharacter::OnAttributeChanged(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
+{
+	FOnAttributeChangeData Data;
+	Data.Attribute = Attribute;
+	Data.OldValue = OldValue;
+	Data.NewValue = NewValue;
+
+	if (Attribute == AttributeSet->GetHealthAttribute())
+	{
+		OnHealthChanged(Data);
+	}
+	if (Attribute == AttributeSet->GetHealthRegenRateAttribute())
+	{
+		OnHealthRegenRateChanged(Data);
+	}
+	else if (Attribute == AttributeSet->GetMovementSpeedAttribute())
+	{
+		OnMovementSpeedChanged(Data);
+	}
+	else if (Attribute == AttributeSet->GetCrouchedSpeedAttribute())
+	{
+		OnCrouchedSpeedChanged(Data);
+	}
+}
+
 void ABattlemageTheEndlessCharacter::OnHealthChanged(const FOnAttributeChangeData& Data)
 {
 	// If health isn't set up, exit
 	if (AttributeSet->GetMaxHealth() == 0)
 		return;
+
+	// this will eventually be more nuanced, but for now just suspend regen on any damage taken
+	if (Data.NewValue < Data.OldValue)
+		AbilitySystemComponent->SuspendHealthRegen();
 
 	AbilitySystemComponent->UpdateShouldTick();
 
@@ -909,6 +933,12 @@ void ABattlemageTheEndlessCharacter::OnHealthChanged(const FOnAttributeChangeDat
 			}
 		}
 	}
+}
+
+void ABattlemageTheEndlessCharacter::OnHealthRegenRateChanged(const FOnAttributeChangeData& Data)
+{
+	// When we change health regen rate, we may need to start or stop ticking
+	AbilitySystemComponent->UpdateShouldTick();
 }
 
 void ABattlemageTheEndlessCharacter::OnMovementSpeedChanged(const FOnAttributeChangeData& Data)

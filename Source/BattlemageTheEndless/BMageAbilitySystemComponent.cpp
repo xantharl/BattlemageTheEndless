@@ -537,3 +537,14 @@ void UBMageAbilitySystemComponent::OnAbilityCancelled(const FAbilityEndedData& e
 		RemoveActiveGameplayEffectBySourceEffect(effect, this, 1);
 	}
 }
+
+void UBMageAbilitySystemComponent::SuspendHealthRegen(float SuspendDurationOverride)
+{
+	// apply a zduration effect that sets health regen to 0
+	auto specHandle = MakeOutgoingSpec(UGE_SuspendRegenHealth::StaticClass(), 1.f, MakeEffectContext());
+	specHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Attributes.HealthRegenRate")), 0.0f);
+	specHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Attributes.SuspendRegenDuration")), 
+		SuspendDurationOverride == 0.f ? SuspendRegenOnHitDuration : SuspendDurationOverride);
+
+	ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
+}

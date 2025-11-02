@@ -11,6 +11,7 @@
 #include "Abilities/AttackBaseGameplayAbility.h"
 #include "Abilities/ProjectileManager.h"
 #include "Abilities/GE_RegenHealth.h"
+#include "Abilities/GE_SuspendRegenHealth.h"
 #include <chrono>
 #include "BMageAbilitySystemComponent.generated.h"
 
@@ -48,14 +49,18 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
 	bool CancelAbilityByOwnedTag(FGameplayTag abilityTag);
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"), Instanced)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"), Instanced)
 	UAbilityComboManager* ComboManager;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
 	UProjectileManager* ProjectileManager;
 
 	// Owned by character by character and set in ASC on init for convenience
 	bool IsLeftHanded;
+
+	/** Duration (s) to suspend health regeneration on hit, a value of 0 means do not suspend **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
+	float SuspendRegenOnHitDuration = 2.0f;
 
 	TArray<APickupActor*> ActivePickups;
 	UFUNCTION(BlueprintCallable, Category = "Pickup")
@@ -68,11 +73,15 @@ public:
 	ACharacter* GetNextChainTarget(float ChainDistance, AActor* ChainActor, TArray<AActor*> Candidates);
 	void OnAbilityCancelled(const FAbilityEndedData& endData);
 
+	UFUNCTION(BlueprintCallable, Category = "Abilities")
+	void SuspendHealthRegen(float SuspendDurationOverride = 0.f);
+
 private:
 	void UnmarkOwner();
 
 	void EnsureInitSubObjects();
 	FTimerHandle _unmarkTimerHandle = FTimerHandle();
+	FTimerHandle _regenSuspendedTimerHandle = FTimerHandle();
 
 	USphereComponent* _markSphere;
 
