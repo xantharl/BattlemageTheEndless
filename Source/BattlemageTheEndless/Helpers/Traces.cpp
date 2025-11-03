@@ -37,11 +37,13 @@ FHitResult Traces::LineTraceFromCharacter(ACharacter* character, USkeletalMeshCo
 	return hit;
 }
 
-FHitResult Traces::LineTraceGeneric(UWorld* world, FCollisionQueryParams params, FVector start, FVector end)
+FHitResult Traces::LineTraceGeneric(UWorld* world, FCollisionQueryParams params, FVector start, FVector end, bool drawTrace, FColor drawColor)
 {
 	// Perform the raycast
 	FHitResult hit;
 	FCollisionObjectQueryParams objectParams;
 	world->LineTraceSingleByObjectType(hit, start, end, objectParams, params);
+	if (drawTrace)
+		DrawDebugLine(world, start, end, drawColor, false, 3.0f, 0, 1.0f);
 	return hit;
 }

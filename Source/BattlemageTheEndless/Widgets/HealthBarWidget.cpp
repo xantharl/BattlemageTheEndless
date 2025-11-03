@@ -15,7 +15,7 @@ void UHealthBarWidget::SetInitialDisplayValues()
 {
 	auto tree = WidgetTree.Get();
 	auto currentHealthWidget = tree->FindWidget<UTextBlock>(CurrentHealthTextBlockName);
-	if (currentHealthWidget)
+	if (currentHealthWidget && _attributeSet)
 	{
 		currentHealthWidget->SetText(FText::FromString(FString::FromInt(_attributeSet->Health.GetBaseValue())));
 	}

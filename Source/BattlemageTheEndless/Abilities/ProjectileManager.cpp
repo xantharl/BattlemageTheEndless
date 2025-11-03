@@ -3,15 +3,41 @@
 
 #include "ProjectileManager.h"
 
+void UProjectileManager::Initialize(ACharacter* character)
+{
+	OwnerCharacter = character;
+	if (!OwnerCharacter)
+	{
+		UE_LOG(LogTemp, Error, TEXT("OwnerCharacter not set for projectile manager, cannot get lookat transform"));
+		return;
+	}
+
+	if (auto controller = OwnerCharacter->GetController())
+	{
+		if (_ownerCameras.Num() != 0)
+			_ownerCameras.Empty();
+
+		// Look for the first active camera component and use that for the spawn transform
+		for (const UActorComponent* Component : OwnerCharacter->GetComponents())
+		{
+			auto cameraComponent = Cast<UCameraComponent>(Component);
+			if (cameraComponent)
+				_ownerCameras.Add(cameraComponent);
+		}
+	}
+}
+
 TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::SpawnProjectiles_Actor(
 	UAttackBaseGameplayAbility* spawningAbility, const FProjectileConfiguration& configuration, AActor* actor = nullptr)
 {
+	// Default to owner if no actor was provided
 	if (!actor)
 	{
 		actor = OwnerCharacter;
 	}
-	auto returnArray = TArray<ABattlemageTheEndlessProjectile*>();
-	auto spawnLocations = GetSpawnLocations(configuration, actor->GetTransform());
+
+	FTransform rootTransform = GetOwnerLookAtTransform();
+	auto spawnLocations = GetSpawnLocations(configuration, rootTransform, spawningAbility);
 	TArray<ABattlemageTheEndlessProjectile*> projectiles = HandleSpawn(spawnLocations, configuration, spawningAbility, actor);
 	return projectiles;
 }
@@ -20,8 +46,7 @@ TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::SpawnProjectiles_Lo
 	UAttackBaseGameplayAbility* spawningAbility, const FProjectileConfiguration& configuration, const FRotator rotation,
 	const FVector translation, const FVector scale, AActor* ignoreActor)
 {
-	auto returnArray = TArray<ABattlemageTheEndlessProjectile*>();
-	auto spawnLocations = GetSpawnLocations(configuration, FTransform(rotation, translation, scale));
+	auto spawnLocations = GetSpawnLocations(configuration, FTransform(rotation, translation, scale), spawningAbility);
 	TArray<ABattlemageTheEndlessProjectile*> projectiles = HandleSpawn(spawnLocations, configuration, spawningAbility, ignoreActor);
 	return projectiles;
 }
@@ -107,12 +132,29 @@ TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::HandleSpawn(FTransf
 	return returnArray;
 }
 
-TArray<FTransform> UProjectileManager::GetSpawnLocations(const FProjectileConfiguration& configuration, const FTransform& rootTransform)
+TArray<FTransform> UProjectileManager::GetSpawnLocations(const FProjectileConfiguration& configuration, const FTransform& rootTransform, UAttackBaseGameplayAbility* spawningAbility)
 {
 	// Some day we'll make this smarter but for now it's basically a bunch of if statements checking on the shape and location
 	auto rootPlusOffset = rootTransform.GetTranslation() + configuration.SpawnOffset.RotateAngleAxis(rootTransform.Rotator().Yaw, FVector::ZAxisVector);
 	auto returnArray = TArray<FTransform>();
-	auto spawnTransform = FTransform(rootTransform.GetRotation(), rootPlusOffset, rootTransform.GetScale3D());
+
+	// set the initial lookat point naively to be max range in look direction
+	auto actorLookAtTransform = GetOwnerLookAtTransform();
+	auto lookAtPoint = actorLookAtTransform.GetLocation() + actorLookAtTransform.GetRotation().GetForwardVector() * spawningAbility->MaxRange;
+
+	// If we have a character, update the lookat point to be aware of obstacles
+	if (OwnerCharacter)
+	{
+		auto params = FCollisionQueryParams(FName(TEXT("LineTrace")), true, OwnerCharacter);
+		auto hitResult = Traces::LineTraceGeneric(OwnerCharacter->GetWorld(), params, actorLookAtTransform.GetLocation(), lookAtPoint);
+		if (hitResult.ImpactPoint != FVector::ZeroVector)
+		{
+			lookAtPoint = hitResult.ImpactPoint;
+		}
+	}
+
+	FRotator lookAtRotation = UKismetMathLibrary::FindLookAtRotation(rootPlusOffset, lookAtPoint);
+	auto spawnTransform = FTransform(lookAtRotation, rootPlusOffset, rootTransform.GetScale3D());
 
 	// For shape None we will use an NGon, but that's not implemented yet
 	if(configuration.Shape == FSpawnShape::None)
@@ -259,4 +301,37 @@ void UProjectileManager::GetLinePoints(const FProjectileConfiguration& configura
 void UProjectileManager::OnProjectileDestroyed(AActor* destroyedActor)
 {
 	//destroyedActor->Destroy();
+}
+
+FTransform UProjectileManager::GetOwnerLookAtTransform()
+{
+	if (!OwnerCharacter)
+	{
+		UE_LOG(LogTemp, Error, TEXT("OwnerCharacter not set for projectile manager, cannot get lookat transform"));
+		return FTransform::Identity;
+	}
+	
+	// prefer the first active camera component for lookat
+	for (const UCameraComponent* cameraComponent : _ownerCameras)
+	{
+		if (!cameraComponent)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Camera component pointer has been invalidated, removing"));
+			_ownerCameras.Remove(cameraComponent);
+		}
+		if (cameraComponent->IsActive())
+			return cameraComponent->GetComponentTransform();
+	}
+
+	// otherwise try camera socket on the mesh
+	if (auto mesh = OwnerCharacter->GetMesh())
+	{
+		if (mesh->DoesSocketExist(FName("cameraSocket")))
+		{
+			return mesh->GetSocketTransform(FName("cameraSocket"));
+		}
+	}
+
+	// if all else fails, return the actor transform
+	return OwnerCharacter->GetActorTransform();
 }

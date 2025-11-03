@@ -23,5 +23,5 @@ public:
 	/// <param name="start"></param>
 	/// <param name="end"></param>
 	/// <returns></returns>
-	static FHitResult LineTraceGeneric(UWorld* world, FCollisionQueryParams params, FVector start, FVector end);
+	static FHitResult LineTraceGeneric(UWorld* world, FCollisionQueryParams params, FVector start, FVector end, bool drawTrace = false, FColor drawColor = FColor::Green);
 };
