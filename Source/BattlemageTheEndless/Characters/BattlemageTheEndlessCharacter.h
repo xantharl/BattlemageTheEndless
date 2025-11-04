@@ -385,9 +385,6 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Projectile")
 	void OnProjectileHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
-	FTimerHandle ChargeSpellTimerHandle;
-	void ChargeSpell(UAttackBaseGameplayAbility* ability);
-
 	const int TickRate = 60;
 
 	// Debug time to avoid spamming print messages

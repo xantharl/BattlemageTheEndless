@@ -1023,17 +1023,13 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged(APickupActor* Pic
 	auto selectedAbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(ActiveSpellClass->Weapon->SelectedAbility);
 	auto ability = Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability);
 
-	//GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("ProcessSpellInput_Charged: Ability %s"),
-	//	*(ability->GetAbilityName().ToString())));
-
 	if (!ability || ability->ChargeDuration <= 0.0001f)
 	{
 		// if the ability is not charged, this is the wrong handler
 		return;
 	}
 
-	auto activeInstances = Cast<UGA_WithEffectsBase>(selectedAbilitySpec->Ability)->GetAbilityActiveInstances(selectedAbilitySpec);
-	TObjectPtr<UGA_WithEffectsBase> activeInstance = activeInstances.Num() > 0 ? activeInstances[0] : nullptr;
+	TObjectPtr<UGameplayAbility> activeInstance = selectedAbilitySpec->GetPrimaryInstance();
 	auto attackAbility = Cast<UAttackBaseGameplayAbility>(activeInstance);
 	if (!attackAbility)
 		return;
@@ -1042,27 +1038,12 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged(APickupActor* Pic
 	{
 	case ETriggerEvent::Started:
 	{
-		bool success = AbilitySystemComponent->TryActivateAbility(selectedAbilitySpec->Handle, true);
-		if (!success && GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Red, FString::Printf(TEXT("Ability %s failed to activate"), *selectedAbilitySpec->Ability->GetName()));
-
-		FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &ABattlemageTheEndlessCharacter::ChargeSpell, attackAbility);
-		GetWorld()->GetTimerManager().SetTimer(ChargeSpellTimerHandle, TimerDelegate, 1.0f / (float)TickRate, true);
-
-		if (GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is charging"), *selectedAbilitySpec->Ability->GetName()));
+		AbilitySystemComponent->BeginChargeAbility(ActiveSpellClass->Weapon->SelectedAbility);
 		break;
 	}
 	case ETriggerEvent::Completed:
 	{
-		// if charge spell and completed event, clear the charge timer
-		if (attackAbility->CastSound)
-			UGameplayStatics::SpawnSoundAttached(attackAbility->CastSound, GetRootComponent());
-
-		GetWorld()->GetTimerManager().ClearTimer(ChargeSpellTimerHandle);
-		AbilitySystemComponent->PostAbilityActivation(attackAbility);
-		// This is a hack to call EndAbility without needing to spoof up all the params
-		attackAbility->OnMontageCompleted();
+		AbilitySystemComponent->CompleteChargeAbility();
 		break;
 	}
 	// We don't need to do anything for ongoing since we've got the repeating timer handling it on a set interval
@@ -1194,14 +1175,4 @@ void ABattlemageTheEndlessCharacter::OnProjectileHit(UPrimitiveComponent* HitCom
 	ability->ApplyEffects(this, AbilitySystemComponent, nullptr, projectile);
 	if (projectile->ShouldDestroyOnHit())
 		projectile->Destroy();
-}
-
-void ABattlemageTheEndlessCharacter::ChargeSpell(UAttackBaseGameplayAbility* ability)
-{
-	bool isChargedBefore = ability->IsCharged();
-	ability->HandleChargeProgress();
-	if (!isChargedBefore && ability->IsCharged() && GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is charged"), *GetName()));
-	}
 }

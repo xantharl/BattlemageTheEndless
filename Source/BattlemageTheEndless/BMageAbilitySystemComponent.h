@@ -76,12 +76,26 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
 	void SuspendHealthRegen(float SuspendDurationOverride = 0.f);
 
+	UFUNCTION(BlueprintCallable, Category = "Abilities")
+	UAttackBaseGameplayAbility* BeginChargeAbility(TSubclassOf<UGameplayAbility> InAbilityClass);
+
+	UFUNCTION(BlueprintCallable, Category = "Abilities")
+	void CompleteChargeAbility();
+
+	void ChargeSpell();
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
+	int ChargeTickRate = 60;
+
 private:
 	void UnmarkOwner();
 
 	void EnsureInitSubObjects();
 	FTimerHandle _unmarkTimerHandle = FTimerHandle();
 	FTimerHandle _regenSuspendedTimerHandle = FTimerHandle();
+	FTimerHandle _chargeSpellTimerHandle = FTimerHandle();
+
+	UAttackBaseGameplayAbility* _chargingAbility = nullptr;
 
 	USphereComponent* _markSphere;
 
@@ -101,4 +115,5 @@ private:
 
 	// return the first ability found with the specified owned tag
 	TObjectPtr<UGameplayAbility> GetActivatableAbilityByOwnedTag(FName abilityTag);
+
 };

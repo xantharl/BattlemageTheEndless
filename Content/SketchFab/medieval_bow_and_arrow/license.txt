@@ -1,0 +1,11 @@
+Model Information:
+* title:	Medieval Bow and Arrow
+* source:	https://sketchfab.com/3d-models/medieval-bow-and-arrow-33209afdfd8f4c52b3bc7764b639177a
+* author:	Anil Gurung (https://sketchfab.com/cgdude0007)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Medieval Bow and Arrow" (https://sketchfab.com/3d-models/medieval-bow-and-arrow-33209afdfd8f4c52b3bc7764b639177a) by Anil Gurung (https://sketchfab.com/cgdude0007) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

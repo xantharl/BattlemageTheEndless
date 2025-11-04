@@ -548,3 +548,62 @@ void UBMageAbilitySystemComponent::SuspendHealthRegen(float SuspendDurationOverr
 
 	ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
 }
+
+UAttackBaseGameplayAbility* UBMageAbilitySystemComponent::BeginChargeAbility(TSubclassOf<UGameplayAbility> InAbilityClass)
+{
+	auto abilitySpec = FindAbilitySpecFromClass(InAbilityClass);
+	TObjectPtr<UGameplayAbility> activeInstance = abilitySpec->GetPrimaryInstance();
+	auto attackAbility = Cast<UAttackBaseGameplayAbility>(activeInstance);
+
+	bool success = TryActivateAbility(abilitySpec->Handle, true);
+	if (!success && GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Red, FString::Printf(TEXT("Ability %s failed to activate"), *abilitySpec->Ability->GetName()));
+
+	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UBMageAbilitySystemComponent::ChargeSpell);
+	GetWorld()->GetTimerManager().SetTimer(_chargeSpellTimerHandle, TimerDelegate, 1.0f / (float)ChargeTickRate, true);
+
+	_chargingAbility = attackAbility;
+
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is charging"), *abilitySpec->Ability->GetName()));
+
+	return _chargingAbility;
+}
+
+void UBMageAbilitySystemComponent::ChargeSpell()
+{
+	if (!_chargingAbility || !_chargingAbility->IsValidLowLevel())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No charging ability to progress"));
+		CompleteChargeAbility();
+		return;
+	}
+
+	bool isChargedBefore = _chargingAbility->IsCharged();
+	_chargingAbility->HandleChargeProgress();
+	if (!isChargedBefore && _chargingAbility->IsCharged() && GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is charged"), *_chargingAbility->GetName()));
+	}
+}
+
+void UBMageAbilitySystemComponent::CompleteChargeAbility()
+{
+	GetWorld()->GetTimerManager().ClearTimer(_chargeSpellTimerHandle);
+
+	if (!_chargingAbility || !_chargingAbility->IsValidLowLevel())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No charging ability to complete"));
+		return;	
+	}
+
+	// if charge spell and completed event, clear the charge timer
+	if (_chargingAbility->CastSound)
+		UGameplayStatics::SpawnSoundAttached(_chargingAbility->CastSound, GetOwnerActor()->GetRootComponent());
+
+	PostAbilityActivation(_chargingAbility);
+
+	// TODO: Is this needed? PostAbilityActivation handles it already
+	// This is a hack to call EndAbility without needing to spoof up all the params
+	_chargingAbility->OnMontageCompleted();
+}

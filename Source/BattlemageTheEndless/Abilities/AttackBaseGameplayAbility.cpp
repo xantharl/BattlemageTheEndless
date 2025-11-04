@@ -306,9 +306,15 @@ void UAttackBaseGameplayAbility::HandleChargeProgress()
 	CurrentChargeDuration = duration_cast<milliseconds>(system_clock::now().time_since_epoch()) - ActivationTime;
 	
 	// get the current charge damage multiplier	from the curve
-	CurrentChargeDamage = ChargeDamageCurve->GetFloatValue(CurrentChargeDuration.count());
-	CurrentChargeProjectileSpeed = ChargeVelocityMultiplierCurve->GetFloatValue(CurrentChargeDuration.count());
-	CurrentChargeGravityScale = ChargeGravityMultiplierCurve->GetFloatValue(CurrentChargeDuration.count());
+	if (ChargeDamageCurve)
+		CurrentChargeDamage = ChargeDamageCurve->GetFloatValue(CurrentChargeDuration.count());
+
+	if (ChargeVelocityMultiplierCurve)
+		CurrentChargeProjectileSpeed = ChargeVelocityMultiplierCurve->GetFloatValue(CurrentChargeDuration.count());
+
+	if (ChargeGravityMultiplierCurve)
+		CurrentChargeGravityScale = ChargeGravityMultiplierCurve->GetFloatValue(CurrentChargeDuration.count());
+
 	if (CurrentChargeDuration >= (ChargeDuration * 1000ms))
 	{
 		_bIsCharged = true;
