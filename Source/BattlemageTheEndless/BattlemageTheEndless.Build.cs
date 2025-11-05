@@ -10,8 +10,8 @@ public class BattlemageTheEndless : ModuleRules
 
 		PublicDependencyModuleNames.AddRange(new string[] { 
 			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "CommonUI", "GameplayTags", 
-			"GameplayAbilities", "GameplayTasks", "Niagara"
-		});
+			"GameplayAbilities", "GameplayTasks", "Niagara", "AIModule"
+        });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
     }

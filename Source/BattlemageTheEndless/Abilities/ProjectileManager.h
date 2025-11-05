@@ -8,6 +8,8 @@
 #include "../Pickups/BattlemageTheEndlessProjectile.h"
 #include "../Abilities/PersistentAreaEffect.h"
 #include "../Abilities/AttackBaseGameplayAbility.h"
+#include "AIController.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "ProjectileManager.generated.h"

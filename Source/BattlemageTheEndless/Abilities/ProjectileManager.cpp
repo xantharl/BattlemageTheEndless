@@ -138,23 +138,32 @@ TArray<FTransform> UProjectileManager::GetSpawnLocations(const FProjectileConfig
 	auto rootPlusOffset = rootTransform.GetTranslation() + configuration.SpawnOffset.RotateAngleAxis(rootTransform.Rotator().Yaw, FVector::ZAxisVector);
 	auto returnArray = TArray<FTransform>();
 
-	// set the initial lookat point naively to be max range in look direction
-	auto actorLookAtTransform = GetOwnerLookAtTransform();
-	auto lookAtPoint = actorLookAtTransform.GetLocation() + actorLookAtTransform.GetRotation().GetForwardVector() * spawningAbility->MaxRange;
+	FTransform spawnTransform = FTransform(rootTransform.GetRotation(), rootPlusOffset, rootTransform.GetScale3D());
+	if(GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Cyan,
+			FString::Printf(TEXT("Spawn Transform Location: %s, Rotation: %s"), *spawnTransform.GetLocation().ToString(), *spawnTransform.GetRotation().Rotator().ToString()));
 
-	// If we have a character, update the lookat point to be aware of obstacles
-	if (OwnerCharacter)
+	// For players, account for crosshair. For AI we assume they're pointed where they need to be already
+	if (OwnerCharacter && OwnerCharacter->IsPlayerControlled())
 	{
-		auto params = FCollisionQueryParams(FName(TEXT("LineTrace")), true, OwnerCharacter);
-		auto hitResult = Traces::LineTraceGeneric(OwnerCharacter->GetWorld(), params, actorLookAtTransform.GetLocation(), lookAtPoint);
-		if (hitResult.ImpactPoint != FVector::ZeroVector)
-		{
-			lookAtPoint = hitResult.ImpactPoint;
-		}
-	}
+		// set the initial lookat point naively to be max range in look direction
+		auto actorLookAtTransform = GetOwnerLookAtTransform();
+		auto lookAtPoint = actorLookAtTransform.GetLocation() + actorLookAtTransform.GetRotation().GetForwardVector() * spawningAbility->MaxRange;
 
-	FRotator lookAtRotation = UKismetMathLibrary::FindLookAtRotation(rootPlusOffset, lookAtPoint);
-	auto spawnTransform = FTransform(lookAtRotation, rootPlusOffset, rootTransform.GetScale3D());
+		// If we have a character, update the lookat point to be aware of obstacles
+		if (OwnerCharacter)
+		{
+			auto params = FCollisionQueryParams(FName(TEXT("LineTrace")), true, OwnerCharacter);
+			auto hitResult = Traces::LineTraceGeneric(OwnerCharacter->GetWorld(), params, actorLookAtTransform.GetLocation(), lookAtPoint);
+			if (hitResult.ImpactPoint != FVector::ZeroVector)
+			{
+				lookAtPoint = hitResult.ImpactPoint;
+			}
+		}
+
+		FRotator lookAtRotation = UKismetMathLibrary::FindLookAtRotation(rootPlusOffset, lookAtPoint);
+		spawnTransform = FTransform(lookAtRotation, rootPlusOffset, rootTransform.GetScale3D());
+	}
 
 	// For shape None we will use an NGon, but that's not implemented yet
 	if(configuration.Shape == FSpawnShape::None)
@@ -311,10 +320,30 @@ FTransform UProjectileManager::GetOwnerLookAtTransform()
 		return FTransform::Identity;
 	}
 	
+	FRotator targetRotation = FRotator::ZeroRotator;
+	if (!OwnerCharacter->IsPlayerControlled())
+	{
+		// For AI we can use the blackboard target if it's set
+		auto controller = Cast<AAIController>(OwnerCharacter->GetController());
+		if (controller)
+		{
+			UBlackboardComponent* blackboardComp = controller->GetBlackboardComponent();
+			if (blackboardComp)
+			{
+				targetRotation = blackboardComp->GetValueAsRotator(FName("AttackAngle"));
+			}
+		}
+	}
+
 	// first prefer an aim socket on the mesh, this is intended for AI for now
 	if (OwnerCharacter->GetMesh()->DoesSocketExist(FName("AimSocket")))
 	{
-		return OwnerCharacter->GetMesh()->GetSocketTransform(FName("AimSocket"));
+		auto aimSocketTransform = OwnerCharacter->GetMesh()->GetSocketTransform(FName("AimSocket"));
+		if (targetRotation != FRotator::ZeroRotator)
+		{
+			aimSocketTransform.SetRotation(targetRotation.Quaternion());
+		}
+		return aimSocketTransform;
 	}
 
 	// prefer the first active camera component for lookat
