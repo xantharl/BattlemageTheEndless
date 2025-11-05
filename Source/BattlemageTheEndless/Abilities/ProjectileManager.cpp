@@ -311,6 +311,12 @@ FTransform UProjectileManager::GetOwnerLookAtTransform()
 		return FTransform::Identity;
 	}
 	
+	// first prefer an aim socket on the mesh, this is intended for AI for now
+	if (OwnerCharacter->GetMesh()->DoesSocketExist(FName("AimSocket")))
+	{
+		return OwnerCharacter->GetMesh()->GetSocketTransform(FName("AimSocket"));
+	}
+
 	// prefer the first active camera component for lookat
 	for (const UCameraComponent* cameraComponent : _ownerCameras)
 	{
