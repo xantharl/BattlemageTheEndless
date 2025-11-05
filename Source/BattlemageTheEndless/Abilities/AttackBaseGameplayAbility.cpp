@@ -420,6 +420,85 @@ void UAttackBaseGameplayAbility::PlayChargeCompleteSound()
 	ChargeSoundComponent = UGameplayStatics::SpawnSoundAttached(ChargeCompleteSound, CurrentActorInfo->OwnerActor->GetRootComponent());
 }
 
+FRotator UAttackBaseGameplayAbility::CalculateAttackAngle(FVector StartLocation, FVector TargetLocation, bool bAssumeFullCharge)
+{
+	if (!ProjectileConfiguration.ProjectileClass)
+	{
+		UE_LOG(LogTemp, Error, TEXT("No projectile class defined in ProjectileConfiguration"));
+		return FRotator::ZeroRotator;
+	}
+
+	if (ProjectileConfiguration.SpawnOffset != FVector::ZeroVector)
+		StartLocation += ProjectileConfiguration.SpawnOffset;
+
+	auto defaultProjectile = ProjectileConfiguration.ProjectileClass->GetDefaultObject<ABattlemageTheEndlessProjectile>();
+
+	// This math came from copilot, test it thoroughly
+	float GravityZ = FMath::Abs(GetEffectiveProjectileGravity(defaultProjectile, bAssumeFullCharge)); // positive value
+	float v = GetEffectiveProjectileSpeed(defaultProjectile, bAssumeFullCharge);
+	float d = FVector::Dist2D(StartLocation, TargetLocation);
+	float h = TargetLocation.Z - StartLocation.Z;
+
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow,
+			FString::Printf(TEXT("Calculating attack angle with v=%f, g=%f, d=%f, h=%f"), v, GravityZ, d, h));
+
+	float v2 = v * v;
+	float sqrtTerm = v2 * v2 - GravityZ * (GravityZ * d * d + 2 * h * v2);
+
+	if (sqrtTerm < 0)
+	{
+		// No solution: target is out of range
+		return FRotator::ZeroRotator;
+	}
+
+	float sqrtVal = FMath::Sqrt(sqrtTerm);
+	float angle1 = FMath::Atan((v2 + sqrtVal) / (GravityZ * d));
+	float angle2 = FMath::Atan((v2 - sqrtVal) / (GravityZ * d));
+
+	// angle1 and angle2 are in radians; pick the lower for a direct shot
+	float chosenAngle = FMath::Min(FMath::RadiansToDegrees(angle1), FMath::RadiansToDegrees(angle2));
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow,
+			FString::Printf(TEXT("Calculated angles: %f and %f, chosen angle: %f"), FMath::RadiansToDegrees(angle1), FMath::RadiansToDegrees(angle2), chosenAngle));
+	FRotator lookAtRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
+	return FRotator(FMath::Min(FMath::RadiansToDegrees(angle1), FMath::RadiansToDegrees(angle2)), lookAtRotation.Yaw, 0.f);
+}
+
+float UAttackBaseGameplayAbility::GetEffectiveProjectileGravity(ABattlemageTheEndlessProjectile* defaultProjectile, bool bAssumeFullCharge)
+{
+	if (ProjectileConfiguration.GravityScaleOverride > 0.f)
+		return ProjectileConfiguration.GravityScaleOverride;
+
+	float projectileGravityScale = defaultProjectile->ProjectileMovement->GetGravityZ();
+	if (ChargeDuration > 0.001f && ChargeGravityMultiplierCurve)
+	{
+		if (bAssumeFullCharge)
+			ChargeGravityMultiplierCurve->GetFloatValue(ChargeDuration * 1000.f);
+		else
+			projectileGravityScale = CurrentChargeGravityScale;
+	}
+
+	return projectileGravityScale;
+}
+
+float UAttackBaseGameplayAbility::GetEffectiveProjectileSpeed(ABattlemageTheEndlessProjectile* defaultProjectile, bool bAssumeFullCharge)
+{
+	if (ProjectileConfiguration.SpeedOverride)
+		return ProjectileConfiguration.SpeedOverride;
+
+	float effectiveSpeed = defaultProjectile->ProjectileMovement->InitialSpeed;
+	if (ChargeDuration > 0.001f && ChargeVelocityMultiplierCurve)
+	{
+		if (bAssumeFullCharge)
+			effectiveSpeed *= ChargeVelocityMultiplierCurve->GetFloatValue(ChargeDuration * 1000.f);
+		else
+			effectiveSpeed *= CurrentChargeProjectileSpeed;
+	}
+
+	return effectiveSpeed;
+}
+
 void UAttackBaseGameplayAbility::OnPlacementGhostDestroyed(AActor* PlacementGhost)
 {
 	if (!_placementGhosts.Contains(PlacementGhost))

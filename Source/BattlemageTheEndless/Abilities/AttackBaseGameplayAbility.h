@@ -18,6 +18,7 @@
 #include "../Pickups/BattlemageTheEndlessProjectile.h"
 #include "../Helpers/Traces.h"
 #include "GameplayAbilities/Public/AbilitySystemComponent.h"
+#include <Kismet/KismetMathLibrary.h>
 #include "HitScanChainEffect.h"
 #include "InputTriggers.h"
 #include <chrono>
@@ -254,6 +255,9 @@ public:
 
 	void PositionSpellActor(AHitEffectActor* hitEffectActor, ACharacter* character);
 
+	UFUNCTION(BlueprintCallable, Category = "Projectile Physics")
+	FRotator CalculateAttackAngle(FVector StartLocation, FVector TargetLocation, bool bAssumeFullCharge = true);
+
 private:
 	/** Timer handles for chained abilities, do not reference directly without ensuring it is initialized
 		See GetChainTimerHandles **/
@@ -270,4 +274,6 @@ private:
 
 	void PlayChargeCompleteSound();
 
+	float GetEffectiveProjectileGravity(ABattlemageTheEndlessProjectile* defaultProjectile, bool bAssumeFullCharge);
+	float GetEffectiveProjectileSpeed(ABattlemageTheEndlessProjectile* defaultProjectile, bool bAssumeFullCharge);
 };

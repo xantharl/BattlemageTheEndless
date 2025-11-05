@@ -115,5 +115,4 @@ private:
 
 	// return the first ability found with the specified owned tag
 	TObjectPtr<UGameplayAbility> GetActivatableAbilityByOwnedTag(FName abilityTag);
-
 };

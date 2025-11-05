@@ -6,19 +6,14 @@ using namespace std::chrono;
 
 UBMageAbilitySystemComponent::UBMageAbilitySystemComponent()
 {
-	if (!_markSphere)
-	{
-		_markSphere = CreateDefaultSubobject<USphereComponent>(TEXT("MarkSphere"));
-		_markSphere->OnComponentBeginOverlap.AddDynamic(this, &UBMageAbilitySystemComponent::OnMarkSphereBeginOverlap);
-		_markSphere->OnComponentEndOverlap.AddDynamic(this, &UBMageAbilitySystemComponent::OnMarkSphereEndOverlap);
-		_markSphere->SetCollisionResponseToAllChannels(ECR_Overlap);
-	}
+	_markSphere = CreateDefaultSubobject<USphereComponent>(TEXT("MarkSphere"));
+	_markSphere->OnComponentBeginOverlap.AddDynamic(this, &UBMageAbilitySystemComponent::OnMarkSphereBeginOverlap);
+	_markSphere->OnComponentEndOverlap.AddDynamic(this, &UBMageAbilitySystemComponent::OnMarkSphereEndOverlap);
+	_markSphere->SetCollisionResponseToAllChannels(ECR_Overlap);
 
-	if (!ComboManager)
-		ComboManager = CreateDefaultSubobject<UAbilityComboManager>(TEXT("ComboManager"));
+	ComboManager = CreateDefaultSubobject<UAbilityComboManager>(TEXT("ComboManager"));
 
-	if (!ProjectileManager)
-		ProjectileManager = CreateDefaultSubobject<UProjectileManager>(TEXT("ProjectileManager"));
+	ProjectileManager = CreateDefaultSubobject<UProjectileManager>(TEXT("ProjectileManager"));
 	EnsureInitSubObjects();
 }
 
@@ -65,8 +60,9 @@ void UBMageAbilitySystemComponent::EnsureInitSubObjects()
 	if (!ComboManager)
 		ComboManager = NewObject<UAbilityComboManager>(this, TEXT("ComboManager"));
 
-	AbilityFailedCallbacks.AddUObject(ComboManager, &UAbilityComboManager::OnAbilityFailed);
 	ComboManager->AbilitySystemComponent = this;
+
+	AbilityFailedCallbacks.AddUObject(ComboManager, &UAbilityComboManager::OnAbilityFailed);
 
 	if (!ProjectileManager)
 	{
@@ -87,7 +83,7 @@ void UBMageAbilitySystemComponent::BeginPlay()
 		_markSphere->SetHiddenInGame(true);
 		_markSphere->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		_markSphere->SetGenerateOverlapEvents(false);
-		_markSphere->RegisterComponent();
+		//_markSphere->RegisterComponent();
 		_markSphere->AttachToComponent(GetOwner()->GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 	}
 
