@@ -256,7 +256,7 @@ public:
 	void PositionSpellActor(AHitEffectActor* hitEffectActor, ACharacter* character);
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile Physics")
-	FRotator CalculateAttackAngle(FVector StartLocation, FVector TargetLocation, bool bAssumeFullCharge = true);
+	FRotator CalculateAttackAngle(FVector StartLocation, AActor* TargetActor, bool bAssumeFullCharge = true);
 
 private:
 	/** Timer handles for chained abilities, do not reference directly without ensuring it is initialized
@@ -273,6 +273,8 @@ private:
 	TArray<TObjectPtr<AHitEffectActor>> _placementGhosts;
 
 	void PlayChargeCompleteSound();
+
+	FVector InterceptPoint(FVector pursuerPos, float pursuerVel, FVector targetPos, FVector targetVel);
 
 	float GetEffectiveProjectileGravity(ABattlemageTheEndlessProjectile* defaultProjectile, bool bAssumeFullCharge);
 	float GetEffectiveProjectileSpeed(ABattlemageTheEndlessProjectile* defaultProjectile, bool bAssumeFullCharge);

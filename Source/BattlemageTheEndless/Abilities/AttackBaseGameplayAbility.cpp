@@ -420,7 +420,55 @@ void UAttackBaseGameplayAbility::PlayChargeCompleteSound()
 	ChargeSoundComponent = UGameplayStatics::SpawnSoundAttached(ChargeCompleteSound, CurrentActorInfo->OwnerActor->GetRootComponent());
 }
 
-FRotator UAttackBaseGameplayAbility::CalculateAttackAngle(FVector StartLocation, FVector TargetLocation, bool bAssumeFullCharge)
+FVector UAttackBaseGameplayAbility::InterceptPoint(FVector pursuerPos, float pursuerVel, FVector targetPos, FVector targetVel)
+{
+	// This is copilot code, test it thoroughly, alrogithm:
+	// Suppose:
+	//	•	P0 = pursuer’s position(FVector)
+	//		•	S = pursuer’s speed(float)
+	//		•	T0 = target’s position(FVector)
+	//		•	Vt = target’s velocity(FVector)
+	//		You want to find time t when the pursuer and target meet, then calculate the intercept point.
+	//		Step - by - step:
+	//	1.	The target’s future position :
+	//			T(t) = T0 + Vt * t
+	//		2.	The pursuer’s future position :
+	//			P(t) = P0 + (InterceptDirection)*S * t But you want P(t) = T(t) at intercept.
+	//		3.	Set up the equation :
+	//			| T0 + Vt * t - P0 | = S * t
+	//		4.	Rearranged, this is a quadratic in t :
+	//			a * t ^ 2 + b * t + c = 0
+	//		where :
+	//		•	a = Vt.Dot(Vt) - S ^ 2
+	//		•	b = 2 * (T0 - P0).Dot(Vt)
+	//		•	c = (T0 - P0).Dot(T0 - P0)
+	//		5.	Solve for t(choose the smallest positive root).
+	//		6.	Plug t back into T(t) for the intercept point.
+
+	FVector toTarget = targetPos - pursuerPos;
+	float a = targetVel.SizeSquared() - pursuerVel * pursuerVel;
+	float b = 2.0f * FVector::DotProduct(toTarget, targetVel);
+	float c = toTarget.SizeSquared();
+
+	float discriminant = b * b - 4 * a * c;
+	if (discriminant < 0 || FMath::IsNearlyZero(a))
+	{
+		// No solution, fallback to current target position
+		return targetPos;
+	}
+
+	float sqrtDisc = FMath::Sqrt(discriminant);
+	float t1 = (-b + sqrtDisc) / (2 * a);
+	float t2 = (-b - sqrtDisc) / (2 * a);
+
+	float t = FMath::Min(t1, t2);
+	if (t < 0) t = FMath::Max(t1, t2);
+	if (t < 0) return targetPos; // No valid intercept
+
+	return targetPos + targetVel * t;
+}
+
+FRotator UAttackBaseGameplayAbility::CalculateAttackAngle(FVector StartLocation, AActor* TargetActor, bool bAssumeFullCharge)
 {
 	if (!ProjectileConfiguration.ProjectileClass)
 	{
@@ -433,11 +481,20 @@ FRotator UAttackBaseGameplayAbility::CalculateAttackAngle(FVector StartLocation,
 
 	auto defaultProjectile = ProjectileConfiguration.ProjectileClass->GetDefaultObject<ABattlemageTheEndlessProjectile>();
 
+	FVector targetLocation = TargetActor->GetActorLocation();
+	if (!FMath::IsNearlyZero(TargetActor->GetVelocity().Size()))
+	{
+		targetLocation = InterceptPoint(StartLocation, GetEffectiveProjectileSpeed(defaultProjectile, bAssumeFullCharge),
+			TargetActor->GetActorLocation(), TargetActor->GetVelocity());
+
+		//DrawDebugSphere(GetWorld(), targetLocation, 20.f, 12, FColor::Blue, false, 2.f);
+	}
+
 	// This math came from copilot, test it thoroughly
 	float GravityZ = FMath::Abs(GetEffectiveProjectileGravity(defaultProjectile, bAssumeFullCharge)); // positive value
 	float v = GetEffectiveProjectileSpeed(defaultProjectile, bAssumeFullCharge);
-	float d = FVector::Dist2D(StartLocation, TargetLocation);
-	float h = TargetLocation.Z - StartLocation.Z;
+	float d = FVector::Dist2D(StartLocation, targetLocation);
+	float h = targetLocation.Z - StartLocation.Z;
 
 	/*if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow,
@@ -461,7 +518,7 @@ FRotator UAttackBaseGameplayAbility::CalculateAttackAngle(FVector StartLocation,
 	/*if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow,
 			FString::Printf(TEXT("Calculated angles: %f and %f, chosen angle: %f"), FMath::RadiansToDegrees(angle1), FMath::RadiansToDegrees(angle2), chosenAngle));*/
-	FRotator lookAtRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
+	FRotator lookAtRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, targetLocation);
 	return FRotator(FMath::Min(FMath::RadiansToDegrees(angle1), FMath::RadiansToDegrees(angle2)), lookAtRotation.Yaw, 0.f);
 }
 
