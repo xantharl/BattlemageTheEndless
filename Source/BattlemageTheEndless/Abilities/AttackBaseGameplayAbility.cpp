@@ -439,9 +439,9 @@ FRotator UAttackBaseGameplayAbility::CalculateAttackAngle(FVector StartLocation,
 	float d = FVector::Dist2D(StartLocation, TargetLocation);
 	float h = TargetLocation.Z - StartLocation.Z;
 
-	if (GEngine)
+	/*if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow,
-			FString::Printf(TEXT("Calculating attack angle with v=%f, g=%f, d=%f, h=%f"), v, GravityZ, d, h));
+			FString::Printf(TEXT("Calculating attack angle with v=%f, g=%f, d=%f, h=%f"), v, GravityZ, d, h));*/
 
 	float v2 = v * v;
 	float sqrtTerm = v2 * v2 - GravityZ * (GravityZ * d * d + 2 * h * v2);
@@ -458,9 +458,9 @@ FRotator UAttackBaseGameplayAbility::CalculateAttackAngle(FVector StartLocation,
 
 	// angle1 and angle2 are in radians; pick the lower for a direct shot
 	float chosenAngle = FMath::Min(FMath::RadiansToDegrees(angle1), FMath::RadiansToDegrees(angle2));
-	if (GEngine)
+	/*if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow,
-			FString::Printf(TEXT("Calculated angles: %f and %f, chosen angle: %f"), FMath::RadiansToDegrees(angle1), FMath::RadiansToDegrees(angle2), chosenAngle));
+			FString::Printf(TEXT("Calculated angles: %f and %f, chosen angle: %f"), FMath::RadiansToDegrees(angle1), FMath::RadiansToDegrees(angle2), chosenAngle));*/
 	FRotator lookAtRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
 	return FRotator(FMath::Min(FMath::RadiansToDegrees(angle1), FMath::RadiansToDegrees(angle2)), lookAtRotation.Yaw, 0.f);
 }

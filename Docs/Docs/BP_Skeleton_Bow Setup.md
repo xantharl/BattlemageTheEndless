@@ -1,3 +1,5 @@
+**Note**: *The BT behavior is currently running every tick, Tick Interval doesn't seem to work. I'm filing this away under "I'll worry about it when it's a problem"*
+
 The setup to get this guy to actually aim at things is pretty complicated.
 
 First of all, there's a few Blackboard Keys that come into play here:
