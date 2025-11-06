@@ -1,0 +1,85 @@
+This article is to assess what is required for desired spells as of 11/17/24. This does not include already implemented features, but will be used to track things going forward.
+
+In Progress:
+- Rework control scheme (Est 1hr)
+	- Melee on dedicated key
+	- Spell cast becomes left click with right click aim
+	- (12-1-24) **In progress, needs addl features to test**	- 
+- Implement spell aim
+	- **Requires HUD**
+	- (12-2-24) Zoom added, still no hud element
+- Implement negative status effects
+	- Make weapon effects apply statuses and/or increase damage
+	- **Basic effect system is in play and integrated with a healthbar on dummies**
+	- Also added frozen but it doesn't do anything yet
+- Figure out object growing with age (Grasp of the Void)
+	- Can probably use some sort of age * scale math
+	- UE supports actor expiration so it must be tracking actor age
+
+To-Do (In no particular order):
+- Implement grapple
+	- Theoretically pretty simple, but might require a good deal of fine tuning
+- Implement elemental shield concept
+	- **Meteor effect looks like a good starting point**
+	- Activation is already covered by self cast
+	- Will need to handle in OnHit hook
+- Implement passives
+	- These are pretty varied and will need thought on how to implement in a scalable fashion
+	- Create a concept of Classes as a C++ class. Has an associated pickup
+	- Migrate granted abilities to the class instead of the pickup
+- Implement explosion on contact (Fireball, Noxious Spore) 
+	- **I think this is handled by Hit Effect Actors, see fire surface effect on firebolt, make sure i'm covering all the cases**
+	- Implement persistent effects
+	- Can use HitEffectActor? Or should it be a GC?
+	- Spawned actor needs to support OnOverlap events for persistent effects
+	- Probably most straightfwd to have a PersistentEffect base class and override the OnOverlap event as needed
+- Implement consumption of stacks 
+	- Implement for enemies stacks (Nourishing Flames, Harness Decay)
+		- Needs to be initiated by caster and check all ASC having characters in range
+	- Implement for de-buff removal
+		- Logically similar, just a different set of targets
+- Implement point-cast spells
+	- Use HitScan entry point
+	- Holding should show target location
+	- Probably ought to be cancelable 
+- Refine ice wall for consistency
+- Implement buffing allies (Protective Frost, Rock and Stone)
+	- Add cast type of Friendly (target self if no ally selected)
+	- Probably ought to implement outlines of friendlies to make this more clear
+- Implement damage multipliers (Concussive Strikes)
+	- Use ability levels and select higher level if concussive strikes is active?
+	- Other option is custom handling to apply a multiplier defined in concussive strikes
+- Implement knockback/knock up
+	- Can likely just define an impulse on the projectile/attack and apply in on hit if needed
+	- Might automatically apply in super on hit
+- VFX and SFX galore
+- Implement target assist (Assisted Targeting)
+	- Use same outline functionality as Buffing Allies
+	- Best to use a few ray casts within a certain cone angle
+- Implement magic weapon (Earth's Fury)
+	- This can just be a duration periodic effect with a gameplay cue to "summon" the fists
+- Implement tethering self cast concept for Sickening Lash
+	- Use a similar VFX approach to chain lightning, but multi target instead of chaining 
+	- Maybe define chain modes of sequential vs all from source?
+- Implement pull effect (Grasp of the Void)
+	- Leverage impulse functionality on hit
+	- Implement through Gameplay Effect in EffectsToApply which has a tag for pulling the character
+	- This will probably need an implementation of GameplayEffect to define the impulse behavior
+- Implement stack spread on death
+	- Need to figure out what Callback should be subscribed to for death and handle there
+	- Logically pretty simple, just assess a % chance for each stack per ASC
+- Implement snare (Nature's Grasp)
+	- Gameplay Effect with modifier to movement speed
+	- **Requires migration of movement speed effects to GAS**
+- Implement Homing (Thorns)
+	- Target selected at cast time, can probably replicate logic in IceMagic sample for "target" functionality
+- Implement mobility classes, likely ought to refactor movement abilities into GAS while I'm in there
+	- This is a whole can of worms requiring more analysis
+
+Done:
+- Implement Hold attacks (automatic weapon analogous)
+	- Surprisingly complex, will need to do the following:
+		- Add support for all ETriggerEvent types in Base Ability, probably a generic OnEventTrigger
+		- Rework input handling in character to identify the ability as soon as possible (might differ per ability type)
+		- Store the ability handle and/or spec on character so we can easily reference it in following Trigger Event calls
+	- (12-31-24) **Done**

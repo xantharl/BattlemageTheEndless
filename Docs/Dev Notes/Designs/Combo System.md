@@ -1,0 +1,17 @@
+- Any ability which can be continued as a combo has an Identifying Ability Tag ending in the attack number
+	- Identifying Ability Tag format: Weapon.AttackType.AttackNumber
+	- For non-combo attacks, simply leave off the last portion
+- Class AComboManager:
+	- Uses AbilitySystemComponent's GameplayTagManager to get related children and find next attack
+	- Defines global value for time before combo ends
+	- Responsible for current combo state and activating next attack
+		- Managed via [Attributes](https://github.com/tranek/GASDocumentation?tab=readme-ov-file#concepts-a) in the Ability System Component
+- Combo and Spell interaction
+	- Only Quick Spells can be woven into melee combos
+	- Using a spell skips the next phase of the combo
+	- Currently equipped spell class is used
+	- If multiple are available, most recently used is selected
+		- This means we need to track most recently used
+		- Can handle via [Responding to Changes in Gameplay Tags](https://github.com/tranek/GASDocumentation?tab=readme-ov-file#421-responding-to-changes-in-gameplay-tags)
+	- Using a non-quick spell immediately cancels an active melee combo
+		- AComboManager instance 

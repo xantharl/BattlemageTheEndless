@@ -1,0 +1,1 @@
+Did some basic spell anim setup, not much else to note. Very short session.

@@ -1,0 +1,20 @@
+- GameplayAbility base class for Spell ability
+	- Contains the projectile
+- How to handle attacks in gas?
+	- e.g. sword has light attacks 1-3 and heavy attacks 1-3 as individual abilities
+	- Is that going to result in too many abilities? idk but we'll find out
+- Tie attack/spell animations to abilities rather than the individual weapon
+- Do spells and attacks need to be different?
+	- Both can hurt
+	- Both will have anims
+	- Both can buff? Maybe ranged weapons
+	- Both can defend
+	- **Conclusion, currently no**
+- Spells
+	- All spells have weapon buff
+	- Ice
+		- Ice Spike, simple single projectile
+		- ice wall
+			- two phase, blocks and then shoots out
+		- ice nova
+	- Lightning

@@ -1,0 +1,1 @@
+Added a texture and particles for the first spell, fixed up idle anims, productive!

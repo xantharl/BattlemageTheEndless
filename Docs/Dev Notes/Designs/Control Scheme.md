@@ -1,0 +1,38 @@
+KBM:
+- WASD Movement
+- Mouse Look
+- Shift sprint
+- Control crouch
+- Space jump
+- Left click/hold to cast
+- Right click to aim
+	- Left click while aiming to cast or weapon button if using ranged weapon
+- Double tap and hold right clock to block, cannot cast while blocking
+- Click while blocking when an attack hits to parry
+	- **Will need to be implemented in attack handler**
+- Tap Forward button for light melee
+- Hold Fwd button for heavy melee
+- **Tap Q** to swap spell class (primary/secondary)
+	- Changes quick attack selection
+- **Tap E** to enter cast mode
+	- Any attack/block/quick cast exits cast mode
+	- Swap spell class still works here, resets any sequence in progress
+	- Input directions are used to cast spells from here
+	- Different levels of complexity for different power levels of spells
+	- E to lock in spell once selected, or more gestures to customize
+- **Scroll** to switch quick attacks if multiple exist
+- **Number keys** for prepared spell quick cast
+	- Some happen instantly, some need targeting
+- F interact 
+Controller:
+- RT to cast
+- LT to aim
+- Double tap LT and hold to block
+- RB weapon attack, tap vs hold similar to mouse
+- LB to swap classes
+- Upper face button to enter cast mode
+- Standard 2 stick movement
+- Left face to crouch
+- Right face to sprint
+- Lower face to jump
+- Lower face to interact, needs to override jump
