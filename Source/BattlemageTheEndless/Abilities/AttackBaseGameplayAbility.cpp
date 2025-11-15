@@ -475,6 +475,11 @@ FRotator UAttackBaseGameplayAbility::CalculateAttackAngle(FVector StartLocation,
 		UE_LOG(LogTemp, Error, TEXT("No projectile class defined in ProjectileConfiguration"));
 		return FRotator::ZeroRotator;
 	}
+	if (!TargetActor)
+	{
+		UE_LOG(LogTemp, Error, TEXT("TargetActor is null in CalculateAttackAngle"));
+		return FRotator::ZeroRotator;
+	}
 
 	if (ProjectileConfiguration.SpawnOffset != FVector::ZeroVector)
 		StartLocation += ProjectileConfiguration.SpawnOffset;

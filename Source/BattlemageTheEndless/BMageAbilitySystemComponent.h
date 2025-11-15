@@ -78,6 +78,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
 	UAttackBaseGameplayAbility* BeginChargeAbility(TSubclassOf<UGameplayAbility> InAbilityClass);
+	UFUNCTION(BlueprintCallable, Category = "Abilities")
+	UAttackBaseGameplayAbility* BeginChargeAbility_Tags(FGameplayTagContainer InAbilityTags);
 
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
 	void CompleteChargeAbility();
@@ -104,6 +106,9 @@ private:
 	UMaterialInstance* _markedMaterialOutOfRange;
 
 	virtual void BeginPlay() override;
+
+	// Internal function to begin charging an ability by class, public functions end up calling this
+	UAttackBaseGameplayAbility* BeginChargeAbility_Internal(FGameplayAbilitySpec* AbilitySpec);
 
 	UFUNCTION(BlueprintCallable, Category = "Hit Effect")
 	virtual void OnMarkSphereBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);

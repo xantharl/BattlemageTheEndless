@@ -548,12 +548,46 @@ void UBMageAbilitySystemComponent::SuspendHealthRegen(float SuspendDurationOverr
 UAttackBaseGameplayAbility* UBMageAbilitySystemComponent::BeginChargeAbility(TSubclassOf<UGameplayAbility> InAbilityClass)
 {
 	auto abilitySpec = FindAbilitySpecFromClass(InAbilityClass);
-	TObjectPtr<UGameplayAbility> activeInstance = abilitySpec->GetPrimaryInstance();
+	if (!abilitySpec)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No ability found of class %s"), *InAbilityClass->GetName());
+		return nullptr;
+	}
+	return BeginChargeAbility_Internal(abilitySpec);
+}
+
+UAttackBaseGameplayAbility* UBMageAbilitySystemComponent::BeginChargeAbility_Tags(FGameplayTagContainer InAbilityTags)
+{
+	TArray<FGameplayAbilitySpecHandle> abilityHandles;
+	FindAllAbilitiesWithTags(abilityHandles, InAbilityTags);
+
+	if (abilityHandles.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No ability found with tags %s"), *InAbilityTags.ToString());
+		return nullptr;
+	}
+	if (abilityHandles.Num() > 1)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Multiple abilities found with tags %s, using first"), *InAbilityTags.ToString());
+	}
+	auto spec = FindAbilitySpecFromHandle(abilityHandles[0]);
+	if (!spec || !spec->Ability)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Ability spec invalid for tags %s"), *InAbilityTags.ToString());
+		return nullptr;
+	}
+	
+	return BeginChargeAbility_Internal(spec);
+}
+
+UAttackBaseGameplayAbility* UBMageAbilitySystemComponent::BeginChargeAbility_Internal(FGameplayAbilitySpec* AbilitySpec)
+{
+	TObjectPtr<UGameplayAbility> activeInstance = AbilitySpec->GetPrimaryInstance();
 	auto attackAbility = Cast<UAttackBaseGameplayAbility>(activeInstance);
 
-	bool success = TryActivateAbility(abilitySpec->Handle, true);
+	bool success = TryActivateAbility(AbilitySpec->Handle, true);
 	if (!success && GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Red, FString::Printf(TEXT("Ability %s failed to activate"), *abilitySpec->Ability->GetName()));
+		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Red, FString::Printf(TEXT("Ability %s failed to activate"), *AbilitySpec->Ability->GetName()));
 
 	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UBMageAbilitySystemComponent::ChargeSpell);
 	GetWorld()->GetTimerManager().SetTimer(_chargeSpellTimerHandle, TimerDelegate, 1.0f / (float)ChargeTickRate, true);
@@ -561,7 +595,7 @@ UAttackBaseGameplayAbility* UBMageAbilitySystemComponent::BeginChargeAbility(TSu
 	_chargingAbility = attackAbility;
 
 	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is charging"), *abilitySpec->Ability->GetName()));
+		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is charging"), *AbilitySpec->Ability->GetName()));
 
 	return _chargingAbility;
 }
