@@ -11,10 +11,14 @@
             "id": "8e5e54dd87c9038e",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "Docs/Fixing Root Motion on Mixamo Anims.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "Fixing Root Motion on Mixamo Anims"
             }
           }
         ]
@@ -74,8 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "right": {
     "id": "2778d7771cc08d40",
@@ -168,6 +171,8 @@
   },
   "active": "8e5e54dd87c9038e",
   "lastOpenFiles": [
+    "Pasted image 20251116124129.png",
+    "Docs/Fixing Root Motion on Mixamo Anims.md",
     "Docs/BP_Skeleton_Bow Setup.md",
     "project.md",
     "Docs",
