@@ -41,9 +41,9 @@ void UHealthBarWidget::Reset()
 	auto tree = WidgetTree.Get();
 	for (int i = 0; i < MAX_STATUS_EFFECTS; ++i)
 	{
-		auto statusIconWidget = tree->FindWidget<UImage>(FName(FString::Printf(IconNameFormat, i)));
-		auto progressIconWidget = tree->FindWidget<UImage>(FName(FString::Printf(ProgressNameFormat, i)));
-		auto stackCounterWidget = tree->FindWidget<UTextBlock>(FName(FString::Printf(StackCountFormat, i)));
+		auto statusIconWidget = tree->FindWidget<UImage>(FName(IconNameFormat.Replace(TEXT("%d"), *FString::FromInt(i))));
+		auto progressIconWidget = tree->FindWidget<UImage>(FName(ProgressNameFormat.Replace(TEXT("%d"), *FString::FromInt(i))));
+		auto stackCounterWidget = tree->FindWidget<UTextBlock>(FName(StackCountFormat.Replace(TEXT("%d"), *FString::FromInt(i))));
 
 		statusIconWidget->SetVisibility(ESlateVisibility::Hidden);
 		progressIconWidget->SetVisibility(ESlateVisibility::Hidden);
@@ -73,8 +73,8 @@ FRichImageRow* UHealthBarWidget::FindImageRow(FName TagOrId, bool bWarnIfMissing
 void UHealthBarWidget::ConfigureStatusAtIndex(int index, const FSlateBrush& statusIconBrush, FText stackCount)
 {
 	auto tree = WidgetTree.Get();
-	auto statusIconWidget = tree->FindWidget<UImage>(FName(FString::Printf(IconNameFormat, index)));
-	auto stackCounterWidget = tree->FindWidget<UTextBlock>(FName(FString::Printf(StackCountFormat, index)));
+	auto statusIconWidget = tree->FindWidget<UImage>(FName(IconNameFormat.Replace(TEXT("%d"), *FString::FromInt(index))));
+	auto stackCounterWidget = tree->FindWidget<UTextBlock>(FName(StackCountFormat.Replace(TEXT("%d"), *FString::FromInt(index))));
 
 	statusIconWidget->SetBrush(statusIconBrush);
 	stackCounterWidget->SetText(stackCount);
@@ -85,9 +85,9 @@ void UHealthBarWidget::SetVisibilityOfStatusAtIndex(int index, ESlateVisibility 
 	auto tree = WidgetTree.Get();
 
 	// hide the last active status icon (icons are 1 indexed)
-	auto statusIconWidget = tree->FindWidget<UImage>(FName(FString::Printf(IconNameFormat, index)));
-	auto progressIconWidget = tree->FindWidget<UImage>(FName(FString::Printf(ProgressNameFormat, index)));
-	auto stackCounterWidget = tree->FindWidget<UTextBlock>(FName(FString::Printf(StackCountFormat, index)));
+	auto statusIconWidget = tree->FindWidget<UImage>(FName(IconNameFormat.Replace(TEXT("%d"), *FString::FromInt(index))));
+	auto progressIconWidget = tree->FindWidget<UImage>(FName(ProgressNameFormat.Replace(TEXT("%d"), *FString::FromInt(index))));
+	auto stackCounterWidget = tree->FindWidget<UTextBlock>(FName(StackCountFormat.Replace(TEXT("%d"), *FString::FromInt(index))));
 
 	statusIconWidget->SetVisibility(visibility);
 	progressIconWidget->SetVisibility(visibility);
@@ -108,8 +108,8 @@ void UHealthBarWidget::MoveStatusElementsAfterIndexDown(int32 startIndex)
 	// move all elements after the start index down one
 	for (int i = startIndex; i < StatusGrid.Num()-1; i++)
 	{
-		auto nextStatusIconWidget = tree->FindWidget<UImage>(FName(FString::Printf(IconNameFormat, i+1)));
-		auto nextStackCounterWidget = tree->FindWidget<UTextBlock>(FName(FString::Printf(StackCountFormat, i+1)));
+	auto nextStatusIconWidget = tree->FindWidget<UImage>(FName(IconNameFormat.Replace(TEXT("%d"), *FString::FromInt(i+1))));
+	auto nextStackCounterWidget = tree->FindWidget<UTextBlock>(FName(StackCountFormat.Replace(TEXT("%d"), *FString::FromInt(i+1))));
 
 		ConfigureStatusAtIndex(i, nextStatusIconWidget->GetBrush(), nextStackCounterWidget->GetText());
 	}
@@ -141,7 +141,7 @@ void UHealthBarWidget::OnActiveGameplayEffectAddedCallback(UAbilitySystemCompone
 			StatusGrid[statusGridItemIdx].ActiveStacks++;
 
 			// find the counter widget and update the stacks
-			auto stackCounterWidget = WidgetTree.Get()->FindWidget<UTextBlock>(FName(FString::Printf(StackCountFormat, statusGridItemIdx)));
+			auto stackCounterWidget = WidgetTree.Get()->FindWidget<UTextBlock>(FName(StackCountFormat.Replace(TEXT("%d"), *FString::FromInt(statusGridItemIdx))));
 			if (stackCounterWidget)
 				stackCounterWidget->SetText(FText::FromString(FString::FromInt(StatusGrid[statusGridItemIdx].ActiveStacks)));
 
@@ -204,7 +204,7 @@ void UHealthBarWidget::AdjustProgressIndicatorSize(int statusGridItemIdx)
 		return;
 
 	auto tree = WidgetTree.Get();
-	auto progressIconWidget = tree->FindWidget<UImage>(FName(FString::Printf(ProgressNameFormat, statusGridItemIdx)));
+	auto progressIconWidget = tree->FindWidget<UImage>(FName(ProgressNameFormat.Replace(TEXT("%d"), *FString::FromInt(statusGridItemIdx))));
 	auto canvasPanelSlot = Cast<UCanvasPanelSlot>(progressIconWidget->Slot);
 	// If we cannot fetch the slot as a canvas panel slot, we cannot adjust the size
 	if (!canvasPanelSlot)
@@ -269,7 +269,7 @@ void UHealthBarWidget::OnGameplayEffectStackChangeCallback(FActiveGameplayEffect
 		StatusGrid[statusGridItemIdx].ActiveStacks = NewCount;
 
 		// find the counter widget and update the stacks
-		auto stackCounterWidget = WidgetTree.Get()->FindWidget<UTextBlock>(FName(FString::Printf(StackCountFormat, statusGridItemIdx)));
+		auto stackCounterWidget = WidgetTree.Get()->FindWidget<UTextBlock>(FName(StackCountFormat.Replace(TEXT("%d"), *FString::FromInt(statusGridItemIdx))));
 		if (stackCounterWidget)
 			stackCounterWidget->SetText(FText::FromString(FString::FromInt(NewCount)));
 

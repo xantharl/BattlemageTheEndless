@@ -90,9 +90,9 @@ private:
 	void MoveStatusElementsAfterIndexDown(int32 startIndex);
 	void ClearTimerAtIndexIfActive(int statusGridItemIdx);
 
-	const wchar_t IconNameFormat[16] = TEXT("Status_%0d_Icon");
-	const wchar_t ProgressNameFormat[20] = TEXT("Status_%0d_Progress");
-	const wchar_t StackCountFormat[18] = TEXT("Status_%0d_Stacks");
+	FString IconNameFormat = TEXT("Status_%d_Icon");
+	FString ProgressNameFormat = TEXT("Status_%d_Progress");
+	FString StackCountFormat = TEXT("Status_%d_Stacks");
 
 	static float GetTimeRemainingForStatusEffect(FStatusGridItem statusGridItem);
 
