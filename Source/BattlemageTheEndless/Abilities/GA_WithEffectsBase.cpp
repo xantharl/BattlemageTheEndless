@@ -65,6 +65,7 @@ void UGA_WithEffectsBase::CancelAbility(const FGameplayAbilitySpecHandle Handle,
 {
 	ResetTimerAndClearEffects(ActorInfo, true);
 	// Super calls end
+	OnAbilityEnded.Broadcast(true);
 	Super::CancelAbility(Handle, ActorInfo, ActivationInfo, bReplicateCancelAbility);
 }
 
@@ -92,6 +93,7 @@ void UGA_WithEffectsBase::EndAbility(const FGameplayAbilitySpecHandle Handle, co
 	if (CooldownGameplayEffectClass)
 		CommitAbilityCooldown(Handle, ActorInfo, ActivationInfo, false);
 
+	OnAbilityEnded.Broadcast(false);
 	ResetTimerAndClearEffects(ActorInfo);
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

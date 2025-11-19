@@ -7,6 +7,8 @@
 #include "GameplayAbilities/Public/AbilitySystemComponent.h"
 #include "GA_WithEffectsBase.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnAbilityEndedDelegate, bool, Cancelled);
+
 /**
  * 
  */
@@ -25,7 +27,10 @@ public:
 	// TODO: Enable ending ability early if all effects are destroyed (e.g. fire shield)
 	/** GameplayEffects to apply, target depends on HitType, for placed abilities put effects on the HitEffectActor instead **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true", EditConditionHides))
-	TArray<TSubclassOf<UGameplayEffect>> EffectsToApply;	
+	TArray<TSubclassOf<UGameplayEffect>> EffectsToApply;
+
+	UPROPERTY(BlueprintAssignable, Category = "Abilities")
+	FOnAbilityEndedDelegate OnAbilityEnded;
 
 	FGameplayTag GetAbilityName();
 

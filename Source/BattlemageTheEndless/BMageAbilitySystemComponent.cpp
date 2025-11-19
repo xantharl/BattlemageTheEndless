@@ -206,24 +206,28 @@ TObjectPtr<UGameplayAbility> UBMageAbilitySystemComponent::GetActivatableAbility
 	return nullptr;
 }
 
-void UBMageAbilitySystemComponent::ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType)
+UAttackBaseGameplayAbility* UBMageAbilitySystemComponent::ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType)
 {
 	// Let combo manager resolve and dispatch ability as needed
 	auto specHandle = ComboManager->ProcessInput(PickupActor, AttackType);
 	if (!specHandle.IsValid())
-		return;
+		return nullptr;
 
 	// find the ability instance
 	auto spec = FindAbilitySpecFromHandle(specHandle);
 	if (!spec)
-		return;
+		return nullptr;
 
 	auto instance = spec->GetPrimaryInstance();
 	if (!instance)
-		return;
+		return nullptr;
 
 	if (auto attackAbility = Cast<UAttackBaseGameplayAbility>(instance))
+	{
 		PostAbilityActivation(attackAbility);
+		return attackAbility;
+	}
+	return nullptr;
 }
 
 bool UBMageAbilitySystemComponent::CancelAbilityByOwnedTag(FGameplayTag abilityTag)

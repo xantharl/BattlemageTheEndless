@@ -44,7 +44,7 @@ public:
 
 	/** Handles attack input for pickups using GAS abilities **/
 	UFUNCTION(BlueprintCallable, Category = "Combo Handler Passthru")
-	void ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType);
+	UAttackBaseGameplayAbility* ProcessInputAndBindAbilityCancelled(APickupActor* PickupActor, EAttackType AttackType);
 
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
 	bool CancelAbilityByOwnedTag(FGameplayTag abilityTag);
