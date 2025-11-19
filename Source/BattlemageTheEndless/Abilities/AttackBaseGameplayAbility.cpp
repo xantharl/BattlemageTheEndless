@@ -42,7 +42,13 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	}
 	// charge abilities have a separate workflow for when to play the sound
 	else if (CastSound)
-		UGameplayStatics::SpawnSoundAttached(CastSound, character->GetRootComponent());
+	{
+		UGameplayStatics::SpawnSoundAttached(CastSound, character->GetRootComponent(),
+			// The next two lines are all default values, just making them explicit to get to the attenuation parameter
+			NAME_None, FVector(ForceInit), FRotator::ZeroRotator, EAttachLocation::KeepRelativeOffset, false,
+			1.f, 1.f, 0.f,
+			CastSoundAttenuation);
+	}
 
 	// Try and play a firing animation if specified
 	auto animInstance = character->GetMesh()->GetAnimInstance();
@@ -63,7 +69,11 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		// play the charge sound if present
 		if (ChargeSound)
 		{
-			ChargeSoundComponent = UGameplayStatics::SpawnSoundAttached(ChargeSound, character->GetRootComponent());
+			ChargeSoundComponent = UGameplayStatics::SpawnSoundAttached(ChargeSound, character->GetRootComponent(),
+				// The next two lines are all default values, just making them explicit to get to the attenuation parameter
+				NAME_None, FVector(ForceInit), FRotator::ZeroRotator, EAttachLocation::KeepRelativeOffset, false,
+				1.f, 1.f, 0.f,
+				ChargeSoundAttenuation);
 
 			// if there is a charge complete sound, set it to play at the end of the charge duration
 			if (ChargeCompleteSound)
@@ -417,12 +427,16 @@ void UAttackBaseGameplayAbility::PlayChargeCompleteSound()
 		ChargeSoundComponent->Stop();
 	}
 
-	ChargeSoundComponent = UGameplayStatics::SpawnSoundAttached(ChargeCompleteSound, CurrentActorInfo->OwnerActor->GetRootComponent());
+	ChargeSoundComponent = UGameplayStatics::SpawnSoundAttached(ChargeCompleteSound, CurrentActorInfo->OwnerActor->GetRootComponent(),
+		// The next two lines are all default values, just making them explicit to get to the attenuation parameter
+		NAME_None, FVector(ForceInit), FRotator::ZeroRotator, EAttachLocation::KeepRelativeOffset, false,
+		1.f, 1.f, 0.f,
+		ChargeCompleteSoundAttenuation);
 }
 
 FVector UAttackBaseGameplayAbility::InterceptPoint(FVector pursuerPos, float pursuerVel, FVector targetPos, FVector targetVel)
 {
-	// This is copilot code, test it thoroughly, alrogithm:
+	// This is copilot code, test it thoroughly, algorithm:
 	// Suppose:
 	//	•	P0 = pursuer’s position(FVector)
 	//		•	S = pursuer’s speed(float)

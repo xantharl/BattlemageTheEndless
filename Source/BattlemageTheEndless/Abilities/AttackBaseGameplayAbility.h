@@ -156,6 +156,15 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Sounds)
 	USoundWave* CastSound;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = SoundAttenuation)
+	TObjectPtr<USoundAttenuation> ChargeSoundAttenuation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = SoundAttenuation)
+	TObjectPtr<USoundAttenuation> ChargeCompleteSoundAttenuation;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = SoundAttenuation)
+	TObjectPtr<USoundAttenuation> CastSoundAttenuation;
+
 	/** AnimMontage to play when we fire the ability */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	UAnimMontage* FireAnimation;
