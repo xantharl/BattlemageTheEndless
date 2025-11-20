@@ -7,7 +7,6 @@
 void UAbilityComboManager::AddAbilityToCombo(APickupActor* PickupActor, UGA_WithEffectsBase* Ability, FGameplayAbilitySpecHandle Handle)
 {
 	// We build combos for each pickup the first time it is equipped and assume they will not change during gameplay
-	// TODO: If we want to allow for dynamic combos, we will need an event this can subscribe to for a rebuild
 	if (!Combos.Contains(PickupActor))
 	{
 		Combos.Add(PickupActor, FPickupCombos());
@@ -65,35 +64,18 @@ FGameplayAbilitySpecHandle UAbilityComboManager::ProcessInput(APickupActor* Pick
 
 	// if the active ability does not have a combo, delegate to the weapon's input handler
 
-	//FPickupCombos& pickupCombos = Combos[PickupActor];
-	auto nameTag = PickupActor->Weapon->SelectedAbility->GetDefaultObject<UAttackBaseGameplayAbility>()->GetAbilityName();
+	FGameplayTag nameTag;
+	if (PickupActor->PickupType == EPickupType::Weapon)
+	{
+		nameTag = (AttackType == EAttackType::Light
+			? (FGameplayTag::RequestGameplayTag(FName("Weapon.AttackType.Light")))
+			: (FGameplayTag::RequestGameplayTag(FName("Weapon.AttackType.Heavy"))));
+	}
+	// this handler is expected to only be hit for weapons now but keeping the fallback to be safe
+	else 
+		nameTag = PickupActor->Weapon->SelectedAbility->GetDefaultObject<UAttackBaseGameplayAbility>()->GetAbilityName();
 	
 	UAbilityCombo* combo = FindComboByTag(PickupActor, nameTag);
-
-	//// TODO: This is kind of a hack to get spells working (since they don't have heavy/light combos)
-	//if(pickupCombos.Combos.Num() == 1)
-	//{
-	//	combo = pickupCombos.Combos[0];
-	//}
-	//else
-	//{
-	//	FString attackTypeName = *UEnum::GetDisplayValueAsText(AttackType).ToString();
-	//	// otherwise we need to find the most applicable Combo based on the AttackType and then start or advance the combo
-	//	TArray<UAbilityCombo*> matches = pickupCombos.Combos.FilterByPredicate(
-	//		[attackTypeName](const UAbilityCombo* combo) {
-	//			return combo->BaseComboIdentifier.GetTagName().ToString().Contains(attackTypeName); });
-
-	//	// If the current attack isn't part of any combo, delegate to the weapon's input handler
-	//	if (matches.Num() == 0)
-	//	{
-	//		return DelegateToWeapon(PickupActor, AttackType);
-	//	}
-	//	else if (matches.Num() > 1)
-	//	{
-	//		UE_LOG(LogTemp, Warning, TEXT("More than one combo found for attack type %s. This is invalid configuration."), *attackTypeName);
-	//	}
-	//	combo = matches[0];
-	//}
 
 	// if we're switching combos (e.g. heavy to light) we need to replace the active combo and advance the new one
 	bool isComboSwap = Combos[PickupActor].ActiveCombo && Combos[PickupActor].ActiveCombo != combo;

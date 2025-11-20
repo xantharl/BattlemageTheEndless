@@ -5,7 +5,7 @@
 
 FGameplayTag UGA_WithEffectsBase::GetAbilityName()
 {
-	FGameplayTagContainer baseComboIdentifierTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Weapons")));
+	FGameplayTagContainer baseComboIdentifierTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Weapon")));
 	baseComboIdentifierTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Spells")));
 
 	// otherwise identify this ability's BaseComboIdentifier

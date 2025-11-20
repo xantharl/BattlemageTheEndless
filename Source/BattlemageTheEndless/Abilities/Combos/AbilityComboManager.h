@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include <format>
 #include "UObject/NoExportTypes.h"
 #include "../GA_WithEffectsBase.h"
 #include <BattlemageTheEndless/Pickups/PickupActor.h>

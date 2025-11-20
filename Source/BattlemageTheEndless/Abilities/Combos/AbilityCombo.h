@@ -22,8 +22,8 @@ public:
 	// returns the next ability spec and increments the combo state counter
 	FGameplayAbilitySpecHandle* AdvanceCombo();
 
-	// This is the combo's base identifier e.g. Weapons.Sword.LightAttack or Spells.Ice.Errupt
-	// From these tags we'll have suffixes of 1, 2, 3, etc. to identify the specific stage in the combo
+	// This is the combo's base identifier e.g. Weapon.Light or Spells.Ice.Errupt
+	// It is expected that ability intended for combos will also have a State.Combo.X tag
 	FGameplayTag BaseComboIdentifier;
 
 	// Sorts the AbilityHandles array by the ability's tag suffix
