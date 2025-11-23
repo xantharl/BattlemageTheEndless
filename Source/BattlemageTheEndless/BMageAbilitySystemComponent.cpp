@@ -633,7 +633,13 @@ void UBMageAbilitySystemComponent::CompleteChargeAbility()
 
 	// if charge spell and completed event, clear the charge timer
 	if (_chargingAbility->CastSound)
-		UGameplayStatics::SpawnSoundAttached(_chargingAbility->CastSound, GetOwnerActor()->GetRootComponent());
+	{
+		UGameplayStatics::SpawnSoundAttached(_chargingAbility->CastSound, GetOwnerActor()->GetRootComponent(),
+			// The next two lines are all default values, just making them explicit to get to the attenuation parameter
+			NAME_None, FVector(ForceInit), FRotator::ZeroRotator, EAttachLocation::KeepRelativeOffset, false,
+			1.f, 1.f, 0.f,
+			_chargingAbility->CastSoundAttenuation);
+	}
 
 	PostAbilityActivation(_chargingAbility);
 
