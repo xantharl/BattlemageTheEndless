@@ -61,7 +61,6 @@ class BATTLEMAGETHEENDLESS_API UAttackBaseGameplayAbility : public UGA_WithEffec
 	GENERATED_BODY()
 
 public:
-	const float DEFAULT_MAX_DISTANCE = 10000.f;
 
 	// Note the CanEditChange() function is only available when compiling with the editor.
 	// Make sure to wrap it with the WITH_EDITOR define or your builds fail!
@@ -135,10 +134,6 @@ public:
 	/** Actor(s) to spawn on hit (e.g. fire surface, explosion, ice wall, etc.) **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HitBehavior)
 	TArray<TSubclassOf<AHitEffectActor>> HitEffectActors;
-
-	/** Maximum distance for the ability, 0 = unlimited */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
-	float MaxRange = DEFAULT_MAX_DISTANCE;
 
 	/** AnimMontage to play during ability charge up */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)

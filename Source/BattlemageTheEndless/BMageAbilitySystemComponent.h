@@ -23,6 +23,27 @@ enum class EGASAbilityInputId : uint8
 	Cancel UMETA(DisplayName = "Cancel")
 };
 
+USTRUCT(BlueprintType)
+struct FAbilitiesByRangeCacheEntry
+{
+	GENERATED_BODY()
+
+public:
+	/** The UObject is the SourceObject for the GameplayAbility **/
+	TMap<UObject*, TArray<FAbilitiesByRangeCacheEntryDetail>> Abilities;
+};
+
+USTRUCT(BlueprintType)
+struct FAbilitiesByRangeCacheEntryDetail
+{
+	GENERATED_BODY()
+
+public:
+	FGameplayAbilitySpecHandle Handle;
+	float Range;
+	EAttackType AttackType;
+};
+
 /**
  * 
  */
@@ -89,6 +110,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
 	int ChargeTickRate = 60;
 
+	/** Gets all abilities which can reach the specified range, filtering on sourceObject (usually a pickupActor) if provided **/
+	UFUNCTION(BlueprintCallable, Category = Abilities)
+	TArray<FAbilitiesByRangeCacheEntryDetail> GetAbilitiesInRange(float range, UObject* sourceObject = nullptr);
+
+	UFUNCTION(BlueprintCallable, Category = Abilities)
+	float GetAbilityRange(UGameplayAbility* ability);
+
+	UFUNCTION(BlueprintCallable, Category = Abilities)
+	FGameplayAbilitySpecHandle GetLongestRangeAbilityWithinRange(float range, UObject* sourceObject = nullptr);
+
 private:
 	void UnmarkOwner();
 
@@ -96,6 +127,13 @@ private:
 	FTimerHandle _unmarkTimerHandle = FTimerHandle();
 	FTimerHandle _regenSuspendedTimerHandle = FTimerHandle();
 	FTimerHandle _chargeSpellTimerHandle = FTimerHandle();
+
+	// Abilities cached by range for quick lookup, key is max range, abilities don't change very often so this is fine to cache
+	// TODO: Handle cache update on ability add/remove
+	TMap<float, FAbilitiesByRangeCacheEntry> _abilitiesByRangeCache;
+	void _removePickupFromAbilityByRangeCache(UObject* pickup);
+
+	TArray<FAbilitiesByRangeCacheEntryDetail> _getCachedAbilitiesInRange(float range, UObject* sourceObject = nullptr);
 
 	UAttackBaseGameplayAbility* _chargingAbility = nullptr;
 

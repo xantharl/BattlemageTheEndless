@@ -20,6 +20,8 @@ UBMageAbilitySystemComponent::UBMageAbilitySystemComponent()
 void UBMageAbilitySystemComponent::DeactivatePickup(APickupActor* pickup)
 {
 	ActivePickups.Remove(pickup);
+
+	_removePickupFromAbilityByRangeCache(pickup);
 }
 
 void UBMageAbilitySystemComponent::ActivatePickup(APickupActor* pickup) 
@@ -33,7 +35,7 @@ void UBMageAbilitySystemComponent::ActivatePickup(APickupActor* pickup)
 	// Needs to happen before bindings since bindings look up assigned abilities
 	for (TSubclassOf<UGameplayAbility>& ability : pickup->Weapon->GrantedAbilities)
 	{
-		FGameplayAbilitySpecHandle handle = GiveAbility(FGameplayAbilitySpec(ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
+		FGameplayAbilitySpecHandle handle = GiveAbility(FGameplayAbilitySpec(ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), pickup));
 		ComboManager->AddAbilityToCombo(pickup, ability->GetDefaultObject<UGA_WithEffectsBase>(), handle);
 	}
 
@@ -71,6 +73,45 @@ void UBMageAbilitySystemComponent::EnsureInitSubObjects()
 
 	if (auto ownerCharacter = Cast<ACharacter>(GetOwnerActor()))
 		ProjectileManager->Initialize(ownerCharacter);
+}
+
+void UBMageAbilitySystemComponent::_removePickupFromAbilityByRangeCache(UObject* pickup)
+{
+	// Remove pickup from all cached range entries
+	for (auto& entry : _abilitiesByRangeCache)
+	{
+		if (entry.Value.Abilities.Contains(pickup))
+		{
+			entry.Value.Abilities.Remove(pickup);
+		}
+	}
+
+	// Clean up any empty entries
+	_abilitiesByRangeCache = _abilitiesByRangeCache.FilterByPredicate(
+		[](const TPair<float, FAbilitiesByRangeCacheEntry>& pair) {
+			return pair.Value.Abilities.Num() > 0;
+		}
+	);
+}
+
+TArray<FAbilitiesByRangeCacheEntryDetail> UBMageAbilitySystemComponent::_getCachedAbilitiesInRange(float range, UObject* sourceObject)
+{
+	if (_abilitiesByRangeCache.Contains(range) && _abilitiesByRangeCache[range].Abilities.Contains(sourceObject))
+	{
+		return _abilitiesByRangeCache[range].Abilities[sourceObject];
+	}
+	else if (_abilitiesByRangeCache.Contains(range) && !sourceObject)
+	{
+		// Return all cached abilities for this range if a pickup is not specified
+		TArray<FAbilitiesByRangeCacheEntryDetail> returnAbilities;
+		for (auto& pair : _abilitiesByRangeCache[range].Abilities)
+		{
+			returnAbilities.Append(pair.Value);
+		}
+		return returnAbilities;
+	}
+
+	return TArray<FAbilitiesByRangeCacheEntryDetail>();
 }
 
 void UBMageAbilitySystemComponent::BeginPlay()
@@ -126,7 +167,7 @@ void UBMageAbilitySystemComponent::MarkOwner(AActor* instigator, float duration,
 void UBMageAbilitySystemComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	
+
 	auto attrs = Cast<UBaseAttributeSet>(GetAttributeSet(UBaseAttributeSet::StaticClass()));
 	if (!attrs)
 		return;
@@ -143,6 +184,78 @@ void UBMageAbilitySystemComponent::TickComponent(float DeltaTime, ELevelTick Tic
 			attrs->OnAttributeChanged.Broadcast(attrs->GetHealthAttribute(), attrs->GetHealth() - AmountToAdd, attrs->GetHealth());
 		}
 	}
+}
+
+TArray<FAbilitiesByRangeCacheEntryDetail> UBMageAbilitySystemComponent::GetAbilitiesInRange(float range, UObject* sourceObject)
+{
+	// If we've already cached abilities for this range and pickup, use those
+	auto cached = _getCachedAbilitiesInRange(range, sourceObject);
+	if (cached.Num() > 0)
+	{
+		return cached;
+	}
+
+	// Otherwise start from all activatable abilities, then filter down by range and pickup if provided
+	TArray<FGameplayAbilitySpecHandle> AbilitiesInRange;
+	auto abilities = GetActivatableAbilities();
+
+	_abilitiesByRangeCache.Add(range, FAbilitiesByRangeCacheEntry());
+	for (APickupActor* activePickup: ActivePickups)
+	{
+		_abilitiesByRangeCache[range].Abilities.Add(activePickup, TArray<FAbilitiesByRangeCacheEntryDetail>());
+	}
+
+	// Process all eligible abilities
+	for (const FGameplayAbilitySpec& Spec : abilities)
+	{
+		if (!Spec.Ability)
+			continue;
+
+		// This can be null and is a supported use case for abilites granted directly to the character
+		auto resolvedSource = Spec.SourceObject.Get();
+		float abilityRange = GetAbilityRange(Spec.Ability);
+		if (abilityRange <= range)
+		{
+			AbilitiesInRange.Add(Spec.Handle);
+			FAbilitiesByRangeCacheEntryDetail entryDetail;
+			entryDetail.Handle = Spec.Handle;
+			entryDetail.Range = abilityRange;
+			entryDetail.AttackType = EAttackType::Light; // TODO: Fix this
+			_abilitiesByRangeCache[range].Abilities[resolvedSource].Add(entryDetail);
+			continue;
+		}
+	}
+
+	return _getCachedAbilitiesInRange(range, sourceObject);
+}
+
+float UBMageAbilitySystemComponent::GetAbilityRange(UGameplayAbility* ability)
+{
+	auto abilityWithRange = Cast<UGA_WithEffectsBase>(ability);
+	// add the ability to the return list and cache
+	if (abilityWithRange && abilityWithRange->MaxRange)
+	{
+		return abilityWithRange->MaxRange;
+	}
+	// assume abilities using the base UGameplayAbility class have infinite range
+	return 9999999999.f;
+}
+
+FGameplayAbilitySpecHandle UBMageAbilitySystemComponent::GetLongestRangeAbilityWithinRange(float range, UObject* sourceObject)
+{
+	// TODO: Sort the cache when it's built to avoid this linear search
+	float maxRangeFound = -1.f;
+	FGameplayAbilitySpecHandle bestHandle;
+
+	for (auto cacheEntryDetail : GetAbilitiesInRange(range, sourceObject))
+	{
+		if (cacheEntryDetail.Range > maxRangeFound)
+		{
+			maxRangeFound = cacheEntryDetail.Range;
+			bestHandle = cacheEntryDetail.Handle;
+		}
+	}
+	return bestHandle;
 }
 
 void UBMageAbilitySystemComponent::UnmarkOwner()

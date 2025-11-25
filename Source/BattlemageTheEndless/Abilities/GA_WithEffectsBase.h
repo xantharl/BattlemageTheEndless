@@ -18,6 +18,8 @@ class BATTLEMAGETHEENDLESS_API UGA_WithEffectsBase : public UGameplayAbility
 	GENERATED_BODY()
 
 public:
+	const float DEFAULT_MAX_DISTANCE = 10000.f;
+
 	UGA_WithEffectsBase()
 	{
 		InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
@@ -28,6 +30,10 @@ public:
 	/** GameplayEffects to apply, target depends on HitType, for placed abilities put effects on the HitEffectActor instead **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Effects, meta = (AllowPrivateAccess = "true", EditConditionHides))
 	TArray<TSubclassOf<UGameplayEffect>> EffectsToApply;
+
+	/** Maximum distance for the ability, 0 = unlimited */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
+	float MaxRange = DEFAULT_MAX_DISTANCE;
 
 	UPROPERTY(BlueprintAssignable, Category = "Abilities")
 	FOnAbilityEndedDelegate OnAbilityEnded;

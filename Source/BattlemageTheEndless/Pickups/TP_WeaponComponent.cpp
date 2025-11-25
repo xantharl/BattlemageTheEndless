@@ -24,22 +24,20 @@ void UTP_WeaponComponent::BeginPlay()
 	Super::BeginPlay();
 }
 
-// TODO: Split out melee and spells, the use cases are too divergent
 TSubclassOf<UGameplayAbility> UTP_WeaponComponent::GetAbilityByAttackType(EAttackType AttackType)
 {
 	// if there's only 1 ability, return it
 	if (GrantedAbilities.Num() == 1)
-	{
 		return GrantedAbilities[0];
-	}
 
 	// otherwise check ability tags for AttackType
 	FString attackTypeName = *UEnum::GetDisplayValueAsText(AttackType).ToString();
-	auto attackTypeTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Weapons.AttackTypes."+ attackTypeName)));
+	auto attackTypeTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Weapon.AttackTypes."+ attackTypeName)));
 
 	auto matches = GrantedAbilities.FilterByPredicate(
-		[attackTypeTags](TSubclassOf<UGameplayAbility> ability) {
-			return ability->GetDefaultObject<UGameplayAbility>()->AbilityTags.HasAny(attackTypeTags); });
+		[AttackType](TSubclassOf<UGameplayAbility> ability) {
+			return GetAbilityAttackType_ByClass(ability) == AttackType; }
+	);
 
 	if (matches.Num() == 0)
 	{
@@ -52,6 +50,25 @@ TSubclassOf<UGameplayAbility> UTP_WeaponComponent::GetAbilityByAttackType(EAttac
 	}
 
 	return matches[0];
+}
+
+EAttackType UTP_WeaponComponent::GetAbilityAttackType_ByClass(TSubclassOf<UGameplayAbility> abilityClass)
+{
+	auto ability = abilityClass->GetDefaultObject<UGameplayAbility>();
+
+	auto attackTypeTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Weapon.AttackTypes")));
+	auto filteredTags = ability->AbilityTags.Filter(attackTypeTags);
+	if (filteredTags.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No Attack Type found for ability %s"), *ability->GetName());
+		return EAttackType::Custom;
+	}
+	else if (filteredTags.Num() > 1)
+	{
+		UE_LOG(LogTemp, Error, TEXT("More than one attack type found for ability %s"), *ability->GetName());
+	}
+
+	return filteredTags.First().GetTagName() == FName("Weapon.AttackTypes.Light") ? EAttackType::Light : EAttackType::Heavy;
 }
 
 void UTP_WeaponComponent::OnAbilityCancelled(const FAbilityEndedData& endData)
