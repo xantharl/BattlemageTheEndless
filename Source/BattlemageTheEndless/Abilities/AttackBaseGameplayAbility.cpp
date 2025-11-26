@@ -180,7 +180,7 @@ void UAttackBaseGameplayAbility::CreateAndDispatchMontageTask()
 	// trigger the fire animation
 	// TODO: Add a montage rate parameter to the ability
 	auto task = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, FireAnimation,
-		1.0f, NAME_None, true, 1.0f, 0.f, true);
+		1.0f, NAME_None, true, 1.0f, 0.f, false);
 	task->OnCompleted.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCompleted);
 	task->OnBlendOut.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageBlendOut);
 	task->OnInterrupted.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCancelled);
