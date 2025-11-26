@@ -214,7 +214,14 @@ void UAbilityComboManager::ActivateAbilityAndResetTimer(FGameplayAbilitySpec abi
 		return;
 
 	// intentionally overwrite the timer handle each time we advance the combo
-	GetWorld()->GetTimerManager().SetTimer(ComboTimerHandle, [&] {EndComboHandler(); }, ComboExpiryTime, false);
+	float timerDuration = ComboExpiryTime;
+
+	// account for montage duration so we start the combo expiry after the attack is over
+	auto attackBase = Cast<UAttackBaseGameplayAbility>(abilitySpec.Ability);
+	if (attackBase && attackBase->FireAnimation)
+		timerDuration += attackBase->FireAnimation->GetPlayLength();
+
+	GetWorld()->GetTimerManager().SetTimer(ComboTimerHandle, [&] {EndComboHandler(); }, timerDuration, false);
 }
 
 void UAbilityComboManager::EndComboHandler() 
