@@ -106,7 +106,6 @@ public:
 	milliseconds LastFireTime;
 
 	TSubclassOf<UGameplayAbility> GetAbilityByAttackType(EAttackType AttackType);
-	static EAttackType GetAbilityAttackType_ByClass(TSubclassOf<UGameplayAbility> abilityClass);
 
 	void OnAbilityCancelled(const FAbilityEndedData& endData);
 	void ResetHits();

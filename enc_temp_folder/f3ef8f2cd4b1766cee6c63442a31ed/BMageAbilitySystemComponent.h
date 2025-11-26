@@ -116,6 +116,7 @@ public:
 	FAbilitiesByRangeCacheEntry GetShortestRangeAbilityWithinRange(float range, UObject* sourceObject = nullptr);
 
 	EAttackType GetAbilityAttackType(UGameplayAbility* ability);
+	//EAttackType GetAbilityAttackType_ByClass(TSubclassOf<UGameplayAbility> abilityClass);
 
 private:
 	void UnmarkOwner();
