@@ -237,7 +237,7 @@ void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Han
 			auto animInstance = owner->GetMesh()->GetAnimInstance();
 
 			// if the charge was interrupted, play the fire animation after cancelling the charge sound
-			if (ChargeSoundComponent && ChargeSoundComponent->GetPlayState() == EAudioComponentPlayState::Playing)
+			if (IsValid(ChargeSoundComponent) && ChargeSoundComponent->GetPlayState() == EAudioComponentPlayState::Playing)
 			{
 				ChargeSoundComponent->Stop();
 			}
@@ -438,24 +438,24 @@ FVector UAttackBaseGameplayAbility::InterceptPoint(FVector pursuerPos, float pur
 {
 	// This is copilot code, test it thoroughly, algorithm:
 	// Suppose:
-	//	•	P0 = pursuer’s position(FVector)
-	//		•	S = pursuer’s speed(float)
-	//		•	T0 = target’s position(FVector)
-	//		•	Vt = target’s velocity(FVector)
+	//	ï¿½	P0 = pursuerï¿½s position(FVector)
+	//		ï¿½	S = pursuerï¿½s speed(float)
+	//		ï¿½	T0 = targetï¿½s position(FVector)
+	//		ï¿½	Vt = targetï¿½s velocity(FVector)
 	//		You want to find time t when the pursuer and target meet, then calculate the intercept point.
 	//		Step - by - step:
-	//	1.	The target’s future position :
+	//	1.	The targetï¿½s future position :
 	//			T(t) = T0 + Vt * t
-	//		2.	The pursuer’s future position :
+	//		2.	The pursuerï¿½s future position :
 	//			P(t) = P0 + (InterceptDirection)*S * t But you want P(t) = T(t) at intercept.
 	//		3.	Set up the equation :
 	//			| T0 + Vt * t - P0 | = S * t
 	//		4.	Rearranged, this is a quadratic in t :
 	//			a * t ^ 2 + b * t + c = 0
 	//		where :
-	//		•	a = Vt.Dot(Vt) - S ^ 2
-	//		•	b = 2 * (T0 - P0).Dot(Vt)
-	//		•	c = (T0 - P0).Dot(T0 - P0)
+	//		ï¿½	a = Vt.Dot(Vt) - S ^ 2
+	//		ï¿½	b = 2 * (T0 - P0).Dot(Vt)
+	//		ï¿½	c = (T0 - P0).Dot(T0 - P0)
 	//		5.	Solve for t(choose the smallest positive root).
 	//		6.	Plug t back into T(t) for the intercept point.
 
