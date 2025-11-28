@@ -12,12 +12,6 @@ UDodgeAbility::UDodgeAbility(const FObjectInitializer& X) : Super(X)
 
 void UDodgeAbility::Begin()
 {
-	// TODO: Implement a dodge cooldown
-	// TODO: Figure out what I want to do with dodging in air
-	// Currently only allow dodging if on ground
-	if (Movement->MovementMode == EMovementMode::MOVE_Falling)
-		return;
-
 	FVector inputVector = Character->GetLastMovementInputVector();
 	// account for camera rotation
 	inputVector = inputVector.RotateAngleAxis(Movement->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector);
