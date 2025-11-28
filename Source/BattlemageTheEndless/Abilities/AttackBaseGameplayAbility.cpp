@@ -132,7 +132,7 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	}
 	else if (HitType == HitType::Actor)
 	{		
-		SpawnSpellActors(false, true);
+		SpawnSpellActors(false, character);
 	}
 
 	// if there is chain delay, set a timer to end the ability after that duration
@@ -587,20 +587,13 @@ void UAttackBaseGameplayAbility::OnPlacementGhostDestroyed(AActor* PlacementGhos
 	PlacementGhost->OnDestroyed.RemoveDynamic(this, &UAttackBaseGameplayAbility::OnPlacementGhostDestroyed);
 }
 
-void UAttackBaseGameplayAbility::SpawnSpellActors(bool isGhost, bool attachToCharacter)
+void UAttackBaseGameplayAbility::SpawnSpellActors(bool IsGhost, ACharacter* Character)
 {
 	auto defaultLocation = FVector(0, 0, -9999);
-	// TODO: Add an animation for placing a spell, can probably reuse the charging animation?
-
-	auto character = Cast<ACharacter>(GetOwningActorFromActorInfo());
-	if(!character)
-	{
-		UE_LOG(LogTemp, Error, TEXT("Owning actor is not a character, cannot spawn spell actors"));
-		return;
-	}
 
 	// A Placed spell will produce one or more hit effect actors at the target location, so we need to ghost all of them
 	// to do that, we need to create actor(s) at the target location and store them 
+	UWorld* world = Character->GetWorld();
 	for (auto hitEffectActor : HitEffectActors)
 	{
 		auto defaultObject = hitEffectActor->GetDefaultObject<AHitEffectActor>();
@@ -613,37 +606,34 @@ void UAttackBaseGameplayAbility::SpawnSpellActors(bool isGhost, bool attachToCha
 		}
 
 		// spawn the actor way below the world and then reposition it (we need the instance to calculate dimensions)
-		auto spellActor = GetWorld()->SpawnActor<AHitEffectActor>(hitEffectActor, defaultLocation, character->GetCharacterMovement()->GetLastUpdateRotation());
-		if (attachToCharacter)
-			spellActor->AttachToActor(character, FAttachmentTransformRules::KeepWorldTransform);
+		auto spellActor = world->SpawnActor<AHitEffectActor>(hitEffectActor, defaultLocation, Character->GetCharacterMovement()->GetLastUpdateRotation());
+		// if (Character)
+		// 	spellActor->AttachToActor(Character, FAttachmentTransformRules::KeepWorldTransform);
 
 		// required for calculations of positional differences between instigator and target
-		spellActor->Instigator = character;
+		spellActor->Instigator = Character;
 		if (spellActor && IsValid(spellActor))
 		{
-			spellActor->SetOwner(character);
+			spellActor->SetOwner(Character);
 
-			if (isGhost)
+			if (IsGhost)
 				spellActor->SetActorEnableCollision(false);
 
-			PositionSpellActor(spellActor, character);
+			PositionSpellActor(spellActor, Character);
 
 			// for each Static Mesh Component on this actor, check if there is an instance of the material with Translucent blend mode
-			for (UActorComponent* component : spellActor->GetComponents())
+ 			for (UActorComponent* component : spellActor->GetComponents())
 			{
 				// check if the component is a mesh component
 				auto meshComponent = Cast<UStaticMeshComponent>(component);
 				if (!meshComponent)
 					continue;
 
-				if (isGhost)
-				{
-					auto material = meshComponent->GetMaterial(0);
+				if (IsGhost)
 					meshComponent->SetMaterial(0, spellActor->PlacementGhostMaterial);
-				}
 			}
 
-			if (isGhost)
+			if (IsGhost)
 				RegisterPlacementGhost(spellActor);
 		}
 	}

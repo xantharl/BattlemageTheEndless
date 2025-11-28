@@ -255,7 +255,8 @@ public:
 	UFUNCTION()
 	void OnPlacementGhostDestroyed(AActor* PlacementGhost);
 
-	void SpawnSpellActors(bool isGhost, bool attachToCharacter = false);
+	/** Spawns spell actors, optionally as ghosts, will attach to character provided **/
+	void SpawnSpellActors(bool isGhost, ACharacter* Character);
 
 	void PositionSpellActor(AHitEffectActor* hitEffectActor, ACharacter* character);
 

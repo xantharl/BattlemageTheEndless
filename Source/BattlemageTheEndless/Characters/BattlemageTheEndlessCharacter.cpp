@@ -1090,7 +1090,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 		// The button was pressed for the first time
 		case ETriggerEvent::Started:
 		{
-			ability->SpawnSpellActors(true, false);
+			ability->SpawnSpellActors(true, this);
 			break;
 		}
 		// The button is being held

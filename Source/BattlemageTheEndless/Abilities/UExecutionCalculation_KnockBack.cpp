@@ -6,7 +6,11 @@
 void UUExecutionCalculation_KnockBack::Execute_Implementation(const FGameplayEffectCustomExecutionParameters& ExecutionParams, OUT FGameplayEffectCustomExecutionOutput& OutExecutionOutput) const
 {
 	// Get a reference to the target ASC's owner
-	AActor* TargetActor = ExecutionParams.GetTargetAbilitySystemComponent()->GetOwner();
+	auto TargetAsc = ExecutionParams.GetTargetAbilitySystemComponent();
+	if (!TargetAsc)
+		return;
+	
+	AActor* TargetActor = TargetAsc->GetOwner();
 	if (!TargetActor)
 	{
 		return;
