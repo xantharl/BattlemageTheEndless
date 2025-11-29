@@ -31,6 +31,9 @@ class BATTLEMAGETHEENDLESS_API UDodgeAbility : public UMovementAbility
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	FVector DodgeImpulseBackward = FVector(-1000.f, 0, 500.f);
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	float ImpulseMultiplierAir = 0.5f;
 
 	virtual void Begin() override;
 	virtual void End(bool bForce = false) override;

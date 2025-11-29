@@ -26,6 +26,12 @@ void UDodgeAbility::Begin()
 	// if the movement is lateral, dodge left or right
 	else
 		ImpulseToUse = DodgeImpulseLateral * ((inputVector.Y < 0.0f) ? 1.f : -1.f);
+	
+	// modify impulse if in air
+	if (Movement->MovementMode == EMovementMode::MOVE_Falling)
+	{
+		ImpulseToUse *= ImpulseMultiplierAir;
+	}
 
 	// Launch the character
 	PreviousFriction = Movement->GroundFriction;
