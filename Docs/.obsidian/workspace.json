@@ -20,8 +20,21 @@
               "icon": "lucide-file",
               "title": "Fixing Root Motion on Mixamo Anims"
             }
+          },
+          {
+            "id": "da5c83e48fce8ef4",
+            "type": "leaf",
+            "state": {
+              "type": "release-notes",
+              "state": {
+                "currentVersion": "1.10.6"
+              },
+              "icon": "lucide-book-up",
+              "title": "Release Notes 1.10.6"
+            }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -169,7 +182,7 @@
       "bases:Create new base": false
     }
   },
-  "active": "8e5e54dd87c9038e",
+  "active": "da5c83e48fce8ef4",
   "lastOpenFiles": [
     "Docs/Movement Ability Notes.md",
     "Docs/Fixing Root Motion on Mixamo Anims.md",
