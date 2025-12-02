@@ -13,28 +13,15 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Docs/Fixing Root Motion on Mixamo Anims.md",
+                "file": "Dev Notes/Designs/Spells/Classes/06 - Vine.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Fixing Root Motion on Mixamo Anims"
-            }
-          },
-          {
-            "id": "da5c83e48fce8ef4",
-            "type": "leaf",
-            "state": {
-              "type": "release-notes",
-              "state": {
-                "currentVersion": "1.10.6"
-              },
-              "icon": "lucide-book-up",
-              "title": "Release Notes 1.10.6"
+              "title": "06 - Vine"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -182,10 +169,20 @@
       "bases:Create new base": false
     }
   },
-  "active": "da5c83e48fce8ef4",
+  "active": "8e5e54dd87c9038e",
   "lastOpenFiles": [
-    "Docs/Movement Ability Notes.md",
+    "Dev Notes/Designs/Spells/Classes/04 - Stone.md",
+    "Dev Notes/Designs/Spells/Classes/05 - Void.md",
+    "Dev Notes/Designs/Spells/Classes/06 - Vine.md",
+    "Dev Notes/Designs/Spells/01 - Elemental Damage and Effects.md",
+    "Dev Notes/Designs/Spells/Classes/01 - Fire.md",
+    "Dev Notes/Designs/Spells/Classes/02 - Ice.md",
+    "Dev Notes/Designs/Spells/Classes/03 - Storms.md",
+    "Dev Notes/Designs/Spells/Classes/07 - Wind.md",
+    "Dev Notes/Designs/Spells/Classes/08 - Shadow.md",
+    "Dev Notes/Designs/Spells/Classes/09 - Arcane.md",
     "Docs/Fixing Root Motion on Mixamo Anims.md",
+    "Docs/Movement Ability Notes.md",
     "Pasted image 20251116124129.png",
     "Docs/BP_Skeleton_Bow Setup.md",
     "project.md",

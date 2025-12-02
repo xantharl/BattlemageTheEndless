@@ -1,10 +1,13 @@
+# Class Identity
+Close range bruiser with immense battlefield control and survivability. The most melee focused class.
 ## Passives
 ### Void Hunger
-Heal per second for each stack of Void Sickness inflicting targets within a certain range
+When a target with Void Sickness stacks dies nearby, heal an amount per stack
 #### Upgrade Paths
 - Endless Hunger: deals less damage per second but does not expire
 - Enduring Hunger: longer expiration
 - Limitless Hunger: longer range
+- Widespread Hunger: Allies gain a portion of your Void Hunger healing
 ## Offensive Spells
 ### Void Spike
 **Quick spell** Small spear of dark energy. Deals light damage and applies light void sickness.

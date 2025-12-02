@@ -7,7 +7,7 @@ Aggressive hit and run tactics with limited self sustain, meant to encourage spr
 - Unstable Flames: Much more increase to fire damage with a chance of self damage
 ## Passives
 ### Raging Inferno
-Gain stacks of raging inferno any time a Burning enemy dies. For each stack of raging inferno, any status effect you inflict lasts longer.
+Gain stacks of raging inferno any time a Burning enemy dies. For each stack of raging inferno, any fire effect deals more damage or lasts longer per tick. This applies to combined statuses.
 #### Upgrade Paths
 - Inferno's Embrace: Gain fire resistance per stack of raging inferno. This can exceed 100% and stacks with other buffs/items.
 - Gambler's Inferno: For each stack of raging inferno, gain a percent chance to double proc burning when applying a stack 
