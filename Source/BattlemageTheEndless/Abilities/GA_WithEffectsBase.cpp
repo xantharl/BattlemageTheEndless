@@ -9,16 +9,21 @@ FGameplayTag UGA_WithEffectsBase::GetAbilityIdentifierTag()
 	baseComboIdentifierTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Spells")));
 
 	// otherwise identify this ability's BaseComboIdentifier
-	auto tags = AbilityTags.Filter(baseComboIdentifierTags);
-	if (tags.Num() > 0)
+	auto Tags = AbilityTags.Filter(baseComboIdentifierTags);
+	auto TypesTag = FGameplayTag::RequestGameplayTag(FName("Spells.Types"));
+	if (Tags.Num() > 0)
 	{
-		return tags.GetByIndex(0);
+		for (FGameplayTag Tag : Tags)
+		{
+			if (!Tag.MatchesTag(TypesTag))
+				return Tag;
+		}
+		
+		return Tags.Last();
 	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("Ability %s has no Weapons or Spells tag, returning empty tag"), *GetName());
-		return FGameplayTag();
-	}
+	
+	UE_LOG(LogTemp, Error, TEXT("Ability %s has no Weapons or Spells tag, returning empty tag"), *GetName());
+	return FGameplayTag();
 }
 
 FName UGA_WithEffectsBase::GetAbilityName()

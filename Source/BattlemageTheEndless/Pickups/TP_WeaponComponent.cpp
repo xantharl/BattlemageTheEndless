@@ -1,5 +1,3 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
-
 #include "TP_WeaponComponent.h"
 #include "BattlemageTheEndlessProjectile.h"
 #include "GameFramework/PlayerController.h"
@@ -13,7 +11,12 @@
 
 TArray<TSubclassOf<class UGameplayAbility>> UTP_WeaponComponent::GetGrantedAbilitiesForDisplay()
 {
-	
+	return GrantedAbilities.FilterByPredicate(
+		[](const TSubclassOf<UGameplayAbility>& entry) {
+			auto cdo = entry->GetDefaultObject<UAttackBaseGameplayAbility>();
+			return !cdo->HasComboTag() || cdo->IsFirstInCombo();
+		}
+	);
 }
 
 // Sets default values for this component's properties
