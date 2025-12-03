@@ -38,7 +38,10 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Abilities")
 	FOnAbilityEndedDelegate OnAbilityEnded;
 
-	FGameplayTag GetAbilityName();
+	FGameplayTag GetAbilityIdentifierTag();
+	
+	UFUNCTION(BlueprintCallable, Category = Abilities)
+	FName GetAbilityName();
 
 	/// <summary>
 	/// override of the ActivateAbility method to apply effects and spawn projectiles

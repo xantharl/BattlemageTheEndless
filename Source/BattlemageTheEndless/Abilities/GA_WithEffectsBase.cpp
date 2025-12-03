@@ -3,7 +3,7 @@
 
 #include "GA_WithEffectsBase.h"
 
-FGameplayTag UGA_WithEffectsBase::GetAbilityName()
+FGameplayTag UGA_WithEffectsBase::GetAbilityIdentifierTag()
 {
 	FGameplayTagContainer baseComboIdentifierTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Weapon")));
 	baseComboIdentifierTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Spells")));
@@ -19,6 +19,21 @@ FGameplayTag UGA_WithEffectsBase::GetAbilityName()
 		UE_LOG(LogTemp, Error, TEXT("Ability %s has no Weapons or Spells tag, returning empty tag"), *GetName());
 		return FGameplayTag();
 	}
+}
+
+FName UGA_WithEffectsBase::GetAbilityName()
+{
+	FGameplayTag IdentifierTag = GetAbilityIdentifierTag();
+	if (!IdentifierTag.IsValid())
+		return FName(GetName());
+	
+	// Handle combo tags by stripping numeric suffixes
+	while (IdentifierTag.GetTagLeafName().ToString().IsNumeric())
+	{
+		IdentifierTag = IdentifierTag.RequestDirectParent();
+	}
+	
+	return IdentifierTag.GetTagLeafName();
 }
 
 void UGA_WithEffectsBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)

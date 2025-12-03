@@ -17,7 +17,7 @@ void UAbilityComboManager::AddAbilityToCombo(APickupActor* PickupActor, UGA_With
 		return;
 
 	// it is expected that the resulting tag will be something like Weapons.Sword.LightAttack
-	FGameplayTag parentTag = Ability->GetAbilityName();
+	FGameplayTag parentTag = Ability->GetAbilityIdentifierTag();
 	UAbilityCombo* combo = nullptr;
 	if (Combos[PickupActor].Combos.Num() > 0)
 	{
@@ -73,7 +73,7 @@ FGameplayAbilitySpecHandle UAbilityComboManager::ProcessInput(APickupActor* Pick
 	}
 	// this handler is expected to only be hit for weapons now but keeping the fallback to be safe
 	else 
-		nameTag = PickupActor->Weapon->SelectedAbility->GetDefaultObject<UAttackBaseGameplayAbility>()->GetAbilityName();
+		nameTag = PickupActor->Weapon->SelectedAbility->GetDefaultObject<UAttackBaseGameplayAbility>()->GetAbilityIdentifierTag();
 	
 	UAbilityCombo* combo = FindComboByTag(PickupActor, nameTag);
 

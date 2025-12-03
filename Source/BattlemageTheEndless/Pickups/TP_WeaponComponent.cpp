@@ -11,6 +11,11 @@
 #include "../Characters/BattlemageTheEndlessCharacter.h"
 #include "../Abilities/AttackBaseGameplayAbility.h"
 
+TArray<TSubclassOf<class UGameplayAbility>> UTP_WeaponComponent::GetGrantedAbilitiesForDisplay()
+{
+	
+}
+
 // Sets default values for this component's properties
 UTP_WeaponComponent::UTP_WeaponComponent()
 {

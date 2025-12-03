@@ -49,7 +49,11 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
 	TArray<TSubclassOf<class UGameplayAbility>> GrantedAbilities;
-
+	
+	/** Filters Granted Abilities to remove later steps of combos */
+	UFUNCTION(BlueprintCallable, Category = Abilities, meta = (AllowPrivateAccess = "true"))
+	TArray<TSubclassOf<class UGameplayAbility>> GetGrantedAbilitiesForDisplay();
+	
 	// used for weapons which have multiple primary abilities (spells)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class UAttackBaseGameplayAbility> SelectedAbility;
