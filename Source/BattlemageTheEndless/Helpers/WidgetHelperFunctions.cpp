@@ -48,3 +48,8 @@ FName UWidgetHelperFunctions::GetAbilityFriendlyName(TSubclassOf<UGameplayAbilit
 	
 	return FName(FName::NameToDisplayString(RetVal, false));
 }
+
+const FGameplayTagContainer& UWidgetHelperFunctions::GetAbilityTags(UGameplayAbility* Ability)
+{
+	return Ability->GetAssetTags();
+}

@@ -21,4 +21,7 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "WidgetHelperFunctions")
 	static FName GetAbilityFriendlyName(TSubclassOf<UGameplayAbility> AbilityClass);
+	
+	UFUNCTION(BlueprintCallable, Category = "WidgetHelperFunctions")
+	static const FGameplayTagContainer& GetAbilityTags(UGameplayAbility* Ability);
 };
