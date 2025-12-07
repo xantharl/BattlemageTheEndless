@@ -115,6 +115,7 @@ public:
 	void ResetHits();
 
 	void NextOrPreviousSpell(bool nextOrPrevious);
+	void ChangeAbilityToIndex(int NewAbilityIndex, bool NextOrPrevious);
 
 	virtual void BeginPlay() override;
 

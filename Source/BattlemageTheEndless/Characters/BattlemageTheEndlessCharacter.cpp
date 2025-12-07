@@ -514,14 +514,11 @@ void ABattlemageTheEndlessCharacter::AbilityInputReleased(TSubclassOf<class UGam
 			return;
 	}
 
-	auto attributeSet = Cast<UBaseAttributeSet>(AbilitySystemComponent->GetAttributeSet(UBaseAttributeSet::StaticClass()));
-	auto speedBefore = attributeSet->GetMovementSpeed();
 	AbilitySystemComponent->CancelAbility(ability->GetDefaultObject<UGameplayAbility>());
-	auto speedAfter = attributeSet->GetMovementSpeed();
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Canceled ability %s"), *ability->GetName()));
-	}
+	// if (GEngine)
+	// {
+	// 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Canceled ability %s"), *ability->GetName()));
+	// }
 }
 
 void ABattlemageTheEndlessCharacter::EndSprint()
@@ -792,6 +789,17 @@ void ABattlemageTheEndlessCharacter::SelectActiveSpell(bool nextOrPrevious)
 	if (!ActiveSpellClass || !ActiveSpellClass->Weapon)
 		return;
 
+	// If we are on the last spell for this class, activate the next spell class instead
+	if (nextOrPrevious && ActiveSpellClass->Weapon->GrantedAbilities.Last() == ActiveSpellClass->Weapon->SelectedAbility)
+	{
+		const int CurrentIndex = Equipment[EquipSlot::Secondary].Pickups.IndexOfByKey(ActiveSpellClass);
+		const int NextIndex = (CurrentIndex + 1) % Equipment[EquipSlot::Secondary].Pickups.Num();
+		ActiveSpellClass = Equipment[EquipSlot::Secondary].Pickups[NextIndex];
+		SetActivePickup(ActiveSpellClass);
+		ActiveSpellClass->Weapon->ChangeAbilityToIndex(0, true);
+		return;
+	}
+		
 	ActiveSpellClass->Weapon->NextOrPreviousSpell(nextOrPrevious);
 }
 

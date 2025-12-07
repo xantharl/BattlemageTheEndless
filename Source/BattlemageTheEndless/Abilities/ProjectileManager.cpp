@@ -90,11 +90,11 @@ TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::HandleSpawn(FTransf
 			newActor->EffectiveDamage = spawningAbility->CurrentChargeDamage;
 			newActor->ProjectileMovement->InitialSpeed *= spawningAbility->CurrentChargeProjectileSpeed;
 			newActor->ProjectileMovement->ProjectileGravityScale *= spawningAbility->CurrentChargeGravityScale;
-			if (GEngine)
-				GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow,
-					FString::Printf(TEXT("(%s) Spawned with Damage: %f, Speed: %f, GravityScale: %f"), 
-						*spawningAbility->GetName(), spawningAbility->CurrentChargeDamage, 
-						newActor->ProjectileMovement->InitialSpeed, newActor->ProjectileMovement->ProjectileGravityScale));
+			// if (GEngine)
+			// 	GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow,
+			// 		FString::Printf(TEXT("(%s) Spawned with Damage: %f, Speed: %f, GravityScale: %f"), 
+			// 			*spawningAbility->GetName(), spawningAbility->CurrentChargeDamage, 
+			// 			newActor->ProjectileMovement->InitialSpeed, newActor->ProjectileMovement->ProjectileGravityScale));
 		}
 
 		newActor->SpawningAbility = spawningAbility;
@@ -139,9 +139,9 @@ TArray<FTransform> UProjectileManager::GetSpawnLocations(const FProjectileConfig
 	auto returnArray = TArray<FTransform>();
 
 	FTransform spawnTransform = FTransform(rootTransform.GetRotation(), rootPlusOffset, rootTransform.GetScale3D());
-	if(GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Cyan,
-			FString::Printf(TEXT("Spawn Transform Location: %s, Rotation: %s"), *spawnTransform.GetLocation().ToString(), *spawnTransform.GetRotation().Rotator().ToString()));
+	// if(GEngine)
+	// 	GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Cyan,
+	// 		FString::Printf(TEXT("Spawn Transform Location: %s, Rotation: %s"), *spawnTransform.GetLocation().ToString(), *spawnTransform.GetRotation().Rotator().ToString()));
 
 	// For players, account for crosshair. For AI we assume they're pointed where they need to be already
 	if (OwnerCharacter && OwnerCharacter->IsPlayerControlled())

@@ -6,13 +6,13 @@
 // Sets default values
 AHitEffectActor::AHitEffectActor()
 {
-	if (!Validate())
-	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 2.5f, FColor::Red, TEXT("HitEffectActor failed to validate, see log for more info"));
-		}
-	}
+	// if (!Validate())
+	// {
+	// 	if (GEngine)
+	// 	{
+	// 		GEngine->AddOnScreenDebugMessage(-1, 2.5f, FColor::Red, TEXT("HitEffectActor failed to validate, see log for more info"));
+	// 	}
+	// }
 
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
@@ -191,12 +191,12 @@ void AHitEffectActor::ApplyEffects(AActor* actor, UPrimitiveComponent* applyingC
 		}
 
 		auto handle = abilitySystemComponent->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
-		if (GEngine)
-		{
-			int stacks = abilitySystemComponent->GetCurrentStackCount(handle);
-			GEngine->AddOnScreenDebugMessage(-1, 2.5f, FColor::Green, 
-				FString::Printf(TEXT("Applied effect %s (Stacks: %i)"), *effect->GetName(), stacks));
-		}
+		// if (GEngine)
+		// {
+		// 	int stacks = abilitySystemComponent->GetCurrentStackCount(handle);
+		// 	GEngine->AddOnScreenDebugMessage(-1, 2.5f, FColor::Green, 
+		// 		FString::Printf(TEXT("Applied effect %s (Stacks: %i)"), *effect->GetName(), stacks));
+		// }
 	}
 
 	if (OnApplyEffectsBehavior == EOnApplyEffectsBehavior::DestroyActor)

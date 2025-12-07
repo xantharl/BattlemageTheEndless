@@ -216,9 +216,9 @@ void UAttackBaseGameplayAbility::HandleSetByCaller(TSubclassOf<UGameplayEffect> 
 	if (projectile && FMath::Abs(projectile->EffectiveDamage) > 0.0001f)
 	{
 		specHandle.Data.Get()->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Spells.Charge.Damage")), -projectile->EffectiveDamage);
-		if (GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow,
-				FString::Printf(TEXT("%s hit for %f"), *effect->GetName(), projectile->EffectiveDamage));
+		// if (GEngine)
+		// 	GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow,
+		// 		FString::Printf(TEXT("%s hit for %f"), *effect->GetName(), projectile->EffectiveDamage));
 	}
 }
 
@@ -293,8 +293,8 @@ void UAttackBaseGameplayAbility::OnMontageBlendOut()
 	{
 		// if the montage is looping, we don't end the ability here, just spin up another task
 		// can this lead to stack overflow? probably, but we're going to ignore that for now
-		if (GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Restarting looping montage for ability %s"), *GetName()));
+		// if (GEngine)
+		// 	GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Restarting looping montage for ability %s"), *GetName()));
 		CreateAndDispatchMontageTask();
 		return;
 	}
@@ -328,8 +328,8 @@ void UAttackBaseGameplayAbility::HandleChargeProgress()
 	if (CurrentChargeDuration >= (ChargeDuration * 1000ms))
 	{
 		_bIsCharged = true;
-		if (GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is now charged with multiplier of %f"), *GetName(), CurrentChargeDamage));
+		// if (GEngine)
+		// 	GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is now charged with multiplier of %f"), *GetName(), CurrentChargeDamage));
 	}
 }
 

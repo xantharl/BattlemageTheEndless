@@ -38,10 +38,10 @@ void ABattlemageTheEndlessProjectile::OnHit(UPrimitiveComponent* HitComp, AActor
 	if (OtherActor == OwnerActor)
 		return;
 
-	if (GEngine) {
-		auto otherName = OtherActor->GetName();
-		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Projectile hit %s"), *otherName));
-	}
+	// if (GEngine) {
+	// 	auto otherName = OtherActor->GetName();
+	// 	GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Projectile hit %s"), *otherName));
+	// }
 	Destroy();
 
 	// Only add impulse and destroy projectile if we hit a physics

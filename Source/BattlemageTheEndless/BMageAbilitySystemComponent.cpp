@@ -688,16 +688,16 @@ UAttackBaseGameplayAbility* UBMageAbilitySystemComponent::BeginChargeAbility_Int
 	auto attackAbility = Cast<UAttackBaseGameplayAbility>(activeInstance);
 
 	bool success = TryActivateAbility(AbilitySpec->Handle, true);
-	if (!success && GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Red, FString::Printf(TEXT("Ability %s failed to activate"), *AbilitySpec->Ability->GetName()));
+	// if (!success && GEngine)
+	// 	GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Red, FString::Printf(TEXT("Ability %s failed to activate"), *AbilitySpec->Ability->GetName()));
 
 	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UBMageAbilitySystemComponent::ChargeSpell);
 	GetWorld()->GetTimerManager().SetTimer(_chargeSpellTimerHandle, TimerDelegate, 1.0f / (float)ChargeTickRate, true);
 
 	_chargingAbility = attackAbility;
 
-	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is charging"), *AbilitySpec->Ability->GetName()));
+	// if (GEngine)
+	// 	GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is charging"), *AbilitySpec->Ability->GetName()));
 
 	return _chargingAbility;
 }
@@ -713,10 +713,10 @@ void UBMageAbilitySystemComponent::ChargeSpell()
 
 	bool isChargedBefore = _chargingAbility->IsCharged();
 	_chargingAbility->HandleChargeProgress();
-	if (!isChargedBefore && _chargingAbility->IsCharged() && GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is charged"), *_chargingAbility->GetName()));
-	}
+	// if (!isChargedBefore && _chargingAbility->IsCharged() && GEngine)
+	// {
+	// 	GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is charged"), *_chargingAbility->GetName()));
+	// }
 }
 
 void UBMageAbilitySystemComponent::CompleteChargeAbility()

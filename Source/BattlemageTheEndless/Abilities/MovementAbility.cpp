@@ -35,8 +35,8 @@ void UMovementAbility::Begin()
 	startTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 	if (TransitionInDuration > 0.00001f)
 	{
-		if (GEngine)
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Transitioning in"));
+		// if (GEngine)
+		// 	GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Transitioning in"));
 		isTransitioningIn = true;
 	}
 

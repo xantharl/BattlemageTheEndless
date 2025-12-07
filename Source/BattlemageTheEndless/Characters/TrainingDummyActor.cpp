@@ -62,11 +62,11 @@ void ATrainingDummyActor::OnHealthChanged(const FOnAttributeChangeData& Data)
 		// Replaces existing timer if present
 		GetWorld()->GetTimerManager().SetTimer(ResetHealthTimer, this, &ATrainingDummyActor::ResetHealth, WaitBeforeResetHealthSeconds, false);
 	}
-	else
-	{
-		if(GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Training Dummy Health Restored"));
-		}
-	}
+	// else
+	// {
+	// 	if(GEngine)
+	// 	{
+	// 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Training Dummy Health Restored"));
+	// 	}
+	// }
 }

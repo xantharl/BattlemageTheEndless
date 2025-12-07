@@ -87,28 +87,34 @@ void UTP_WeaponComponent::NextOrPreviousSpell(bool nextOrPrevious)
 		return;
 	}
 
-	UAttackBaseGameplayAbility* abilityDefaultObject;
 	// select the next or previous spell, wrapping around the array and continuing if the ability is part of a combo
 	//	 and not the start of it
-	do 
-	{
-		ActiveAbilityIndex = nextOrPrevious ? ActiveAbilityIndex + 1 : ActiveAbilityIndex - 1;
-		if (ActiveAbilityIndex < 0)
-		{
-			ActiveAbilityIndex = GrantedAbilities.Num() - 1;
-		}
-		else if (ActiveAbilityIndex >= GrantedAbilities.Num())
-		{
-			ActiveAbilityIndex = 0;
-		}
-		SelectedAbility = GrantedAbilities[ActiveAbilityIndex];
-		abilityDefaultObject = SelectedAbility->GetDefaultObject<UAttackBaseGameplayAbility>();
-	} while (abilityDefaultObject->HasComboTag() && !abilityDefaultObject->IsFirstInCombo());
+	const int NewAbilityIndex = nextOrPrevious ? ActiveAbilityIndex + 1 : ActiveAbilityIndex - 1;
+	ChangeAbilityToIndex(NewAbilityIndex, nextOrPrevious);
 
 	if (GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("Switched to %s"), *SelectedAbility->GetName()));
 	}
+}
+
+void UTP_WeaponComponent::ChangeAbilityToIndex(int NewAbilityIndex, bool NextOrPrevious)
+{
+	UAttackBaseGameplayAbility* abilityDefaultObject;
+	do 
+	{
+		if (NewAbilityIndex < 0)
+		{
+			NewAbilityIndex = GrantedAbilities.Num() - 1;
+		}
+		else if (NewAbilityIndex >= GrantedAbilities.Num())
+		{
+			NewAbilityIndex = 0;
+		}
+		SelectedAbility = GrantedAbilities[NewAbilityIndex];
+		abilityDefaultObject = SelectedAbility->GetDefaultObject<UAttackBaseGameplayAbility>();
+		NextOrPrevious ? ++NewAbilityIndex : --NewAbilityIndex;
+	} while (abilityDefaultObject->HasComboTag() && !abilityDefaultObject->IsFirstInCombo());
 }
 
 void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -129,9 +135,9 @@ void UTP_WeaponComponent::RemoveContext(ACharacter* character)
 // This is called by the AnimNotify_Collision Blueprint
 void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult& Hit, FString attackAnimationName)
 {
-	if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("%s hit character %s"),
-			*(character->GetName()), *(Hit.GetActor()->GetName())));
+	// if (GEngine)
+	// 	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("%s hit character %s"),
+	// 		*(character->GetName()), *(Hit.GetActor()->GetName())));
 
 	if (attackAnimationName != LastAttackAnimationName)
 	{
