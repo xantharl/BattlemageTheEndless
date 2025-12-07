@@ -31,15 +31,18 @@ void UBMageAbilitySystemComponent::ActivatePickup(APickupActor* Pickup, const TA
 	if (ComboManager->Combos.Contains(Pickup))
 		ComboManager->Combos.Remove(Pickup);
 
+	// If specific abilities were provided, only grant those
+	// This comes from character creation where we want to only give the selected spells for spell class pickups
+	if (SelectedAbilities.Num() > 0)
+	{
+		Pickup->Weapon->GrantedAbilities = SelectedAbilities;
+	}
+	
 	// grant abilities for the new weapon
 	// Needs to happen before bindings since bindings look up assigned abilities
+	
 	for (TSubclassOf<UGameplayAbility>& ability : Pickup->Weapon->GrantedAbilities)
 	{
-		if (SelectedAbilities.Num() > 0 && !SelectedAbilities.Contains(ability))
-		{
-			// skip abilities that aren't selected
-			continue;
-		}
 		
 		FGameplayAbilitySpecHandle handle = GiveAbility(FGameplayAbilitySpec(ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), Pickup));
 		ComboManager->AddAbilityToCombo(Pickup, ability->GetDefaultObject<UGA_WithEffectsBase>(), handle);

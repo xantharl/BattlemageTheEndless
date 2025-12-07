@@ -1087,10 +1087,16 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged(APickupActor* Pic
 
 void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)
 {
-	auto selectedAbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(ActiveSpellClass->Weapon->SelectedAbility);
-	auto ability = Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability);
+	const auto SelectedAbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(ActiveSpellClass->Weapon->SelectedAbility);
+	if (!SelectedAbilitySpec)
+	{
+		UE_LOG(LogTemplateCharacter, Warning, TEXT("'%s' ProcessSpellInput_Placed called without a valid Ability Spec!"), *GetNameSafe(this));
+		return;
+	}
+	
+	const auto Ability = Cast<UAttackBaseGameplayAbility>(SelectedAbilitySpec->Ability);
 
-	if (!ability || ability->HitType != HitType::Placed)
+	if (!Ability || Ability->HitType != HitType::Placed)
 	{
 		// if the ability is not placed, this is the wrong handler
 		return;
@@ -1123,17 +1129,17 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 		// The button was pressed for the first time
 		case ETriggerEvent::Started:
 		{
-			ability->SpawnSpellActors(true, this);
+			Ability->SpawnSpellActors(true, this);
 			break;
 		}
 		// The button is being held
 		case ETriggerEvent::Ongoing:
 		{
-			for (auto ghostActor : ability->GetPlacementGhosts())
+			for (auto ghostActor : Ability->GetPlacementGhosts())
 			{
 				if (ghostActor && IsValid(ghostActor))
 				{
-					ability->PositionSpellActor(ghostActor, this);
+					Ability->PositionSpellActor(ghostActor, this);
 				}
 			}
 			break;
@@ -1142,7 +1148,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 		case ETriggerEvent::Canceled:
 		{
 			// destroy all placement ghosts
-			for (auto ghostActor : ability->GetPlacementGhosts())
+			for (auto ghostActor : Ability->GetPlacementGhosts())
 				ghostActor->Destroy();
 			break;
 		}
@@ -1151,7 +1157,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 		{			
 			AbilitySystemComponent->ComboManager->ProcessInput(PickupActor, AttackType);
 			// reset materials on all placement ghosts
-			for (auto ghostActor : ability->GetPlacementGhosts())
+			for (auto ghostActor : Ability->GetPlacementGhosts())
 			{
 				if (!ghostActor || !IsValid(ghostActor))
 					continue;
@@ -1184,7 +1190,7 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed(APickupActor* Pick
 			}
 
 			// stop tracking placement ghosts after making them real
-			ability->ClearPlacementGhosts();
+			Ability->ClearPlacementGhosts();
 
 			break;
 		}
