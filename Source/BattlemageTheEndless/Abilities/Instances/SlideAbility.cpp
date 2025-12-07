@@ -20,7 +20,12 @@ void USlideAbility::Begin()
 	_priorRotationRateZ = Movement->RotationRate.Yaw;
 	Movement->bUseControllerDesiredRotation = true;
 	Character->bUseControllerRotationYaw = false;
- 	Movement->RotationRate.Yaw = RotationRateZ;
+	Movement->RotationRate.Yaw = RotationRateZ;
+	
+	// Set character rotation to movement direction since the slide in animation is root motion
+	auto Velocity = Movement->Velocity;
+	Velocity.Z = 0.f;
+	Character->SetActorRotation(Velocity.Rotation());
 }
 
 void USlideAbility::End(bool bForce)
