@@ -113,32 +113,16 @@ void UWallRunAbility::Begin()
 	Movement->GravityScale = WallRunInitialGravityScale;
 
 	// get vectors parallel to the wall
-	FRotator possibleWallRunDirectionOne = WallRunHit.ImpactNormal.RotateAngleAxis(90.f, FVector::ZAxisVector).Rotation();
-	FRotator possibleWallRunDirectionTwo = WallRunHit.ImpactNormal.RotateAngleAxis(-90.f, FVector::ZAxisVector).Rotation();
-
-	float dirOne360 = VectorMath::NormalizeRotator0To360(possibleWallRunDirectionOne).Yaw;
-	float dirTwo360 = VectorMath::NormalizeRotator0To360(possibleWallRunDirectionTwo).Yaw;
-	float dirOne180 = VectorMath::NormalizeRotator180s(possibleWallRunDirectionOne).Yaw;
-	float dirTwo180 = VectorMath::NormalizeRotator180s(possibleWallRunDirectionTwo).Yaw;
-
-	float lookDirection = Movement->GetLastUpdateRotation().Yaw;
-
-	// find the least yaw difference
-	float closestDir = dirOne360;
-	if (FMath::Abs(dirTwo360 - lookDirection) < FMath::Abs(closestDir - lookDirection))
-	{
-		closestDir = dirTwo360;
-	}
-	if (FMath::Abs(dirOne180 - lookDirection) < FMath::Abs(closestDir - lookDirection))
-	{
-		closestDir = dirOne180;
-	}
-	if (FMath::Abs(dirTwo180 - lookDirection) < FMath::Abs(closestDir - lookDirection))
-	{
-		closestDir = dirTwo180;
-	}
+	const FRotator PossibleWallRunDirectionOne = WallRunHit.ImpactNormal.RotateAngleAxis(90.f, FVector::ZAxisVector).Rotation();
+	const FRotator PossibleWallRunDirectionTwo = WallRunHit.ImpactNormal.RotateAngleAxis(-90.f, FVector::ZAxisVector).Rotation();
+	const float LookDirection = Movement->GetLastUpdateRotation().Yaw;
+	// find the closest direction to the character's current look direction
+	const auto DeltaOne = FMath::FindDeltaAngleDegrees(LookDirection, PossibleWallRunDirectionOne.Yaw);
+	const auto DeltaTwo = FMath::FindDeltaAngleDegrees(LookDirection, PossibleWallRunDirectionTwo.Yaw);
+	const FRotator BestOption = FMath::Abs(DeltaOne) < FMath::Abs(DeltaTwo) ? PossibleWallRunDirectionOne : PossibleWallRunDirectionTwo;
+	
 	// consumed by caller in character
-	TargetRotation = FRotator(0.f, closestDir, 0.f);
+	TargetRotation = FRotator(0.f, BestOption.Yaw, 0.f);
 
 	// redirect character's velocity to be parallel to the wall, ignore input
 	Movement->Velocity = TargetRotation.Vector() * Movement->Velocity.Size();
