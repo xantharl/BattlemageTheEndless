@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Dev Notes/Designs/Spells/Classes/06 - Vine.md",
+                "file": "Docs/Character Creation Flow.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "06 - Vine"
+              "title": "Character Creation Flow"
             }
           }
         ]
@@ -171,9 +171,11 @@
   },
   "active": "8e5e54dd87c9038e",
   "lastOpenFiles": [
+    "Docs/Movement Ability Notes.md",
+    "Docs/Character Creation Flow.md",
+    "Dev Notes/Designs/Spells/Classes/06 - Vine.md",
     "Dev Notes/Designs/Spells/Classes/04 - Stone.md",
     "Dev Notes/Designs/Spells/Classes/05 - Void.md",
-    "Dev Notes/Designs/Spells/Classes/06 - Vine.md",
     "Dev Notes/Designs/Spells/01 - Elemental Damage and Effects.md",
     "Dev Notes/Designs/Spells/Classes/01 - Fire.md",
     "Dev Notes/Designs/Spells/Classes/02 - Ice.md",
@@ -182,7 +184,6 @@
     "Dev Notes/Designs/Spells/Classes/08 - Shadow.md",
     "Dev Notes/Designs/Spells/Classes/09 - Arcane.md",
     "Docs/Fixing Root Motion on Mixamo Anims.md",
-    "Docs/Movement Ability Notes.md",
     "Pasted image 20251116124129.png",
     "Docs/BP_Skeleton_Bow Setup.md",
     "project.md",

@@ -88,7 +88,7 @@ void ABattlemageTheEndlessCharacter::Destroyed()
 	{
 		if (ABattlemageTheEndlessGameMode* GameMode = Cast<ABattlemageTheEndlessGameMode>(World->GetAuthGameMode()))
 		{
-			GameMode->GetOnPlayerDied().Broadcast(this);
+			GameMode->OnPlayerDied.Broadcast(this);
 		}
 	}
 }
