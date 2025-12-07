@@ -24,22 +24,28 @@ void UBMageAbilitySystemComponent::DeactivatePickup(APickupActor* pickup)
 	_removePickupFromAbilityByRangeCache(pickup);
 }
 
-void UBMageAbilitySystemComponent::ActivatePickup(APickupActor* pickup) 
+void UBMageAbilitySystemComponent::ActivatePickup(APickupActor* Pickup, const TArray<TSubclassOf<UGameplayAbility>>& SelectedAbilities) 
 {
 	// The handles in GAS change each time we grant an ability, so we need to reset them each time we equip a new weapon
 	// TODO: We should be able to assign all abilities on begin play and not have to do this since we're explicit when activating an ability
-	if (ComboManager->Combos.Contains(pickup))
-		ComboManager->Combos.Remove(pickup);
+	if (ComboManager->Combos.Contains(Pickup))
+		ComboManager->Combos.Remove(Pickup);
 
 	// grant abilities for the new weapon
 	// Needs to happen before bindings since bindings look up assigned abilities
-	for (TSubclassOf<UGameplayAbility>& ability : pickup->Weapon->GrantedAbilities)
+	for (TSubclassOf<UGameplayAbility>& ability : Pickup->Weapon->GrantedAbilities)
 	{
-		FGameplayAbilitySpecHandle handle = GiveAbility(FGameplayAbilitySpec(ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), pickup));
-		ComboManager->AddAbilityToCombo(pickup, ability->GetDefaultObject<UGA_WithEffectsBase>(), handle);
+		if (SelectedAbilities.Num() > 0 && !SelectedAbilities.Contains(ability))
+		{
+			// skip abilities that aren't selected
+			continue;
+		}
+		
+		FGameplayAbilitySpecHandle handle = GiveAbility(FGameplayAbilitySpec(ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), Pickup));
+		ComboManager->AddAbilityToCombo(Pickup, ability->GetDefaultObject<UGA_WithEffectsBase>(), handle);
 	}
 
-	ActivePickups.Add(pickup);
+	ActivePickups.Add(Pickup);
 }
 
 bool UBMageAbilitySystemComponent::GetShouldTick() const

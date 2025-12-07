@@ -35,6 +35,7 @@
 #include "../Widgets/HealthBarWidget.h"
 #include "Components/WidgetComponent.h"
 #include "../Abilities/ProjectileManager.h"
+#include "BattlemageTheEndless/Character/CharacterCreationData.h"
 
 #include "BattlemageTheEndlessCharacter.generated.h"
 
@@ -256,7 +257,14 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivate))
 	TArray<TSubclassOf<class APickupActor>> DefaultEquipment;
-
+	
+	/** Character creation data set during character creation flow, use UFUNCTION ProcessCharacterCreationData to set it **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterCreation, meta = (AllowPrivate), Instanced)
+	UCharacterCreationData* CharacterCreationData;
+	
+	UFUNCTION(BlueprintCallable, Category = CharacterCreation)
+	void ProcessCharacterCreationData(TArray<FString> ArchetypeNames,TArray<FString> SpellNames);
+	
 protected:
 	virtual void BeginPlay();
 	void InitHealthbar();
@@ -347,8 +355,10 @@ protected:
 	// this is an override but specifying it as such breaks compile for some reason
 	void Jump();
 
+	UFUNCTION(BlueprintCallable, Category = Weapon)
 	void SetActivePickup(APickupActor* pickup);
 	// True = next, False = previous
+	UFUNCTION(BlueprintCallable, Category = Weapon)
 	void SelectActiveSpell(bool nextOrPrevious);
 
 	// APawn interface

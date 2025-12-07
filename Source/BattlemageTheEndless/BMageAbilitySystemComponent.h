@@ -53,7 +53,7 @@ public:
 
 	void DeactivatePickup(APickupActor* pickup);
 
-	void ActivatePickup(APickupActor* activePickup);
+	void ActivatePickup(APickupActor* ActivePickup, const TArray<TSubclassOf<UGameplayAbility>>& SelectedAbilities = TArray<TSubclassOf<UGameplayAbility>>());
 	virtual bool GetShouldTick() const override;
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 

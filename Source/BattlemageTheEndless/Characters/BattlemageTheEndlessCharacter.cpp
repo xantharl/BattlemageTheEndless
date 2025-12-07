@@ -48,6 +48,8 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 	}
 	else if (!AbilitySystemComponent)
 		AbilitySystemComponent = ascComp;
+	
+	CharacterCreationData = CreateDefaultSubobject<UCharacterCreationData>(TEXT("CharacterCreationData"));
 }
 
 void ABattlemageTheEndlessCharacter::PossessedBy(AController* NewController)
@@ -191,6 +193,17 @@ void ABattlemageTheEndlessCharacter::AdjustAimModeFov(float DeltaTime)
 	}
 }
 
+void ABattlemageTheEndlessCharacter::ProcessCharacterCreationData(TArray<FString> ArchetypeNames,TArray<FString> SpellNames)
+{
+	if (CharacterCreationData->SelectedPickupActors.Num() > 0)
+	{
+		// already processed
+		return;
+	}
+	
+	CharacterCreationData->InitSelections(ArchetypeNames, SpellNames);
+}
+
 void ABattlemageTheEndlessCharacter::BeginPlay()
 {
 	CheckRequiredObjects();
@@ -209,6 +222,7 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+	
 	GiveDefaultAbilities();
 	GiveStartingEquipment();
 
@@ -265,6 +279,12 @@ void ABattlemageTheEndlessCharacter::GiveStartingEquipment()
 	// add abilities given by Weapons
 	for (const TSubclassOf<class APickupActor> PickupType : DefaultEquipment)
 	{
+		if (CharacterCreationData && CharacterCreationData->SelectedPickupActors.Num() > 0)
+		{
+			if (!CharacterCreationData->SelectedPickupActors.Contains(PickupType))
+				continue;
+		}
+		
 		// create the actor
 		APickupActor* pickup = GetWorld()->SpawnActor<APickupActor>(PickupType, GetActorLocation(), GetActorRotation());
 		pickup->SetOwner(this);
@@ -566,7 +586,9 @@ void ABattlemageTheEndlessCharacter::CheckRequiredObjects()
 	// This is kind of a hack, for AI the attributes are getting set in the CTOR but somehow becoming null by BeginPlay
 	if (!AttributeSet)
 		AttributeSet = NewObject<UBaseAttributeSet>(this, TEXT("AttributeSet"));
-
+	if (!CharacterCreationData)
+		CharacterCreationData = NewObject<UCharacterCreationData>(this, TEXT("CharacterCreationData"));
+	
 	AttributeSet->InitHealth(MaxHealth);
 	AttributeSet->InitMaxHealth(MaxHealth);
 	AttributeSet->InitHealthRegenRate(HealthRegenRate);
@@ -687,7 +709,10 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 	// set it to the appropriate hand
 	isRightHand ? RightHandWeapon = pickup : LeftHandWeapon = pickup;
 
-	AbilitySystemComponent->ActivatePickup(pickup);
+	if (CharacterCreationData)
+		AbilitySystemComponent->ActivatePickup(pickup, CharacterCreationData->SelectedSpells);
+	else
+		AbilitySystemComponent->ActivatePickup(pickup);
 
 	// to avoid nullptr
 	if (!pickup->Weapon->SelectedAbility && pickup->Weapon->GrantedAbilities.Num() > 0)
