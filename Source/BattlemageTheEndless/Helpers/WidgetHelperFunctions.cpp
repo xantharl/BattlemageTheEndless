@@ -53,3 +53,24 @@ const FGameplayTagContainer& UWidgetHelperFunctions::GetAbilityTags(UGameplayAbi
 {
 	return Ability->GetAssetTags();
 }
+
+TArray<FString> UWidgetHelperFunctions::GetAllSaveFiles()
+{
+	TArray<FString> SaveFiles;
+	FString SaveDirectory = FPaths::ProjectSavedDir() + TEXT("SaveGames/");
+	IFileManager::Get().FindFiles(SaveFiles, *SaveDirectory, TEXT(".sav"));	
+	
+	// Sort by modification time (newest first)
+	SaveFiles.Sort([&SaveDirectory](const FString& A, const FString& B)
+	{
+		FString PathA = SaveDirectory + A;
+		FString PathB = SaveDirectory + B;
+        
+		FDateTime TimeA = IFileManager::Get().GetTimeStamp(*PathA);
+		FDateTime TimeB = IFileManager::Get().GetTimeStamp(*PathB);
+        
+		return TimeA > TimeB; // Descending order (newest first)
+	});
+	
+	return SaveFiles;
+}

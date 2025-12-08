@@ -24,4 +24,7 @@ public:
 	
 	UFUNCTION(BlueprintCallable, Category = "WidgetHelperFunctions")
 	static const FGameplayTagContainer& GetAbilityTags(UGameplayAbility* Ability);
+	
+	UFUNCTION(BlueprintCallable, Category = "WidgetHelperFunctions|Saves")
+	static TArray<FString> GetAllSaveFiles();
 };
