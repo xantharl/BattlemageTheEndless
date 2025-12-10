@@ -10,7 +10,7 @@ KBM:
 - Double tap and hold right clock to block, cannot cast while blocking
 - Click while blocking when an attack hits to parry
 	- **Will need to be implemented in attack handler**
-- Tap Forward button for light melee
+- Tap Forward mouse button for light melee
 - Hold Fwd button for heavy melee
 - **Tap Q** to swap spell class (primary/secondary)
 	- Changes quick attack selection

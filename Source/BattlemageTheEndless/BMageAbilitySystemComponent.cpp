@@ -295,12 +295,13 @@ TObjectPtr<UGameplayAbility> UBMageAbilitySystemComponent::GetActivatableAbility
 {
 	for (const FGameplayAbilitySpec& Spec : GetActivatableAbilities())
 	{
-		if (!Spec.Ability)
+		auto primaryInstance = Spec.GetPrimaryInstance();
+		if (!primaryInstance)
 			continue;
 
-		if (Spec.Ability->AbilityTags.HasTag(FGameplayTag::RequestGameplayTag(abilityTag)))
+		if (primaryInstance->AbilityTags.HasTag(FGameplayTag::RequestGameplayTag(abilityTag)))
 		{
-			return Spec.Ability;
+			return primaryInstance;
 		}
 	}
 
@@ -333,11 +334,12 @@ UAttackBaseGameplayAbility* UBMageAbilitySystemComponent::ProcessInputAndBindAbi
 
 bool UBMageAbilitySystemComponent::CancelAbilityByOwnedTag(FGameplayTag abilityTag)
 {
-	auto ability = GetActivatableAbilityByOwnedTag(abilityTag.GetTagName());
-	if (!ability || !ability->IsActive())
-		return false;
+	TArray<FGameplayAbilitySpecHandle> abilities;
+	FindAllAbilitiesWithTags(abilities, FGameplayTagContainer(abilityTag));
 
-	CancelAbility(ability);
+	for (auto handle: abilities)
+		CancelAbilityHandle(handle);
+	
 	return true;
 }
 
