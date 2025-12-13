@@ -13,7 +13,8 @@
 				"CommonUI",
 				"GameplayAbilities",
 				"CoreUObject",
-				"UMG"
+				"UMG",
+				"IKRig"
 			]
 		},
 		{
