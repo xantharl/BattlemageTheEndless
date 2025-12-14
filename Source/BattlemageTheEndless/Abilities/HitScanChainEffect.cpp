@@ -42,7 +42,7 @@ void AHitScanChainEffect::OnSystemFinished(UNiagaraComponent* finishedComponent)
 void AHitScanChainEffect::Tick(float DeltaTime)
 {
 	HitScanChainEffectInstance->SetWorldLocation(OriginatingActor->GetActorLocation());
-	HitScanChainEffectInstance->SetVariablePosition(FName("BeamEnd"), BeamEnd != FVector::ZeroVector ? BeamEnd : TargetActor->GetActorLocation());
+	HitScanChainEffectInstance->SetVariablePosition(FName("BeamStart"), OriginatingActor->GetActorLocation());
 	Super::Tick(DeltaTime);
 }
 
