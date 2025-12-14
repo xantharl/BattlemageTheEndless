@@ -117,10 +117,6 @@ void UTP_WeaponComponent::ChangeAbilityToIndex(int NewAbilityIndex, bool NextOrP
 	} while (abilityDefaultObject->HasComboTag() && !abilityDefaultObject->IsFirstInCombo());
 }
 
-void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-}
-
 void UTP_WeaponComponent::RemoveContext(ACharacter* character)
 {
 	if (APlayerController* PlayerController = Cast<APlayerController>(character->GetController()))

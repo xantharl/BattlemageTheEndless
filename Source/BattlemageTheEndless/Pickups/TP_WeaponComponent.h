@@ -120,10 +120,6 @@ public:
 	virtual void BeginPlay() override;
 
 protected:
-	/** Ends gameplay for this component. */
-	UFUNCTION()
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
 	bool AttackRequested = false;
 
 	UFUNCTION(BlueprintCallable, Category = "Combat")
