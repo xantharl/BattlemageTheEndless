@@ -487,7 +487,7 @@ void UBMageAbilitySystemComponent::HandleHitScan(UAttackBaseGameplayAbility* abi
 		// We don't need to keep the reference, UE will handle disposing when it is destroyed
 		auto chainEffectActor = GetWorld()->SpawnActor<AHitScanChainEffect>(AHitScanChainEffect::StaticClass(),
 			ownerCharacter->GetActorLocation(), FRotator::ZeroRotator);
-		chainEffectActor->Init(chainEffectActor, hitActor, ability->ChainSystem, hit.Location);
+		chainEffectActor->Init(GetOwnerActor(), hitActor, ability->ChainSystem, hit.Location);
 		return;
 	}
 

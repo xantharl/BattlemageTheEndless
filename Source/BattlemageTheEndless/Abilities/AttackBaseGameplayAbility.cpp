@@ -287,6 +287,7 @@ void UAttackBaseGameplayAbility::OnMontageCompleted()
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 
+// TODO: Deprecate this, with proper montage setup it is not needed.
 void UAttackBaseGameplayAbility::OnMontageBlendOut()
 {
 	if (FireAnimation->bLoop)

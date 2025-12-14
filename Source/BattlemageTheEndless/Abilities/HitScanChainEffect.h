@@ -23,6 +23,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
 	TObjectPtr<UNiagaraSystem> HitScanChainEffect;
 
+	/// <summary>
+	/// Initializes the hitscan chain effect actor with the necessary data to spawn and manage the effect
+	/// </summary>
+	/// @param originatingActor Actor where the chain originates, e.g. the caster
+	/// @param targetActor Actor being hit by the chain
+	/// @param hitScanChainEffect Niagara system to use for the effect
+	/// @param beamEnd Optional Override for beam end location instead of using target actor location
 	void Init(TObjectPtr<AActor> originatingActor, TObjectPtr<AActor> targetActor, TObjectPtr<UNiagaraSystem> hitScanChainEffect, FVector beamEnd = FVector::ZeroVector);
 
 protected:

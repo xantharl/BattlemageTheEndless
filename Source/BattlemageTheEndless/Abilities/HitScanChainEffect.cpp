@@ -15,14 +15,15 @@ void AHitScanChainEffect::Init(TObjectPtr<AActor> originatingActor, TObjectPtr<A
 	HitScanChainEffect = hitScanChainEffect;
 	OriginatingActor = originatingActor;
 	TargetActor = targetActor;
-	BeamEnd = beamEnd;
 
 	// Spawn the system and subscribe
 	HitScanChainEffectInstance = UNiagaraFunctionLibrary::SpawnSystemAtLocation(OriginatingActor, HitScanChainEffect, OriginatingActor->GetActorLocation());
 	HitScanChainEffectInstance->OnSystemFinished.AddDynamic(this, &AHitScanChainEffect::OnSystemFinished);
 
-	// Set the end location of the beam
-	HitScanChainEffectInstance->SetVariablePosition(FName("BeamEnd"), OriginatingActor->GetActorLocation());
+	// Set the location of the beam endpoints
+	HitScanChainEffectInstance->SetVariablePosition(FName("BeamStart"), OriginatingActor->GetActorLocation());
+	// Use beam end override if passed, otherwise use target's location
+	HitScanChainEffectInstance->SetVariablePosition(FName("BeamEnd"), beamEnd == FVector::ZeroVector ? TargetActor->GetActorLocation() : beamEnd);
 }
 
 // Called when the game starts or when spawned
