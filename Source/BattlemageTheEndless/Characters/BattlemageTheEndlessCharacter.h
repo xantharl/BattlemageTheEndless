@@ -394,5 +394,7 @@ protected:
 
 	// Debug time to avoid spamming print messages
 	float _secondsSinceLastPrint = 0;
+	
+	FTransform SpawnTransform;
 };
 

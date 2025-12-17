@@ -98,7 +98,15 @@ void ABattlemageTheEndlessCharacter::CallRestartPlayer()
 	//Get the Controller of the Character.
 	AController* controllerRef = GetController();
 	if (LastCheckPoint)
-		controllerRef->StartSpot = LastCheckPoint;
+	{
+		auto Transform = LastCheckPoint->GetActorTransform();
+		Transform.SetScale3D(SpawnTransform.GetScale3D());
+		SetActorTransform(Transform);
+	}
+	else
+	{		
+		SetActorTransform(SpawnTransform);
+	}
 
 	//// Unpossess the controller before destroying the pawn, required to prevent nullptr Controller references.
 	//if (controllerRef && controllerRef->GetPawn() == this)
@@ -229,6 +237,7 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 	AttributeSet->OnAttributeChanged.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnAttributeChanged);
 
 	InitHealthbar();
+	SpawnTransform = GetActorTransform();
 	Super::BeginPlay();
 }
 
