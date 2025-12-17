@@ -664,9 +664,10 @@ TArray<UGA_WithEffectsBase*> UBMageAbilitySystemComponent::TryActivateAbilitiesB
 	GetActivatableGameplayAbilitySpecsByAllMatchingTags(GameplayTagContainer, AbilitiesToActivatePtrs);
 	for (auto& specPtr : AbilitiesToActivatePtrs )
 	{
-		if (specPtr->Ability && specPtr->Ability->IsActive())
+		auto primaryInstance = specPtr->GetPrimaryInstance();
+		if (primaryInstance && primaryInstance->IsActive())
 		{
-			if (auto Ability = Cast<UGA_WithEffectsBase>(specPtr->Ability))
+			if (auto Ability = Cast<UGA_WithEffectsBase>(primaryInstance))
 				ActivatedAbilities.Add(Ability);
 		}
 	}
