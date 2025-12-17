@@ -642,14 +642,36 @@ void UBMageAbilitySystemComponent::OnAbilityCancelled(const FAbilityEndedData& e
 }
 
 void UBMageAbilitySystemComponent::SuspendHealthRegen(float SuspendDurationOverride)
-{
-	// apply a zduration effect that sets health regen to 0
+{	
+	// apply a duration effect that sets health regen to 0
 	auto specHandle = MakeOutgoingSpec(UGE_SuspendRegenHealth::StaticClass(), 1.f, MakeEffectContext());
 	specHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Attributes.HealthRegenRate")), 0.0f);
 	specHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("Attributes.SuspendRegenDuration")), 
 		SuspendDurationOverride == 0.f ? SuspendRegenOnHitDuration : SuspendDurationOverride);
 
 	ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
+}
+
+TArray<UGA_WithEffectsBase*> UBMageAbilitySystemComponent::TryActivateAbilitiesByTagWrapper(
+	FGameplayTagContainer GameplayTagContainer, bool AllowRemoteActivation)
+{
+	if (!TryActivateAbilitiesByTag(GameplayTagContainer, AllowRemoteActivation))
+		return TArray<UGA_WithEffectsBase*>();
+	
+	// Previous call already activated the abilities but isn't kind enough to return them, so we need to find them
+	TArray<FGameplayAbilitySpec*> AbilitiesToActivatePtrs;
+	TArray<UGA_WithEffectsBase*> ActivatedAbilities;
+	GetActivatableGameplayAbilitySpecsByAllMatchingTags(GameplayTagContainer, AbilitiesToActivatePtrs);
+	for (auto& specPtr : AbilitiesToActivatePtrs )
+	{
+		if (specPtr->Ability && specPtr->Ability->IsActive())
+		{
+			if (auto Ability = Cast<UGA_WithEffectsBase>(specPtr->Ability))
+				ActivatedAbilities.Add(Ability);
+		}
+	}
+	
+	return ActivatedAbilities;
 }
 
 UAttackBaseGameplayAbility* UBMageAbilitySystemComponent::BeginChargeAbility(TSubclassOf<UGameplayAbility> InAbilityClass)

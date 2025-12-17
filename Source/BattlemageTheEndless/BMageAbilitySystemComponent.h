@@ -94,6 +94,8 @@ public:
 	void SuspendHealthRegen(float SuspendDurationOverride = 0.f);
 
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
+	TArray<UGA_WithEffectsBase*> TryActivateAbilitiesByTagWrapper(FGameplayTagContainer GameplayTagContainer, bool AllowRemoteActivation = true);
+	UFUNCTION(BlueprintCallable, Category = "Abilities")
 	UAttackBaseGameplayAbility* BeginChargeAbility(TSubclassOf<UGameplayAbility> InAbilityClass);
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
 	UAttackBaseGameplayAbility* BeginChargeAbility_Tags(FGameplayTagContainer InAbilityTags);
