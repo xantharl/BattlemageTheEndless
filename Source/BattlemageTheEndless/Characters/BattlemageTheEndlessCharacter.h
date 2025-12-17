@@ -47,6 +47,7 @@ struct FInputActionValue;
 using namespace std::chrono;
 
 DECLARE_DELEGATE_OneParam(FSpellClassSelectDelegate, const int);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnIsDeadChanged, bool, IsDead);
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
@@ -200,7 +201,15 @@ public:
 	/** Map of last activated abilities. This is NOT automatically cleared out on ability end, and will be validated on next attempt to process input **/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
 	TMap<APickupActor*, FGameplayAbilitySpecHandle> LastActivatedAbilities;
-
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterState, meta = (AllowPrivateAccess = "true"))
+	bool IsDead = false;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterState, meta = (AllowPrivateAccess = "true"))
+	float TimeToPersistAfterDeath = 10.f;
+	
+	UPROPERTY(BlueprintAssignable, Category = "Attributes")
+	FOnIsDeadChanged OnIsDeadChanged;	
 private:
 	milliseconds _lastCameraSwap;
 
@@ -280,6 +289,7 @@ protected:
 
 	bool IsAiming = false;
 	FTimerHandle AimModeTimerHandle;
+	FTimerHandle PersistAfterDeathTimerHandle;
 
 public:
 	/** Look Input Action */
@@ -364,6 +374,7 @@ protected:
 
 	UFUNCTION()
 	virtual void OnAttributeChanged(const FGameplayAttribute& Attribute, float OldValue, float NewValue);
+	void DestroyDeadCharacter();
 	virtual void OnHealthChanged(const FOnAttributeChangeData& Data);
 	virtual void OnHealthRegenRateChanged(const FOnAttributeChangeData& Data);
 	virtual void OnMovementSpeedChanged(const FOnAttributeChangeData& Data);

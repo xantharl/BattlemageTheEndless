@@ -933,8 +933,25 @@ void ABattlemageTheEndlessCharacter::OnAttributeChanged(const FGameplayAttribute
 	}
 }
 
+void ABattlemageTheEndlessCharacter::DestroyDeadCharacter()
+{
+	Destroy();
+	// Destroy the Enemy's equipment
+	for (auto& slot : Equipment)
+	{
+		for (auto& pickup : slot.Value.Pickups)
+		{
+			pickup->Destroy();
+		}
+	}
+}
+
 void ABattlemageTheEndlessCharacter::OnHealthChanged(const FOnAttributeChangeData& Data)
 {
+	// If already dead and health is still zero or below, do nothing
+	if (IsDead && Data.NewValue <= 0.f)
+		return;
+	
 	// If health isn't set up, exit
 	if (AttributeSet->GetMaxHealth() == 0)
 		return;
@@ -948,6 +965,9 @@ void ABattlemageTheEndlessCharacter::OnHealthChanged(const FOnAttributeChangeDat
 	// If health is zero or below, die
 	if (Data.NewValue <= 0.f)
 	{
+		IsDead = true;
+		OnIsDeadChanged.Broadcast(true);
+		
 		auto controller = GetController();
 		if (controller && controller->IsPlayerController())
 		{
@@ -955,15 +975,14 @@ void ABattlemageTheEndlessCharacter::OnHealthChanged(const FOnAttributeChangeDat
 		}
 		else
 		{
-			Destroy();
-			// Destroy the Enemy's equipment
-			for (auto& slot : Equipment)
+			if (TimeToPersistAfterDeath > 0.f)
 			{
-				for (auto& pickup : slot.Value.Pickups)
-				{
-					pickup->Destroy();
-				}
+				FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &ABattlemageTheEndlessCharacter::DestroyDeadCharacter);
+				GetWorld()->GetTimerManager().SetTimer(PersistAfterDeathTimerHandle, TimerDelegate, TimeToPersistAfterDeath, false);
+				return;
 			}
+			
+			DestroyDeadCharacter();
 		}
 	}
 }
