@@ -4,6 +4,35 @@
 #include "BaseAttributeSet.h"
 #include "Net/UnrealNetwork.h"
 
+UBaseAttributeSet::UBaseAttributeSet()
+{
+	Health.SetBaseValue(100.f);
+	Health.SetCurrentValue(100.f);
+
+	MaxHealth.SetBaseValue(100.f);
+	MaxHealth.SetCurrentValue(100.f);
+
+	HealthRegenRate.SetBaseValue(1.f);
+	HealthRegenRate.SetCurrentValue(1.f);
+
+	MovementSpeed.SetBaseValue(600.f);
+	MovementSpeed.SetCurrentValue(600.f);
+	CrouchedSpeed.SetBaseValue(300.f);
+	CrouchedSpeed.SetCurrentValue(300.f);
+
+	DamageModifierPhysical_Outbound.SetBaseValue(1.f);
+	DamageModifierPhysical_Outbound.SetCurrentValue(1.f);
+	
+	DamageModifierPhysical_Inbound.SetBaseValue(1.f);
+	DamageModifierPhysical_Inbound.SetCurrentValue(1.f);
+	
+	DamageModifierFire_Outbound.SetBaseValue(1.f);
+	DamageModifierFire_Outbound.SetCurrentValue(1.f);
+	
+	DamageModifierFire_Inbound.SetBaseValue(1.f);
+	DamageModifierFire_Inbound.SetCurrentValue(1.f);
+}
+
 void UBaseAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -22,27 +51,47 @@ void UBaseAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute,
 	OnAttributeChanged.Broadcast(Attribute, OldValue, NewValue);
 }
 
-void UBaseAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
+void UBaseAttributeSet::OnRep_Health(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, Health, OldHealth);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, Health, OldValue);
 }
 
-void UBaseAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth)
+void UBaseAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, MaxHealth, OldMaxHealth);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, MaxHealth, OldValue);
 }
 
-void UBaseAttributeSet::OnRep_HealthRegenRate(const FGameplayAttributeData& OldHealthRegenRate)
+void UBaseAttributeSet::OnRep_HealthRegenRate(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, HealthRegenRate, OldHealthRegenRate);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, HealthRegenRate, OldValue);
 }
 
-void UBaseAttributeSet::OnRep_MovementSpeed(const FGameplayAttributeData& OldMovementSpeed)
+void UBaseAttributeSet::OnRep_MovementSpeed(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, MovementSpeed, OldMovementSpeed);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, MovementSpeed, OldValue);
 }
 
-void UBaseAttributeSet::OnRep_CrouchedSpeed(const FGameplayAttributeData& OldCrouchedSpeed)
+void UBaseAttributeSet::OnRep_CrouchedSpeed(const FGameplayAttributeData& OldValue)
 {
-	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, CrouchedSpeed, OldCrouchedSpeed);
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, CrouchedSpeed, OldValue);
+}
+
+void UBaseAttributeSet::OnRep_DamageModifierPhysical_Outbound(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, DamageModifierPhysical_Outbound, OldValue);
+}
+
+void UBaseAttributeSet::OnRep_DamageModifierPhysical_Inbound(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, DamageModifierPhysical_Inbound, OldValue);
+}
+
+void UBaseAttributeSet::OnRep_DamageModifierFire_Outbound(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, DamageModifierFire_Outbound, OldValue);
+}
+
+void UBaseAttributeSet::OnRep_DamageModifierFire_Inbound(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, DamageModifierFire_Inbound, OldValue);
 }

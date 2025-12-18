@@ -203,7 +203,7 @@ public:
 	/// <param name="effect"></param>
 	/// <param name="specHandle"></param>
 	/// <param name="effectCauser"></param>
-	virtual void HandleSetByCaller(TSubclassOf<UGameplayEffect> effect, FGameplayEffectSpecHandle specHandle, AActor* effectCauser);
+	virtual void HandleSetByCaller(TSubclassOf<UGameplayEffect> effect, FGameplayEffectSpecHandle specHandle, AActor* effectCauser, UAbilitySystemComponent* targetAsc);
 
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 

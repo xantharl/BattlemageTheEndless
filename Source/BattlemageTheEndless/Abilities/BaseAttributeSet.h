@@ -25,6 +25,8 @@ class BATTLEMAGETHEENDLESS_API UBaseAttributeSet : public UAttributeSet
 	GENERATED_BODY()
 	
 public:
+	UBaseAttributeSet();
+	
 	UPROPERTY(BlueprintAssignable, Category = "Attributes")
 	FOnAttributeChangedDelegate OnAttributeChanged;
 
@@ -52,8 +54,26 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Movement", ReplicatedUsing = OnRep_CrouchedSpeed)
 	FGameplayAttributeData CrouchedSpeed;
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, CrouchedSpeed)
+	
+	UPROPERTY(BlueprintReadOnly, Category = "Damage", ReplicatedUsing = OnRep_DamageModifierPhysical_Outbound)
+	FGameplayAttributeData DamageModifierPhysical_Outbound;
+	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, DamageModifierPhysical_Outbound)
+	
+	UPROPERTY(BlueprintReadOnly, Category = "Damage", ReplicatedUsing = OnRep_DamageModifierPhysical_Inbound)
+	FGameplayAttributeData DamageModifierPhysical_Inbound;
+	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, DamageModifierPhysical_Inbound)
+	
+	UPROPERTY(BlueprintReadOnly, Category = "Damage", ReplicatedUsing = OnRep_DamageModifierFire_Outbound)
+	FGameplayAttributeData DamageModifierFire_Outbound;
+	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, DamageModifierFire_Outbound)
+	
+	UPROPERTY(BlueprintReadOnly, Category = "Damage", ReplicatedUsing = OnRep_DamageModifierFire_Inbound)
+	FGameplayAttributeData DamageModifierFire_Inbound;
+	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, DamageModifierFire_Inbound)
+	
+	// TODO: Support all elements
 
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;	
 
 	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
 
@@ -63,17 +83,29 @@ protected:
 	**/
 
 	UFUNCTION()
-	virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);
+	virtual void OnRep_Health(const FGameplayAttributeData& OldValue);
 
 	UFUNCTION()
-	virtual void OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth);
+	virtual void OnRep_MaxHealth(const FGameplayAttributeData& OldValue);
 
 	UFUNCTION()
-	virtual void OnRep_HealthRegenRate(const FGameplayAttributeData& OldHealthRegenRate);
+	virtual void OnRep_HealthRegenRate(const FGameplayAttributeData& OldValue);
 
 	UFUNCTION()
-	virtual void OnRep_MovementSpeed(const FGameplayAttributeData& OldMovementSpeed);
+	virtual void OnRep_MovementSpeed(const FGameplayAttributeData& OldValue);
 
 	UFUNCTION()
-	virtual void OnRep_CrouchedSpeed(const FGameplayAttributeData& OldCrouchedSpeed);
+	virtual void OnRep_CrouchedSpeed(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	virtual void OnRep_DamageModifierPhysical_Outbound(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	virtual void OnRep_DamageModifierPhysical_Inbound(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	virtual void OnRep_DamageModifierFire_Outbound(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	virtual void OnRep_DamageModifierFire_Inbound(const FGameplayAttributeData& OldValue);
 };

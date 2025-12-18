@@ -209,7 +209,7 @@ void UAttackBaseGameplayAbility::ApplyEffects(AActor* target, UAbilitySystemComp
 	Super::ApplyEffects(target, targetAsc, instigator, effectCauser);
 }
 
-void UAttackBaseGameplayAbility::HandleSetByCaller(TSubclassOf<UGameplayEffect> effect, FGameplayEffectSpecHandle specHandle, AActor* effectCauser)
+void UAttackBaseGameplayAbility::HandleSetByCaller(TSubclassOf<UGameplayEffect> effect, FGameplayEffectSpecHandle specHandle, AActor* effectCauser, UAbilitySystemComponent* targetAsc)
 {
 	// This sets the damage manually for a Set By Caller type effect
 	ABattlemageTheEndlessProjectile* projectile = Cast<ABattlemageTheEndlessProjectile>(effectCauser);
@@ -220,6 +220,8 @@ void UAttackBaseGameplayAbility::HandleSetByCaller(TSubclassOf<UGameplayEffect> 
 		// 	GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow,
 		// 		FString::Printf(TEXT("%s hit for %f"), *effect->GetName(), projectile->EffectiveDamage));
 	}
+	
+	Super::HandleSetByCaller(effect, specHandle, effectCauser, targetAsc);
 }
 
 void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)

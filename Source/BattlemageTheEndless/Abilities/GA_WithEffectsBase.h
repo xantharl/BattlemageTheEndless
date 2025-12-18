@@ -66,7 +66,8 @@ public:
 	/// <param name="effect"></param>
 	/// <param name="specHandle"></param>
 	/// <param name="effectCauser"></param>
-	virtual void HandleSetByCaller(TSubclassOf<UGameplayEffect> effect, FGameplayEffectSpecHandle specHandle, AActor* effectCauser);
+	/// <param name="targetAsc"></param>
+	virtual void HandleSetByCaller(TSubclassOf<UGameplayEffect> effect, FGameplayEffectSpecHandle specHandle, AActor* effectCauser, UAbilitySystemComponent* targetAsc);
 
 	/// <summary>
 	/// Override of the CancelAbility method to clear effects (even if they still have duration) and reset the Combo Continuation timer

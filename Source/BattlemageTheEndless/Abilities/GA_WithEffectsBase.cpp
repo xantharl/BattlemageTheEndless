@@ -3,6 +3,9 @@
 
 #include "GA_WithEffectsBase.h"
 
+#include "BaseAttributeSet.h"
+#include "GEComp_DefaultDamage.h"
+
 FGameplayTag UGA_WithEffectsBase::GetAbilityIdentifierTag()
 {
 	FGameplayTagContainer baseComboIdentifierTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Weapon")));
@@ -68,16 +71,45 @@ void UGA_WithEffectsBase::ApplyEffects(AActor* target, UAbilitySystemComponent* 
 		if (!specHandle.IsValid())
 			continue;
 
-		HandleSetByCaller(effect, specHandle, effectCauser);
+		HandleSetByCaller(effect, specHandle, effectCauser, targetAsc);
 
 		auto handle = targetAsc->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
 		ActiveEffectHandles.Add(handle);
 	}
 }
 
-void UGA_WithEffectsBase::HandleSetByCaller(TSubclassOf<UGameplayEffect> effect, FGameplayEffectSpecHandle specHandle, AActor* effectCauser)
+void UGA_WithEffectsBase::HandleSetByCaller(TSubclassOf<UGameplayEffect> effect, FGameplayEffectSpecHandle specHandle, AActor* effectCauser, UAbilitySystemComponent* targetAsc)
 {
-	// intentionally empty, meant to be overridden by implementers
+	if (!targetAsc) 
+		return;
+
+	// TODO: Support DamageModifiers from the attacker
+	
+	// currently we only care about physical damage for resistance/modifier purposes
+	// We're also assuming all weapons are physical damage, which is true at least for now
+	FGameplayTagContainer WeaponAttackTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag("Weapon.AttackType"));
+	WeaponAttackTags.AddTag(FGameplayTag::RequestGameplayTag("Weapon.Attack"));
+	if (!this->AbilityTags.HasAny(WeaponAttackTags))
+		return;
+
+	auto TargetAttributeSet = Cast<UBaseAttributeSet>(targetAsc->GetAttributeSet(UBaseAttributeSet::StaticClass()));
+	if (!TargetAttributeSet)
+		return;
+	
+	auto DefaultValueComponent = Cast<UGameplayEffect>(effect->GetDefaultObject())->FindComponent(UGEComp_DefaultDamage::StaticClass());
+	float EffectiveValue;
+	if (!DefaultValueComponent)
+		return;
+	{
+		EffectiveValue = Cast<UGEComp_DefaultDamage>(DefaultValueComponent)->DefaultValue;
+	}
+	
+	if (FMath::Abs(TargetAttributeSet->GetDamageModifierPhysical_Inbound() - 1.f) > KINDA_SMALL_NUMBER)
+	{		
+		EffectiveValue *= TargetAttributeSet->GetDamageModifierPhysical_Inbound();
+	}
+	
+	specHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag("Data.Damage.Physical"), EffectiveValue);
 }
 
 

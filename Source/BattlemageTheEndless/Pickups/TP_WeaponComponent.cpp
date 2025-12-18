@@ -175,5 +175,5 @@ void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 		attackerAsc->FindAbilitySpecFromHandle(attackerAsc->ComboManager->LastActivatedAbilityHandle)->Ability);
 
 	// apply any on hit effects from the weapon attack, all effects on a weapon are assumed to be on hit
-	abilitySpec->ApplyEffects(hitActor, hitActorAsc, character);
+	abilitySpec->ApplyEffects(hitActor, hitActorAsc, character, GetOwner());
 }
