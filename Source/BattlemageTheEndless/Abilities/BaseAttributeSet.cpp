@@ -12,8 +12,8 @@ UBaseAttributeSet::UBaseAttributeSet()
 	MaxHealth.SetBaseValue(100.f);
 	MaxHealth.SetCurrentValue(100.f);
 
-	HealthRegenRate.SetBaseValue(1.f);
-	HealthRegenRate.SetCurrentValue(1.f);
+	HealthRegenRate.SetBaseValue(0.f);
+	HealthRegenRate.SetCurrentValue(0.f);
 
 	MovementSpeed.SetBaseValue(600.f);
 	MovementSpeed.SetCurrentValue(600.f);
