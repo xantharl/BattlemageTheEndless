@@ -232,7 +232,6 @@ public:
 	//Call Gamemode class to Restart Player Character.
 	void CallRestartPlayer();
 
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivate))
 	TMap<EquipSlot, FPickups> Equipment;
 

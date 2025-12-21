@@ -103,7 +103,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = AttachmentBehavior, meta = (AllowPrivateAccess = "true"))
 	FTransform AttachmentTransform;
 
-	/** Light attack damage */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Damage)
 	float ShotsPerMinute = 120;
 
@@ -118,7 +117,7 @@ public:
 	void ChangeAbilityToIndex(int NewAbilityIndex, bool NextOrPrevious);
 
 	virtual void BeginPlay() override;
-
+	
 protected:
 	bool AttackRequested = false;
 

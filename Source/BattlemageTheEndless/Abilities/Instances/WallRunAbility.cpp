@@ -4,6 +4,8 @@
 #include "WallRunAbility.h"
 #include <BattlemageTheEndless/Helpers/VectorMath.h>
 
+#include "GameFramework/PlayerState.h"
+
 UWallRunAbility::UWallRunAbility(const FObjectInitializer& X) : Super(X)
 {
 	Type = MovementAbilityType::WallRun;
@@ -130,8 +132,13 @@ void UWallRunAbility::Begin()
 	Movement->Velocity.Z = 0.f;
 
 	Character->bUseControllerRotationYaw = false;
+	const auto State = Character->GetPlayerState();
+	if (!State)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("WallRunAbility: Character has no PlayerState, cannot set wall run camera settings"));
+	}
 	// set max pan angle to 60 degrees
-	if (APlayerCameraManager* cameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0))
+	else if (APlayerCameraManager* cameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), State->GetPlayerId()))
 	{
 		float currentYaw = TargetRotation.Yaw;
 		cameraManager->ViewYawMax = currentYaw + 90.f;

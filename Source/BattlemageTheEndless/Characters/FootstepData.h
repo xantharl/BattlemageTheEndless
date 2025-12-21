@@ -31,7 +31,7 @@ class BATTLEMAGETHEENDLESS_API UFootstepData: public UObject
 
 public:
 	UFootstepData();
-	~UFootstepData();
+	virtual ~UFootstepData() override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Footsteps, meta = (AllowPrivateAccess = "true"))
 	TArray<FFootstepMaterialProperties> FootstepMaterialProperties;
