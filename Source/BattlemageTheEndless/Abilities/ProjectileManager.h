@@ -3,13 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
-#include "Abilities/GameplayAbility.h"
 #include "../Pickups/BattlemageTheEndlessProjectile.h"
-#include "../Abilities/PersistentAreaEffect.h"
 #include "../Abilities/AttackBaseGameplayAbility.h"
-#include "AIController.h"
-#include "AnimEncoding.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"

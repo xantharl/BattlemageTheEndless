@@ -3,6 +3,7 @@
 
 #include "ProjectileManager.h"
 
+#include "AIController.h"
 #include "Components/CapsuleComponent.h"
 
 void UProjectileManager::Initialize(ACharacter* character)
