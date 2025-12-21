@@ -9,6 +9,7 @@
 #include "../Abilities/PersistentAreaEffect.h"
 #include "../Abilities/AttackBaseGameplayAbility.h"
 #include "AIController.h"
+#include "AnimEncoding.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -49,10 +50,10 @@ public:
 	void Initialize(ACharacter* character);
 
 	// Spawns projectiles entry point based on the provided configuration and actor location
-	TArray<ABattlemageTheEndlessProjectile*> SpawnProjectiles_Actor(UAttackBaseGameplayAbility* spawningAbility, const FProjectileConfiguration& configuration, AActor* actor);
+	void SpawnProjectiles_Actor(UAttackBaseGameplayAbility* spawningAbility, const FProjectileConfiguration& configuration, AActor* actor);
 
 	// Spawns projectiles entry point based on the provided configuration and specific transform, used for "previous ability" and "spell focus" spawn location
-	TArray<ABattlemageTheEndlessProjectile*> SpawnProjectiles_Location(UAttackBaseGameplayAbility* spawningAbility, const FProjectileConfiguration& configuration,
+	void SpawnProjectiles_Location(UAttackBaseGameplayAbility* spawningAbility, const FProjectileConfiguration& configuration,
 		const FRotator rotation, const FVector translation, const FVector scale = FVector::OneVector, AActor* ignoreActor = nullptr);
 
 	// TODO: Make these all members of the theoretical shapes classes
@@ -70,8 +71,9 @@ public:
 private:
 
 	// Actual spawner
-	TArray<ABattlemageTheEndlessProjectile*> HandleSpawn(FTransformArrayA2& spawnLocations, const FProjectileConfiguration& configuration, 
-		UAttackBaseGameplayAbility* spawningAbility, AActor* ignoreActor = nullptr);
+	UFUNCTION(Server, Reliable)
+	void HandleSpawn(const TArray<FTransform>& spawnLocations, const FProjectileConfiguration& configuration, 
+		const UAttackBaseGameplayAbility* spawningAbility, const AActor* ignoreActor = nullptr);
 
 	// Produces spawn locations and rotations (relative) based on the provided configuration
 	TArray<FTransform> GetSpawnLocations(const FProjectileConfiguration& configuration, const FTransform& rootTransform, UAttackBaseGameplayAbility* spawningAbility);

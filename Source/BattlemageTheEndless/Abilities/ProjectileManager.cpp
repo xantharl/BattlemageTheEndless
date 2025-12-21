@@ -3,6 +3,8 @@
 
 #include "ProjectileManager.h"
 
+#include "Components/CapsuleComponent.h"
+
 void UProjectileManager::Initialize(ACharacter* character)
 {
 	OwnerCharacter = character;
@@ -27,7 +29,7 @@ void UProjectileManager::Initialize(ACharacter* character)
 	}
 }
 
-TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::SpawnProjectiles_Actor(
+void UProjectileManager::SpawnProjectiles_Actor(
 	UAttackBaseGameplayAbility* spawningAbility, const FProjectileConfiguration& configuration, AActor* actor = nullptr)
 {
 	// Default to owner if no actor was provided
@@ -38,26 +40,25 @@ TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::SpawnProjectiles_Ac
 
 	FTransform rootTransform = GetOwnerLookAtTransform();
 	auto spawnLocations = GetSpawnLocations(configuration, rootTransform, spawningAbility);
-	TArray<ABattlemageTheEndlessProjectile*> projectiles = HandleSpawn(spawnLocations, configuration, spawningAbility, actor);
-	return projectiles;
+	HandleSpawn(spawnLocations, configuration, spawningAbility, actor);
 }
 
-TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::SpawnProjectiles_Location(
+void UProjectileManager::SpawnProjectiles_Location(
 	UAttackBaseGameplayAbility* spawningAbility, const FProjectileConfiguration& configuration, const FRotator rotation,
 	const FVector translation, const FVector scale, AActor* ignoreActor)
 {
 	auto spawnLocations = GetSpawnLocations(configuration, FTransform(rotation, translation, scale), spawningAbility);
-	TArray<ABattlemageTheEndlessProjectile*> projectiles = HandleSpawn(spawnLocations, configuration, spawningAbility, ignoreActor);
-	return projectiles;
+	HandleSpawn(spawnLocations, configuration, spawningAbility, ignoreActor);
 }
 
-TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::HandleSpawn(FTransformArrayA2& spawnLocations, const FProjectileConfiguration& configuration, 
-	UAttackBaseGameplayAbility* spawningAbility, AActor* ignoreActor)
+void UProjectileManager::HandleSpawn_Implementation(
+	const TArray<FTransform>& spawnLocations, const FProjectileConfiguration& configuration,
+	const UAttackBaseGameplayAbility* spawningAbility, const AActor* ignoreActor)
 {
 	if (!OwnerCharacter)
 	{
 		UE_LOG(LogTemp, Error, TEXT("OwnerCharacter not set for projectile manager, projectiles will not spawn"));
-		return TArray<ABattlemageTheEndlessProjectile*>();
+		return;
 	
 	}
 	TArray<ABattlemageTheEndlessProjectile*> returnArray = TArray<ABattlemageTheEndlessProjectile*>();
@@ -66,11 +67,13 @@ TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::HandleSpawn(FTransf
 	if (!world)
 	{
 		UE_LOG(LogTemp, Error, TEXT("No world found for projectile spawning"));
-		return returnArray;
+		return;
 	}
 
 	FActorSpawnParameters ActorSpawnParams = FActorSpawnParameters();
 	ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	ActorSpawnParams.Owner = OwnerCharacter;
+	ActorSpawnParams.Instigator = OwnerCharacter;
 
 	TArray<AActor*> attachedActors;
 	attachedActors.Add(OwnerCharacter);
@@ -109,12 +112,13 @@ TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::HandleSpawn(FTransf
 			}
 		}
 
-		returnArray.Add(newActor);
+		OwnerCharacter->GetCapsuleComponent()->IgnoreActorWhenMoving(newActor, true);
+		newActor->GetCollisionComp()->OnComponentHit.AddDynamic(spawningAbility, &UAttackBaseGameplayAbility::OnHit);
 	}
 
 	// if we only have 1 projectile, we're done
 	if (returnArray.Num() <= 1)
-		return returnArray;
+		return;
 
 	// TODO: Figure out how to do this better than N^2 timing
 	// If we have multiple, make them ignore eachother
@@ -128,8 +132,6 @@ TArray<ABattlemageTheEndlessProjectile*> UProjectileManager::HandleSpawn(FTransf
 			base->GetCollisionComp()->IgnoreActorWhenMoving(target, true);
 		}
 	}
-
-	return returnArray;
 }
 
 TArray<FTransform> UProjectileManager::GetSpawnLocations(const FProjectileConfiguration& configuration, const FTransform& rootTransform, UAttackBaseGameplayAbility* spawningAbility)

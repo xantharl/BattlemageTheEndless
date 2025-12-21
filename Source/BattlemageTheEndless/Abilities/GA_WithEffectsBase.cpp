@@ -50,35 +50,38 @@ void UGA_WithEffectsBase::ActivateAbility(const FGameplayAbilitySpecHandle Handl
 
 	// Default impl assumes applying effects to self, override if needed
 	if (EffectsToApply.Num() > 0)
-	{
-		ApplyEffects(ActorInfo->OwnerActor.Get(), ActorInfo->AbilitySystemComponent.Get(), ActorInfo->OwnerActor.Get(), ActorInfo->AvatarActor.Get());
+	{		
+		ActiveEffectHandles = ApplyEffects(ActorInfo->OwnerActor.Get(), ActorInfo->AbilitySystemComponent.Get(), ActorInfo->OwnerActor.Get(), ActorInfo->AvatarActor.Get());
 	}
 }
 
-void UGA_WithEffectsBase::ApplyEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser)
-{
+TArray<FActiveGameplayEffectHandle> UGA_WithEffectsBase::ApplyEffects(const AActor* Target, UAbilitySystemComponent* TargetAsc, AActor* Instigator, AActor* EffectCauser) const
+{	
+	TArray<FActiveGameplayEffectHandle> InnerEffectHandles;
 	for (TSubclassOf<UGameplayEffect> effect : EffectsToApply)
 	{
-		FGameplayEffectContextHandle context = targetAsc->MakeEffectContext();
-		if (instigator)
+		FGameplayEffectContextHandle context = TargetAsc->MakeEffectContext();
+		if (Instigator)
 		{
-			context.AddSourceObject(instigator);
-			context.AddInstigator(instigator, effectCauser ? effectCauser : instigator);
-			context.AddActors({ instigator });
+			context.AddSourceObject(Instigator);
+			context.AddInstigator(Instigator, EffectCauser ? EffectCauser : Instigator);
+			context.AddActors({ Instigator });
 		}
 
-		FGameplayEffectSpecHandle specHandle = targetAsc->MakeOutgoingSpec(effect, 1.f, context);
+		FGameplayEffectSpecHandle specHandle = TargetAsc->MakeOutgoingSpec(effect, 1.f, context);
 		if (!specHandle.IsValid())
 			continue;
 
-		HandleSetByCaller(effect, specHandle, effectCauser, targetAsc);
+		HandleSetByCaller(effect, specHandle, EffectCauser, TargetAsc);
 
-		auto handle = targetAsc->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
-		ActiveEffectHandles.Add(handle);
+		const FActiveGameplayEffectHandle handle = TargetAsc->ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
+		InnerEffectHandles.Add(handle);
 	}
+	
+	return InnerEffectHandles;
 }
 
-void UGA_WithEffectsBase::HandleSetByCaller(TSubclassOf<UGameplayEffect> effect, FGameplayEffectSpecHandle specHandle, AActor* effectCauser, UAbilitySystemComponent* targetAsc)
+void UGA_WithEffectsBase::HandleSetByCaller(TSubclassOf<UGameplayEffect> effect, FGameplayEffectSpecHandle specHandle, AActor* effectCauser, UAbilitySystemComponent* targetAsc) const
 {
 	if (!targetAsc) 
 		return;

@@ -407,7 +407,7 @@ void UBMageAbilitySystemComponent::HandleProjectileSpawn(UAttackBaseGameplayAbil
 	// if the projectiles are spawned from an actor, use that entry point
 	if (ability->ProjectileConfiguration.SpawnLocation == FSpawnLocation::Player)
 	{
-		projectiles = ProjectileManager->SpawnProjectiles_Actor(ability, ability->ProjectileConfiguration, nullptr);
+		ProjectileManager->SpawnProjectiles_Actor(ability, ability->ProjectileConfiguration, nullptr);
 	}
 	// We can only spawn at last ability location if we have a niagara instance
 	//  TODO: support spawning projectiles based on a previous ability's actor(s) as well
@@ -426,7 +426,7 @@ void UBMageAbilitySystemComponent::HandleProjectileSpawn(UAttackBaseGameplayAbil
 		auto spawnLocation = ownerCharacter->GetMesh()->GetSocketLocation(socketName) + spawnRotation.RotateVector(activeSpellClass->Weapon->MuzzleOffset);
 
 		// We are making the potentially dangerous assumption that there is only 1 instance
-		projectiles = ProjectileManager->SpawnProjectiles_Location(ability, ability->ProjectileConfiguration,
+		ProjectileManager->SpawnProjectiles_Location(ability, ability->ProjectileConfiguration,
 			spawnRotation, spawnLocation, FVector::OneVector, activeSpellClass);
 	}
 	else if (ability->ProjectileConfiguration.SpawnLocation == FSpawnLocation::PreviousAbility)
@@ -434,7 +434,7 @@ void UBMageAbilitySystemComponent::HandleProjectileSpawn(UAttackBaseGameplayAbil
 		if (ComboManager->LastAbilityNiagaraInstance)
 		{
 			// We are making the potentially dangerous assumption that there is only 1 instance
-			projectiles = ProjectileManager->SpawnProjectiles_Location(
+			ProjectileManager->SpawnProjectiles_Location(
 				ability, ability->ProjectileConfiguration, ComboManager->LastAbilityNiagaraInstance->GetComponentRotation(),
 				ComboManager->LastAbilityNiagaraInstance->GetComponentLocation());
 		}
@@ -443,13 +443,6 @@ void UBMageAbilitySystemComponent::HandleProjectileSpawn(UAttackBaseGameplayAbil
 	{
 		UE_LOG(LogExec, Error, TEXT("'%s' Attempted to spawn projectiles from an invalid location!"), *GetNameSafe(this));
 	}
-
-	for (auto projectile : projectiles)
-	{
-		ownerCharacter->GetCapsuleComponent()->IgnoreActorWhenMoving(projectile, true);
-		projectile->GetCollisionComp()->OnComponentHit.AddDynamic(ability, &UAttackBaseGameplayAbility::OnHit);
-	}
-
 }
 
 void UBMageAbilitySystemComponent::HandleHitScan(UAttackBaseGameplayAbility* ability)
@@ -534,10 +527,10 @@ void UBMageAbilitySystemComponent::HandleHitScan(UAttackBaseGameplayAbility* abi
 			FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(
 				ability,
 				&UAttackBaseGameplayAbility::ApplyChainEffects,
-				(AActor*)hitCharacters[i],
-				(UAbilitySystemComponent*)asc,
-				(AActor*)hitCharacters[i - 1],
-				(AActor*)nullptr,
+				static_cast<AActor*>(hitCharacters[i]),
+				static_cast<UAbilitySystemComponent*>(asc),
+				static_cast<AActor*>(hitCharacters[i - 1]),
+				static_cast<AActor*>(hitCharacters[i - 1]),
 				i == ability->NumberOfChains
 			);
 
