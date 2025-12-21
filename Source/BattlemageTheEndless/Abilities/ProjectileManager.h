@@ -10,28 +10,6 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "ProjectileManager.generated.h"
 
-USTRUCT(BlueprintType)
-struct FAbilityInstanceProjectiles
-{
-	GENERATED_BODY()
-
-public:
-	/** Ability class which spawned these projectiles */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
-	UAttackBaseGameplayAbility* SpawningAbility;
-
-	/** Configuration definining how to spawn projectiles */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
-	FProjectileConfiguration Configuration;
-
-	// TODO: Can we just use AActor?
-	/** Array of spawned projectiles */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
-	TArray<ABattlemageTheEndlessProjectile*> Projectiles;
-
-	// TODO: Add delegate for projectile destruction so that the manager can remove the instance from the active list
-};
-
 /**
  * Projectile Manager for handling projectile spawning and management
  *	from gameplay abilities.
@@ -64,8 +42,6 @@ public:
 	UPROPERTY(Instanced)
 	ACharacter* OwnerCharacter;
 private:
-
-	// Actual spawner
 	UFUNCTION(Server, Reliable)
 	void HandleSpawn(const TArray<FTransform>& spawnLocations, const FProjectileConfiguration& configuration, 
 		const UAttackBaseGameplayAbility* spawningAbility, const AActor* ignoreActor = nullptr);
