@@ -74,7 +74,7 @@ public:
 private:
 	UFUNCTION(Server, Reliable)
 	void HandleSpawn(const TArray<FTransform>& spawnLocations, const FProjectileConfiguration& configuration, 
-		const UAttackBaseGameplayAbility* spawningAbility, const AActor* ignoreActor = nullptr);
+		const FGameplayAbilitySpecHandle& spawningAbilityHandle, const AActor* ignoreActor = nullptr);
 
 	// Produces spawn locations and rotations (relative) based on the provided configuration
 	TArray<FTransform> GetSpawnLocations(const FProjectileConfiguration& configuration, const FTransform& rootTransform, UAttackBaseGameplayAbility* spawningAbility);

@@ -69,7 +69,7 @@ void UProjectileManagerComponent::SpawnProjectiles_Actor(
 
 	FTransform rootTransform = GetOwnerLookAtTransform();
 	auto spawnLocations = GetSpawnLocations(configuration, rootTransform, spawningAbility);
-	HandleSpawn(spawnLocations, configuration, spawningAbility, actor);
+	HandleSpawn(spawnLocations, configuration, spawningAbility->GetCurrentAbilitySpec()->Handle, actor);
 }
 
 void UProjectileManagerComponent::SpawnProjectiles_Location(
@@ -77,12 +77,12 @@ void UProjectileManagerComponent::SpawnProjectiles_Location(
 	const FVector translation, const FVector scale, AActor* ignoreActor)
 {
 	auto spawnLocations = GetSpawnLocations(configuration, FTransform(rotation, translation, scale), spawningAbility);
-	HandleSpawn(spawnLocations, configuration, spawningAbility, ignoreActor);
+	HandleSpawn(spawnLocations, configuration, spawningAbility->GetCurrentAbilitySpec()->Handle, ignoreActor);
 }
 
 void UProjectileManagerComponent::HandleSpawn_Implementation(
 	const TArray<FTransform>& spawnLocations, const FProjectileConfiguration& configuration,
-	const UAttackBaseGameplayAbility* spawningAbility, const AActor* ignoreActor)
+	const FGameplayAbilitySpecHandle& spawningAbilityHandle, const AActor* ignoreActor)
 {
 	if (!OwnerCharacter)
 	{
@@ -99,7 +99,15 @@ void UProjectileManagerComponent::HandleSpawn_Implementation(
 		return;
 	}
 
-	if (!spawningAbility)
+	UAbilitySystemComponent* ASC = OwnerCharacter->GetComponentByClass<UAbilitySystemComponent>();
+	if (!ASC)
+	{
+		UE_LOG(LogTemp, Error, TEXT("No AbilitySystemComponent found on OwnerCharacter for projectile spawning"));
+		return;
+	}
+	
+	auto SpawningAbility = Cast<UAttackBaseGameplayAbility>(ASC->FindAbilitySpecFromHandle(spawningAbilityHandle)->GetPrimaryInstance());
+	if (!SpawningAbility)
 	{
 		UE_LOG(LogTemp, Error, TEXT("No spawning ability provided for projectile spawning"));
 		return;
@@ -123,11 +131,11 @@ void UProjectileManagerComponent::HandleSpawn_Implementation(
 			configuration.ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
 
 		// This sets the damage manually for a charge spell
-		if (spawningAbility->ChargeDuration > 0.0f)
+		if (SpawningAbility->ChargeDuration > 0.0f)
 		{
-			newActor->EffectiveDamage = spawningAbility->CurrentChargeDamage;
-			newActor->ProjectileMovement->InitialSpeed *= spawningAbility->CurrentChargeProjectileSpeed;
-			newActor->ProjectileMovement->ProjectileGravityScale *= spawningAbility->CurrentChargeGravityScale;
+			newActor->EffectiveDamage = SpawningAbility->CurrentChargeDamage;
+			newActor->ProjectileMovement->InitialSpeed *= SpawningAbility->CurrentChargeProjectileSpeed;
+			newActor->ProjectileMovement->ProjectileGravityScale *= SpawningAbilitya->CurrentChargeGravityScale;
 			// if (GEngine)
 			// 	GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow,
 			// 		FString::Printf(TEXT("(%s) Spawned with Damage: %f, Speed: %f, GravityScale: %f"), 
@@ -135,7 +143,7 @@ void UProjectileManagerComponent::HandleSpawn_Implementation(
 			// 			newActor->ProjectileMovement->InitialSpeed, newActor->ProjectileMovement->ProjectileGravityScale));
 		}
 
-		newActor->SpawningAbility = spawningAbility;
+		newActor->SpawningAbility = SpawningAbility;
 		newActor->OwnerActor = OwnerCharacter;
 
 		// get all actors attached to the OwnerCharacter and ignore them
@@ -148,7 +156,7 @@ void UProjectileManagerComponent::HandleSpawn_Implementation(
 		}
 
 		OwnerCharacter->GetCapsuleComponent()->IgnoreActorWhenMoving(newActor, true);
-		newActor->GetCollisionComp()->OnComponentHit.AddDynamic(spawningAbility, &UAttackBaseGameplayAbility::OnHit);
+		newActor->GetCollisionComp()->OnComponentHit.AddDynamic(SpawningAbility, &UAttackBaseGameplayAbility::OnHit);
 	}
 
 	// if we only have 1 projectile, we're done
