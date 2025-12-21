@@ -26,10 +26,14 @@ ABattlemageTheEndlessProjectile::ABattlemageTheEndlessProjectile()
 	ProjectileMovement->MaxSpeed = 3000.f;
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->bShouldBounce = true;
+	ProjectileMovement->SetIsReplicated(true);
 
 	// Die after 3 seconds by default
 	InitialLifeSpan = 3.0f;
 	PrimaryActorTick.bCanEverTick = true;
+	
+	bReplicates = true;
+	SetReplicateMovement(true);
 }
 
 void ABattlemageTheEndlessProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
