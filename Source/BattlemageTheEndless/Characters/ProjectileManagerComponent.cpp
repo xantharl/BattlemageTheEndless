@@ -99,6 +99,12 @@ void UProjectileManagerComponent::HandleSpawn_Implementation(
 		return;
 	}
 
+	if (!spawningAbility)
+	{
+		UE_LOG(LogTemp, Error, TEXT("No spawning ability provided for projectile spawning"));
+		return;
+	}
+	
 	FActorSpawnParameters ActorSpawnParams = FActorSpawnParameters();
 	ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	ActorSpawnParams.Owner = OwnerCharacter;

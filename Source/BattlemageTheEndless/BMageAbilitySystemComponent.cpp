@@ -13,7 +13,7 @@ UBMageAbilitySystemComponent::UBMageAbilitySystemComponent()
 
 	ComboManager = CreateDefaultSubobject<UAbilityComboManager>(TEXT("ComboManager"));
 
-	// ProjectileManager = CreateDefaultSubobject<UProjectileManager>(TEXT("ProjectileManager"));
+	ProjectileManager = CreateDefaultSubobject<UProjectileManagerComponent>(TEXT("ProjectileManager"));
 	EnsureInitSubObjects();
 }
 
@@ -75,13 +75,13 @@ void UBMageAbilitySystemComponent::EnsureInitSubObjects()
 
 	AbilityFailedCallbacks.AddUObject(ComboManager, &UAbilityComboManager::OnAbilityFailed);
 
-	// if (!ProjectileManager)
-	// {
-	// 	ProjectileManager = NewObject<UProjectileManager>(this, TEXT("ProjectileManager"));
-	// }
-	//
-	// if (auto ownerCharacter = Cast<ACharacter>(GetOwnerActor()))
-	// 	ProjectileManager->Initialize(ownerCharacter);
+	if (!ProjectileManager)
+	{
+		ProjectileManager = NewObject<UProjectileManagerComponent>(this, TEXT("ProjectileManager"));
+	}
+	
+	if (auto ownerCharacter = Cast<ACharacter>(GetOwnerActor()))
+		ProjectileManager->Initialize(ownerCharacter);
 }
 
 void UBMageAbilitySystemComponent::_removePickupFromAbilityByRangeCache(UObject* pickup)
@@ -391,27 +391,27 @@ void UBMageAbilitySystemComponent::HandleProjectileSpawn(UAttackBaseGameplayAbil
 	auto ownerCharacter = Cast<ACharacter>(GetOwnerActor());
 
 	// I'm unclear on why, but the address of the character seems to change at times
-	// if (!ProjectileManager->OwnerCharacter)
-	// {
-	// 	if (!ownerCharacter)
-	// 	{
-	// 		UE_LOG(LogExec, Error, TEXT("'%s' ProjectileManager has no valid OwnerCharacter!"), *GetNameSafe(this));
-	// 		return;
-	// 	}
-	//
-	// 	ProjectileManager->OwnerCharacter = ownerCharacter;
-	// }
+	if (!ProjectileManager->OwnerCharacter)
+	{
+		if (!ownerCharacter)
+		{
+			UE_LOG(LogExec, Error, TEXT("'%s' ProjectileManager has no valid OwnerCharacter!"), *GetNameSafe(this));
+			return;
+		}
+	
+		ProjectileManager->OwnerCharacter = ownerCharacter;
+	}
 
 	TArray<ABattlemageTheEndlessProjectile*> projectiles;
 
 	// if the projectiles are spawned from an actor, use that entry point
-	// if (ability->ProjectileConfiguration.SpawnLocation == FSpawnLocation::Player)
-	// {
-	// 	ProjectileManager->SpawnProjectiles_Actor(ability, ability->ProjectileConfiguration, nullptr);
-	// }
+	if (ability->ProjectileConfiguration.SpawnLocation == FSpawnLocation::Player)
+	{
+		ProjectileManager->SpawnProjectiles_Actor(ability, ability->ProjectileConfiguration, nullptr);
+	}
 	// We can only spawn at last ability location if we have a niagara instance
 	//  TODO: support spawning projectiles based on a previous ability's actor(s) as well
-	if (ability->ProjectileConfiguration.SpawnLocation == FSpawnLocation::SpellFocus)
+	else if (ability->ProjectileConfiguration.SpawnLocation == FSpawnLocation::SpellFocus)
 	{
 		auto controller = Cast<APlayerController>(ownerCharacter->GetController());
 		const FRotator spawnRotation = controller ? controller->PlayerCameraManager->GetCameraRotation() : ownerCharacter->GetTransform().Rotator();
@@ -426,17 +426,17 @@ void UBMageAbilitySystemComponent::HandleProjectileSpawn(UAttackBaseGameplayAbil
 		auto spawnLocation = ownerCharacter->GetMesh()->GetSocketLocation(socketName) + spawnRotation.RotateVector(activeSpellClass->Weapon->MuzzleOffset);
 
 		// We are making the potentially dangerous assumption that there is only 1 instance
-		// ProjectileManager->SpawnProjectiles_Location(ability, ability->ProjectileConfiguration,
-		// 	spawnRotation, spawnLocation, FVector::OneVector, activeSpellClass);
+		ProjectileManager->SpawnProjectiles_Location(ability, ability->ProjectileConfiguration,
+			spawnRotation, spawnLocation, FVector::OneVector, activeSpellClass);
 	}
 	else if (ability->ProjectileConfiguration.SpawnLocation == FSpawnLocation::PreviousAbility)
 	{
 		if (ComboManager->LastAbilityNiagaraInstance)
 		{
 			// We are making the potentially dangerous assumption that there is only 1 instance
-			// ProjectileManager->SpawnProjectiles_Location(
-			// 	ability, ability->ProjectileConfiguration, ComboManager->LastAbilityNiagaraInstance->GetComponentRotation(),
-			// 	ComboManager->LastAbilityNiagaraInstance->GetComponentLocation());
+			ProjectileManager->SpawnProjectiles_Location(
+				ability, ability->ProjectileConfiguration, ComboManager->LastAbilityNiagaraInstance->GetComponentRotation(),
+				ComboManager->LastAbilityNiagaraInstance->GetComponentLocation());
 		}
 	}
 	else
