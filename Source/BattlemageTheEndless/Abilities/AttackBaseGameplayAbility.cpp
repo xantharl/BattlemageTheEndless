@@ -197,7 +197,7 @@ void UAttackBaseGameplayAbility::ApplyChainEffects(AActor* target, UAbilitySyste
 	}
 }
 
-void UAttackBaseGameplayAbility::ApplyEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser)
+TArray<FActiveGameplayEffectHandle> UAttackBaseGameplayAbility::ApplyEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser) const
 {
 	if (ChainSystem && instigator)
 	{
@@ -206,7 +206,7 @@ void UAttackBaseGameplayAbility::ApplyEffects(AActor* target, UAbilitySystemComp
 		chainEffectActor->Init(instigator, target, ChainSystem);
 	}
 
-	Super::ApplyEffects(target, targetAsc, instigator, effectCauser);
+	return Super::ApplyEffects(target, targetAsc, instigator, effectCauser);
 }
 
 void UAttackBaseGameplayAbility::HandleSetByCaller(TSubclassOf<UGameplayEffect> effect, FGameplayEffectSpecHandle specHandle, AActor* effectCauser, UAbilitySystemComponent* targetAsc)

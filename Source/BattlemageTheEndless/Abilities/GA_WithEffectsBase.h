@@ -55,10 +55,11 @@ public:
 	/// <summary>
 	/// Helper to apply any effects owned by this ability to the target, which can be the same as the character if applying to self
 	/// </summary>
-	/// <param name="instigator">Character causing the effect(s)</param>
-	/// <param name="target">Target of the effect(s)</param>
-	/// <param name="effectCauser">EffectCauser is the actor that is the physical source of the effect</param>
-	void ApplyEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator = nullptr, AActor* effectCauser = nullptr);
+	/// <param name="TargetAsc"></param>
+	/// <param name="Instigator">Character causing the effect(s)</param>
+	/// <param name="Target">Target of the effect(s)</param>
+	/// <param name="EffectCauser">EffectCauser is the actor that is the physical source of the effect</param>
+	virtual TArray<FActiveGameplayEffectHandle> ApplyEffects(const AActor* Target, UAbilitySystemComponent* TargetAsc, AActor* Instigator = nullptr, AActor* EffectCauser = nullptr)  const;
 
 	/// <summary>
 	/// Override this method to set any SetByCaller values on the specHandle before applying it
@@ -67,7 +68,7 @@ public:
 	/// <param name="specHandle"></param>
 	/// <param name="effectCauser"></param>
 	/// <param name="targetAsc"></param>
-	virtual void HandleSetByCaller(TSubclassOf<UGameplayEffect> effect, FGameplayEffectSpecHandle specHandle, AActor* effectCauser, UAbilitySystemComponent* targetAsc);
+	virtual void HandleSetByCaller(TSubclassOf<UGameplayEffect> effect, FGameplayEffectSpecHandle specHandle, AActor* effectCauser, UAbilitySystemComponent* targetAsc) const;
 
 	/// <summary>
 	/// Override of the CancelAbility method to clear effects (even if they still have duration) and reset the Combo Continuation timer

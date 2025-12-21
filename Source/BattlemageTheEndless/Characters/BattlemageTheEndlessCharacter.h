@@ -34,7 +34,7 @@
 #include <BattlemageTheEndless/Abilities/BaseAttributeSet.h>
 #include "../Widgets/HealthBarWidget.h"
 #include "Components/WidgetComponent.h"
-#include "../Abilities/ProjectileManager.h"
+#include "../Characters/ProjectileManagerComponent.h"
 #include "BattlemageTheEndless/Character/CharacterCreationData.h"
 
 #include "BattlemageTheEndlessCharacter.generated.h"

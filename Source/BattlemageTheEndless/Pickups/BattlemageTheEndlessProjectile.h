@@ -128,7 +128,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	UProjectileMovementComponent* ProjectileMovement;
 
-	UGameplayAbility* SpawningAbility;
+	const UGameplayAbility* SpawningAbility;
 	AActor* OwnerActor;
 
 	/** Effective Damage for abilities which do not have constant damage, evaluated at time of spawn **/

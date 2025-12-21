@@ -33,7 +33,7 @@ ABattlemageTheEndlessProjectile::ABattlemageTheEndlessProjectile()
 	PrimaryActorTick.bCanEverTick = true;
 	
 	bReplicates = true;
-	SetReplicateMovement(true);
+	ABattlemageTheEndlessProjectile::SetReplicateMovement(true);
 }
 
 void ABattlemageTheEndlessProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)

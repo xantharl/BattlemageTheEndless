@@ -1233,12 +1233,11 @@ void ABattlemageTheEndlessCharacter::OnProjectileHit(UPrimitiveComponent* HitCom
 	if (!projectile)
 		return;
 	
-	UAttackBaseGameplayAbility* ability = Cast<UAttackBaseGameplayAbility>(projectile->SpawningAbility);
+	const UAttackBaseGameplayAbility* ability = Cast<UAttackBaseGameplayAbility>(projectile->SpawningAbility);
 	if (!ability)
 		return;
 
 	// apply effects to the hit actor (this character)
-	// TODO: maybe package instigator with the ability so we can trace back to the source of the ability
 	ability->ApplyEffects(this, AbilitySystemComponent, nullptr, projectile);
 	if (projectile->ShouldDestroyOnHit())
 		projectile->Destroy();

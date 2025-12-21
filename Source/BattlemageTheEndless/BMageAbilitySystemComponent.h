@@ -9,7 +9,7 @@
 #include "Pickups/PickupActor.h"
 #include "Abilities/Combos/AbilityComboManager.h"
 #include "Abilities/AttackBaseGameplayAbility.h"
-#include "Abilities/ProjectileManager.h"
+#include "Characters/ProjectileManagerComponent.h"
 #include "Abilities/GE_RegenHealth.h"
 #include "Abilities/GE_SuspendRegenHealth.h"
 #include <chrono>
@@ -69,8 +69,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"), Instanced)
 	UAbilityComboManager* ComboManager;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"), Instanced)
-	UProjectileManager* ProjectileManager;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"), Instanced)
+	UProjectileManagerComponent* ProjectileManager;
 
 	// Owned by character by character and set in ASC on init for convenience
 	bool IsLeftHanded;
