@@ -41,14 +41,18 @@ void UBMageAbilitySystemComponent::ActivatePickup(APickupActor* Pickup, const TA
 	// grant abilities for the new weapon
 	// Needs to happen before bindings since bindings look up assigned abilities
 	
+	ActivePickups.Add(Pickup);
+	
+	if (GetOwnerActor()->GetLocalRole() != ROLE_Authority)
+	{
+		return;
+	}
+	
 	for (TSubclassOf<UGameplayAbility>& ability : Pickup->Weapon->GrantedAbilities)
 	{
-		
 		FGameplayAbilitySpecHandle handle = GiveAbility(FGameplayAbilitySpec(ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), Pickup));
 		ComboManager->AddAbilityToCombo(Pickup, ability->GetDefaultObject<UGA_WithEffectsBase>(), handle);
 	}
-
-	ActivePickups.Add(Pickup);
 }
 
 bool UBMageAbilitySystemComponent::GetShouldTick() const

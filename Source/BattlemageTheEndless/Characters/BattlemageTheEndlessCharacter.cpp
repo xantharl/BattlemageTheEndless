@@ -351,6 +351,11 @@ void ABattlemageTheEndlessCharacter::GiveStartingEquipment()
 
 void ABattlemageTheEndlessCharacter::GiveDefaultAbilities()
 {
+	if (GetLocalRole() != ROLE_Authority || !IsValid(AbilitySystemComponent))
+	{
+		return;
+	}
+	
 	if (!AbilitySystemComponent)
 	{
 		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Ability System Component!"), *GetNameSafe(this));

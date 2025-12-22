@@ -10,19 +10,9 @@
 #include "AbilityCombo.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
+#include "BattlemageTheEndless/Characters/ComboManagerComponent.h"
 #include "AbilityComboManager.generated.h"
 
-USTRUCT(BlueprintType)
-struct FPickupCombos
-{
-	GENERATED_BODY()
-
-public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Equipment, meta = (AllowPrivateAccess = "true"))
-	TArray<UAbilityCombo*> Combos = TArray<UAbilityCombo*>();
-
-	UAbilityCombo* ActiveCombo;
-};
 
 /**
  * 

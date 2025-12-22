@@ -40,7 +40,7 @@ TSubclassOf<UGameplayAbility> UTP_WeaponComponent::GetAbilityByAttackType(EAttac
 
 	// otherwise check ability tags for AttackType
 	FString attackTypeName = *UEnum::GetDisplayValueAsText(AttackType).ToString();
-	auto attackTypeTag = FGameplayTag::RequestGameplayTag(FName("Weapon.AttackTypes."+ attackTypeName));
+	auto attackTypeTag = FGameplayTag::RequestGameplayTag(FName("Weapon.AttackType."+ attackTypeName));
 
 	auto matches = GrantedAbilities.FilterByPredicate(
 		[attackTypeTag](TSubclassOf<UGameplayAbility> ability) {
@@ -129,7 +129,7 @@ void UTP_WeaponComponent::RemoveContext(ACharacter* character)
 }
 
 // This is called by the AnimNotify_Collision Blueprint
-void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult& Hit, FString attackAnimationName)
+bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult& Hit, FString attackAnimationName)
 {
 	// if (GEngine)
 	// 	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("%s hit character %s"),
@@ -143,7 +143,7 @@ void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 
 	if (!Hit.GetActor())
 	{
-		return;
+		return false;
 	}
 
 	// if either actor involed does not have an ASC, exit
@@ -154,7 +154,7 @@ void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 	// If this character has already been hit by this stage of the combo, don't hit them again
 	if (!attackerAsc || !hitActorAsc || LastHitCharacters.Contains(hitActor) || hitActor == character)
 	{
-		return;
+		return false;
 	}
 
 	/*if (GEngine)
@@ -168,7 +168,7 @@ void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 	if (!ability)
 	{
 		UE_LOG(LogTemp, Error, TEXT("LastActivatedAbility Not found, if you hit this ActivateAbility was probably called directly, use UFUNCTION ProcessInputAndBindAbilityCancelled"));
-		return;
+		return false;
 	}
 	// get the active ability
 	auto abilitySpec = Cast<UAttackBaseGameplayAbility>(
@@ -176,4 +176,6 @@ void UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 
 	// apply any on hit effects from the weapon attack, all effects on a weapon are assumed to be on hit
 	abilitySpec->ApplyEffects(hitActor, hitActorAsc, character, GetOwner());
+	
+	return true;
 }

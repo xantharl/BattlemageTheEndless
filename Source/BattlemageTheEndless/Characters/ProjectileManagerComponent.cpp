@@ -135,7 +135,7 @@ void UProjectileManagerComponent::HandleSpawn_Implementation(
 		{
 			newActor->EffectiveDamage = SpawningAbility->CurrentChargeDamage;
 			newActor->ProjectileMovement->InitialSpeed *= SpawningAbility->CurrentChargeProjectileSpeed;
-			newActor->ProjectileMovement->ProjectileGravityScale *= SpawningAbilitya->CurrentChargeGravityScale;
+			newActor->ProjectileMovement->ProjectileGravityScale *= SpawningAbility->CurrentChargeGravityScale;
 			// if (GEngine)
 			// 	GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow,
 			// 		FString::Printf(TEXT("(%s) Spawned with Damage: %f, Speed: %f, GravityScale: %f"), 
