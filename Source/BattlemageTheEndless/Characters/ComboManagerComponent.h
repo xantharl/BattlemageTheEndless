@@ -3,28 +3,42 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include <format>
-#include "UObject/NoExportTypes.h"
-#include "../GA_WithEffectsBase.h"
-#include <BattlemageTheEndless/Pickups/PickupActor.h>
-#include "AbilityCombo.h"
-#include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
-#include "BattlemageTheEndless/Characters/ComboManagerComponent.h"
-#include "AbilityComboManager.generated.h"
+#include "BattlemageTheEndless/Abilities/GA_WithEffectsBase.h"
+#include "BattlemageTheEndless/Abilities/Combos/AbilityCombo.h"
+#include "BattlemageTheEndless/Abilities/AttackBaseGameplayAbility.h"
+#include "BattlemageTheEndless/Pickups/PickupActor.h"
+#include "Components/ActorComponent.h"
+#include "ComboManagerComponent.generated.h"
 
 
-/**
- * 
- */
-UCLASS()
-class BATTLEMAGETHEENDLESS_API UAbilityComboManager : public UObject
+USTRUCT(BlueprintType)
+struct FPickupCombos
 {
 	GENERATED_BODY()
+
 public:
-	FGameplayAbilityActorInfo GetOwnerActorInfo();
+	UPROPERTY(BlueprintReadOnly, Category = Equipment, meta = (AllowPrivateAccess = "true"))
+	TArray<UAbilityCombo*> Combos = TArray<UAbilityCombo*>();
+
+	UPROPERTY(BlueprintReadOnly, Category = Equipment, meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UAbilityCombo> ActiveCombo;
+};
+
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+class BATTLEMAGETHEENDLESS_API UComboManagerComponent : public UActorComponent
+{
+	GENERATED_BODY()
+
+public:	
+	// Sets default values for this component's properties
+	UComboManagerComponent();
 	
+	FGameplayAbilityActorInfo GetOwnerActorInfo();
+
 protected:
+	// Called when the game starts
+	virtual void BeginPlay() override;
 	FTimerHandle ComboTimerHandle;
 
 	int CurrentComboNumber = 0;
@@ -46,7 +60,11 @@ protected:
 
 	FTimerHandle QueuedAbilityTimer;
 
-public:
+public:	
+	// Called every frame
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	
+	UPROPERTY(BlueprintReadOnly, Category = Combo, meta = (AllowPrivateAccess = "true"))
 	FGameplayAbilitySpecHandle LastActivatedAbilityHandle;
 
 	TObjectPtr<UNiagaraComponent> LastAbilityNiagaraInstance;
@@ -74,4 +92,5 @@ public:
 
 private:
 	FGameplayAbilityActorInfo _ownerActorInfo = FGameplayAbilityActorInfo();
+	
 };

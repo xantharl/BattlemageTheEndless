@@ -30,9 +30,8 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 
 	JumpMaxCount = 2;
 
-	auto ascComp = GetComponentByClass<UBMageAbilitySystemComponent>();
 	// init gas
-	if (!ascComp)
+	if (auto AscComp = GetComponentByClass<UBMageAbilitySystemComponent>(); !AscComp)
 	{
 		AbilitySystemComponent = CreateDefaultSubobject<UBMageAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 		AbilitySystemComponent->SetIsReplicated(true);
@@ -47,7 +46,7 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 		AttributeSet = CreateDefaultSubobject<UBaseAttributeSet>(TEXT("AttributeSet"));
 	}
 	else if (!AbilitySystemComponent)
-		AbilitySystemComponent = ascComp;
+		AbilitySystemComponent = AscComp;
 	
 	CharacterCreationData = CreateDefaultSubobject<UCharacterCreationData>(TEXT("CharacterCreationData"));
 }
@@ -1086,16 +1085,22 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged(APickupActor* Pic
 		return;
 	}
 
-	auto selectedAbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(ActiveSpellClass->Weapon->SelectedAbility);
-	auto ability = Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability);
+	auto SelectedAbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(ActiveSpellClass->Weapon->SelectedAbility);
+	if (!SelectedAbilitySpec)
+	{
+		UE_LOG(LogTemplateCharacter, Warning, TEXT("'%s' ProcessSpellInput_Charged called without a valid Ability Spec!"), *GetNameSafe(this));
+		return;
+	}
+	
+	auto Ability = Cast<UAttackBaseGameplayAbility>(SelectedAbilitySpec->Ability);
 
-	if (!ability || ability->ChargeDuration <= 0.0001f)
+	if (!Ability || Ability->ChargeDuration <= 0.0001f)
 	{
 		// if the ability is not charged, this is the wrong handler
 		return;
 	}
 
-	TObjectPtr<UGameplayAbility> activeInstance = selectedAbilitySpec->GetPrimaryInstance();
+	TObjectPtr<UGameplayAbility> activeInstance = SelectedAbilitySpec->GetPrimaryInstance();
 	auto attackAbility = Cast<UAttackBaseGameplayAbility>(activeInstance);
 	if (!attackAbility)
 		return;

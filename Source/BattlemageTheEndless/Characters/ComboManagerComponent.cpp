@@ -1,10 +1,39 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-#include "AbilityComboManager.h"
-#include "Abilities/GameplayAbility.h"
-#include <BattlemageTheEndless/Abilities/AttackBaseGameplayAbility.h>
 
-void UAbilityComboManager::AddAbilityToCombo(APickupActor* PickupActor, UGA_WithEffectsBase* Ability, FGameplayAbilitySpecHandle Handle)
+#include "ComboManagerComponent.h"
+
+// Sets default values for this component's properties
+UComboManagerComponent::UComboManagerComponent()
+{
+	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
+	// off to improve performance if you don't need them.
+	PrimaryComponentTick.bCanEverTick = true;
+
+	// ...
+}
+
+
+// Called when the game starts
+void UComboManagerComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// ...
+	
+}
+
+
+// Called every frame
+void UComboManagerComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	// ...
+}
+
+
+void UComboManagerComponent::AddAbilityToCombo(APickupActor* PickupActor, UGA_WithEffectsBase* Ability, FGameplayAbilitySpecHandle Handle)
 {
 	// We build combos for each pickup the first time it is equipped and assume they will not change during gameplay
 	if (!Combos.Contains(PickupActor))
@@ -41,7 +70,7 @@ void UAbilityComboManager::AddAbilityToCombo(APickupActor* PickupActor, UGA_With
 	}
 }
 
-FGameplayAbilitySpecHandle UAbilityComboManager::ProcessInput(APickupActor* PickupActor, EAttackType AttackType)
+FGameplayAbilitySpecHandle UComboManagerComponent::ProcessInput(APickupActor* PickupActor, EAttackType AttackType)
 {
 	// ignore input if there is a queued action and we are requesting the same combo
 	bool activeComboContainsRequestedAttack = Combos.Contains(PickupActor) && Combos[PickupActor].ActiveCombo
@@ -138,7 +167,7 @@ FGameplayAbilitySpecHandle UAbilityComboManager::ProcessInput(APickupActor* Pick
 }
 
 // TODO: Separate the logic for spell and melee
-FGameplayAbilitySpecHandle UAbilityComboManager::DelegateToWeapon(APickupActor* PickupActor, EAttackType AttackType)
+FGameplayAbilitySpecHandle UComboManagerComponent::DelegateToWeapon(APickupActor* PickupActor, EAttackType AttackType)
 {
 	if (!PickupActor)
 	{
@@ -161,7 +190,7 @@ FGameplayAbilitySpecHandle UAbilityComboManager::DelegateToWeapon(APickupActor* 
 	return FGameplayAbilitySpecHandle();
 }
 
-UAbilityCombo* UAbilityComboManager::FindComboByTag(APickupActor* PickupActor, const FGameplayTag& ComboTag)
+UAbilityCombo* UComboManagerComponent::FindComboByTag(APickupActor* PickupActor, const FGameplayTag& ComboTag)
 {
 	TArray<UAbilityCombo*> matches = Combos[PickupActor].Combos.FilterByPredicate(
 		[ComboTag](const UAbilityCombo* combo) {
@@ -179,7 +208,7 @@ UAbilityCombo* UAbilityComboManager::FindComboByTag(APickupActor* PickupActor, c
 	return matches[0];
 }
 
-void UAbilityComboManager::ActivateAbilityAndResetTimer(FGameplayAbilitySpec abilitySpec)
+void UComboManagerComponent::ActivateAbilityAndResetTimer(FGameplayAbilitySpec abilitySpec)
 {
 	// This is for the case where we entered this function via the queued ability timer
 	if (NextAbilityHandle)
@@ -224,7 +253,7 @@ void UAbilityComboManager::ActivateAbilityAndResetTimer(FGameplayAbilitySpec abi
 	GetWorld()->GetTimerManager().SetTimer(ComboTimerHandle, [&] {EndComboHandler(); }, timerDuration, false);
 }
 
-void UAbilityComboManager::EndComboHandler() 
+void UComboManagerComponent::EndComboHandler() 
 {
 	// taking the lazy approach and ending any and all combos, this may change later
 	if (Combos.Num() == 0)
@@ -247,7 +276,7 @@ void UAbilityComboManager::EndComboHandler()
 		GetWorld()->GetTimerManager().ClearTimer(ComboTimerHandle);
 }
 
-FGameplayAbilityActorInfo UAbilityComboManager::GetOwnerActorInfo()
+FGameplayAbilityActorInfo UComboManagerComponent::GetOwnerActorInfo()
 {
 	if (_ownerActorInfo.AvatarActor == nullptr)
 	{
@@ -257,7 +286,7 @@ FGameplayAbilityActorInfo UAbilityComboManager::GetOwnerActorInfo()
 	return _ownerActorInfo;
 }
 
-void UAbilityComboManager::OnAbilityFailed(const UGameplayAbility* ability, const FGameplayTagContainer& reason)
+void UComboManagerComponent::OnAbilityFailed(const UGameplayAbility* ability, const FGameplayTagContainer& reason)
 {
 	// if there's a non-cooldown failure, we want to know why
 	if(GEngine)
@@ -267,7 +296,7 @@ void UAbilityComboManager::OnAbilityFailed(const UGameplayAbility* ability, cons
 	}
 }
 
-FGameplayAbilitySpecHandle* UAbilityComboManager::SwitchAndAdvanceCombo(APickupActor* PickupActor, UAbilityCombo* Combo)
+FGameplayAbilitySpecHandle* UComboManagerComponent::SwitchAndAdvanceCombo(APickupActor* PickupActor, UAbilityCombo* Combo)
 {
 	int startFrom = Combos[PickupActor].ActiveCombo->LastComboAttackNumber++;
 	Combos[PickupActor].ActiveCombo->EndCombo();
@@ -275,7 +304,7 @@ FGameplayAbilitySpecHandle* UAbilityComboManager::SwitchAndAdvanceCombo(APickupA
 	return Combo->StartCombo(startFrom);
 }
 
-bool UAbilityComboManager::CheckCooldownAndTryActivate(FGameplayAbilitySpec abilitySpec)
+bool UComboManagerComponent::CheckCooldownAndTryActivate(FGameplayAbilitySpec abilitySpec)
 {
 	// only activate if we're not on CD to avoid spamming the ASC
 	const FGameplayAbilityActorInfo& actorInfo = GetOwnerActorInfo();

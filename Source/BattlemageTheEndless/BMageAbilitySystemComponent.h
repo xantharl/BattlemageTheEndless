@@ -7,12 +7,13 @@
 #include "Abilities/BaseAttributeSet.h"
 #include <Components/SphereComponent.h>
 #include "Pickups/PickupActor.h"
-#include "Abilities/Combos/AbilityComboManager.h"
 #include "Abilities/AttackBaseGameplayAbility.h"
 #include "Characters/ProjectileManagerComponent.h"
 #include "Abilities/GE_RegenHealth.h"
 #include "Abilities/GE_SuspendRegenHealth.h"
 #include <chrono>
+
+#include "Characters/ComboManagerComponent.h"
 #include "BMageAbilitySystemComponent.generated.h"
 
 UENUM(BlueprintType)
@@ -51,6 +52,7 @@ class BATTLEMAGETHEENDLESS_API UBMageAbilitySystemComponent : public UAbilitySys
 public:
 	UBMageAbilitySystemComponent();
 
+	virtual void InitializeComponent() override;
 	void DeactivatePickup(APickupActor* pickup);
 
 	void ActivatePickup(APickupActor* ActivePickup, const TArray<TSubclassOf<UGameplayAbility>>& SelectedAbilities = TArray<TSubclassOf<UGameplayAbility>>());
@@ -67,7 +69,7 @@ public:
 	bool CancelAbilityByOwnedTag(FGameplayTag abilityTag);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"), Instanced)
-	UAbilityComboManager* ComboManager;
+	UComboManagerComponent* ComboManager;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Components, meta = (AllowPrivateAccess = "true"), Instanced)
 	UProjectileManagerComponent* ProjectileManager;

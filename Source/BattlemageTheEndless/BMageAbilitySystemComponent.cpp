@@ -11,10 +11,32 @@ UBMageAbilitySystemComponent::UBMageAbilitySystemComponent()
 	_markSphere->OnComponentEndOverlap.AddDynamic(this, &UBMageAbilitySystemComponent::OnMarkSphereEndOverlap);
 	_markSphere->SetCollisionResponseToAllChannels(ECR_Overlap);
 
-	ComboManager = CreateDefaultSubobject<UAbilityComboManager>(TEXT("ComboManager"));
-
 	ProjectileManager = CreateDefaultSubobject<UProjectileManagerComponent>(TEXT("ProjectileManager"));
 	EnsureInitSubObjects();
+}
+
+void UBMageAbilitySystemComponent::InitializeComponent()
+{
+	Super::InitializeComponent(); 
+	
+	// create/register the combo manager on the runtime instance if missing
+	if (!ComboManager)
+	{
+		if (GetOwner())
+		{
+			ComboManager = NewObject<UComboManagerComponent>(GetOwner(), UComboManagerComponent::StaticClass(), TEXT("ComboManager"));
+			if (ComboManager)
+			{
+				ComboManager->RegisterComponent();
+			}
+		}
+	}
+
+	if (ComboManager)
+	{
+		ComboManager->AbilitySystemComponent = this;
+		AbilityFailedCallbacks.AddUObject(ComboManager, &UComboManagerComponent::OnAbilityFailed);
+	}
 }
 
 void UBMageAbilitySystemComponent::DeactivatePickup(APickupActor* pickup)
@@ -26,6 +48,11 @@ void UBMageAbilitySystemComponent::DeactivatePickup(APickupActor* pickup)
 
 void UBMageAbilitySystemComponent::ActivatePickup(APickupActor* Pickup, const TArray<TSubclassOf<UGameplayAbility>>& SelectedAbilities) 
 {
+	if (!ComboManager)
+	{
+		UE_LOG( LogTemp, Error, TEXT("UBMageAbilitySystemComponent::ActivatePickup: ComboManager is null!"));
+		return;
+	}
 	// The handles in GAS change each time we grant an ability, so we need to reset them each time we equip a new weapon
 	// TODO: We should be able to assign all abilities on begin play and not have to do this since we're explicit when activating an ability
 	if (ComboManager->Combos.Contains(Pickup))
@@ -43,15 +70,32 @@ void UBMageAbilitySystemComponent::ActivatePickup(APickupActor* Pickup, const TA
 	
 	ActivePickups.Add(Pickup);
 	
-	if (GetOwnerActor()->GetLocalRole() != ROLE_Authority)
+	if (GetOwnerActor()->GetLocalRole() == ROLE_Authority)
 	{
+		for (TSubclassOf<UGameplayAbility>& ability : Pickup->Weapon->GrantedAbilities)
+		{
+			FGameplayAbilitySpecHandle handle = GiveAbility(FGameplayAbilitySpec(ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), Pickup));
+			ComboManager->AddAbilityToCombo(Pickup, ability->GetDefaultObject<UGA_WithEffectsBase>(), handle);
+		}
+		
 		return;
 	}
 	
 	for (TSubclassOf<UGameplayAbility>& ability : Pickup->Weapon->GrantedAbilities)
 	{
-		FGameplayAbilitySpecHandle handle = GiveAbility(FGameplayAbilitySpec(ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), Pickup));
-		ComboManager->AddAbilityToCombo(Pickup, ability->GetDefaultObject<UGA_WithEffectsBase>(), handle);
+		auto Spec = FindAbilitySpecFromClass(ability);
+		if (!Spec)
+		{
+			UE_LOG(LogTemp, Error, TEXT("UBMageAbilitySystemComponent::ActivatePickup: Could not find ability spec for ability %s"), *ability->GetName());
+			continue;
+		}
+		auto Handle = FindAbilitySpecFromClass(ability)->Handle;
+		if (!Handle.IsValid())
+		{
+			UE_LOG(LogTemp, Error, TEXT("UBMageAbilitySystemComponent::ActivatePickup: Could not find ability spec for ability %s"), *ability->GetName());
+			continue;
+		}
+		ComboManager->AddAbilityToCombo(Pickup, ability->GetDefaultObject<UGA_WithEffectsBase>(), Handle);
 	}
 }
 
@@ -72,12 +116,8 @@ bool UBMageAbilitySystemComponent::GetShouldTick() const
 void UBMageAbilitySystemComponent::EnsureInitSubObjects()
 {
 	// This is kind of a hack, for AI the attributes are getting set in the CTOR but somehow becoming null by BeginPlay
-	if (!ComboManager)
-		ComboManager = NewObject<UAbilityComboManager>(this, TEXT("ComboManager"));
-
-	ComboManager->AbilitySystemComponent = this;
-
-	AbilityFailedCallbacks.AddUObject(ComboManager, &UAbilityComboManager::OnAbilityFailed);
+	// if (!ComboManager)
+	// 	ComboManager = NewObject<UComboManagerComponent>(this, TEXT("ComboManager"));
 
 	if (!ProjectileManager)
 	{
