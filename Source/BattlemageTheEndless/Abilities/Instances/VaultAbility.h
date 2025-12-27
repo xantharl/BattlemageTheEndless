@@ -17,6 +17,7 @@ class BATTLEMAGETHEENDLESS_API UVaultAbility : public UMovementAbility
 {
 	GENERATED_BODY()
 
+public:
 	UVaultAbility(const FObjectInitializer& X);
 	// Object currently being vaulted
 	AActor* VaultTarget;
@@ -24,7 +25,6 @@ class BATTLEMAGETHEENDLESS_API UVaultAbility : public UMovementAbility
 	FVector VaultAttachPoint;
 	FTimerHandle VaultEndTimer;
 
-public:
 	// Default duration is based on the animation currently in use
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float VaultDurationSeconds = 1.1f;

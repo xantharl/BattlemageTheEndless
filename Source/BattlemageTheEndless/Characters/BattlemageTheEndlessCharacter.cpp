@@ -215,8 +215,7 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 {
 	CheckRequiredObjects();
 
-	TObjectPtr<UBMageCharacterMovementComponent> movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
-	if (movement)
+	if (TObjectPtr<UBMageCharacterMovementComponent> movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement()))
 	{
 		movement->InitAbilities(this, GetMesh());
 		AttributeSet->InitMovementSpeed(movement->MaxWalkSpeed);
@@ -367,7 +366,7 @@ void ABattlemageTheEndlessCharacter::GiveDefaultAbilities()
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability.Key, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
 
 		// Abilities with input actions will not be activated immediately
-		if (Ability.Value)
+		if (!Ability.Key->GetDefaultObject<UGameplayAbility>()->AbilityTags.HasTag(FGameplayTag::RequestGameplayTag(FName("Ability.ActivateImmediately"))))
 			continue;
 
 		// Try to activate abilities that don't require input

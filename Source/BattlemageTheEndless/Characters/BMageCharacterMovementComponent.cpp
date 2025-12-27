@@ -5,12 +5,12 @@
 
 UBMageCharacterMovementComponent::UBMageCharacterMovementComponent()
 {
-	MovementAbilities.Add(MovementAbilityType::WallRun, CreateDefaultSubobject<UWallRunAbility>(TEXT("WallRun")));
-	MovementAbilities.Add(MovementAbilityType::Launch, CreateDefaultSubobject<ULaunchAbility>(TEXT("Launch")));
-	MovementAbilities.Add(MovementAbilityType::Sprint, CreateDefaultSubobject<USprintAbility>(TEXT("Sprint")));
-	MovementAbilities.Add(MovementAbilityType::Slide, CreateDefaultSubobject<USlideAbility>(TEXT("Slide")));
-	MovementAbilities.Add(MovementAbilityType::Vault, CreateDefaultSubobject<UVaultAbility>(TEXT("Vault")));
-	MovementAbilities.Add(MovementAbilityType::Dodge, CreateDefaultSubobject<UDodgeAbility>(TEXT("Dodge")));
+	// MovementAbilities.Add(MovementAbilityType::WallRun, CreateDefaultSubobject<UWallRunAbility>(TEXT("WallRun")));
+	// MovementAbilities.Add(MovementAbilityType::Launch, CreateDefaultSubobject<ULaunchAbility>(TEXT("Launch")));
+	// MovementAbilities.Add(MovementAbilityType::Sprint, CreateDefaultSubobject<USprintAbility>(TEXT("Sprint")));
+	// MovementAbilities.Add(MovementAbilityType::Slide, CreateDefaultSubobject<USlideAbility>(TEXT("Slide")));
+	// MovementAbilities.Add(MovementAbilityType::Vault, CreateDefaultSubobject<UVaultAbility>(TEXT("Vault")));
+	// MovementAbilities.Add(MovementAbilityType::Dodge, CreateDefaultSubobject<UDodgeAbility>(TEXT("Dodge")));
 
 	AirControl = BaseAirControl;
 	GetNavAgentPropertiesRef().bCanCrouch = true;

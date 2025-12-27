@@ -75,5 +75,4 @@ void UMovementAbility::DeactivateAndBroadcast() {
 	IsActive = false;
 	shouldTransitionOut = false;
 	OnMovementAbilityEnd.Broadcast(this);
-
 }

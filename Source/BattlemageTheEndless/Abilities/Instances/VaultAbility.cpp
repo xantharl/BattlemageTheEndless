@@ -29,7 +29,7 @@ void UVaultAbility::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPri
 void UVaultAbility::Begin()
 {
 	Super::Begin();
-
+	
 	Character->DisableInput(Cast<APlayerController>(Character->Controller));
 	// stop movement and gravity by enabling flying
 	UCharacterMovementComponent* movement = Movement;
@@ -39,7 +39,12 @@ void UVaultAbility::Begin()
 	FRotator targetDirection = VaultHit.ImpactNormal.RotateAngleAxis(180.f, FVector::ZAxisVector).Rotation();
 
 	// Rotate the character to directly face the vaulted object
-	Character->Controller->SetControlRotation(targetDirection);
+	if (auto controller = Character->GetController())
+		controller->SetControlRotation(targetDirection);
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("VaultAbility: Character has no controller, cannot set rotation"));
+	}
 
 	// determine the highest point on the vaulted face
 	// NOTE: This logic will only work for objects with flat tops
