@@ -4,6 +4,9 @@
 #include "WallRunAbility.h"
 #include <BattlemageTheEndless/Helpers/VectorMath.h>
 
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemLog.h"
+#include "BattlemageTheEndless/Characters/BMageCharacterMovementComponent.h"
 #include "GameFramework/PlayerState.h"
 
 UWallRunAbility::UWallRunAbility(const FObjectInitializer& X) : Super(X)
@@ -37,28 +40,24 @@ bool UWallRunAbility::ShouldBegin()
 	if (!WallRunCapsule)
 		return false;
 
-	// check if there are any eligible wallrun objects
-	TArray<AActor*> overlappingActors;
-	WallRunCapsule->GetOverlappingActors(overlappingActors, nullptr);
-	for (AActor* actor : overlappingActors)
+	// WallRunObject has already been set before we get here by the server RPC fired from client Actor overlap
+	if (ObjectIsWallRunnable(WallRunObject, Mesh))
 	{
-		if (ObjectIsWallRunnable(actor, Mesh))
-		{
-			WallRunObject = actor;
-			// WallRunHit is set in ObjectIsWallRunnable
+		// WallRunHit is set in ObjectIsWallRunnable
 
-			// This is used by the anim graph to determine which way to mirror the wallrun animation
-			FVector start = Mesh->GetSocketLocation(FName("feetRaycastSocket"));
-			// add 30 degrees to the left of the forward vector to account for wall runs starting near the start of the wall
-			FVector end = start + FVector::LeftVector.RotateAngleAxis(WallRunCapsule->GetComponentRotation().Yaw + 30.f, FVector::ZAxisVector) * 200;
+		// This is used by the anim graph to determine which way to mirror the wallrun animation
+		FVector start = Mesh->GetSocketLocation(FName("feetRaycastSocket"));
+		// add 30 degrees to the left of the forward vector to account for wall runs starting near the start of the wall
+		FVector end = start + FVector::LeftVector.RotateAngleAxis(WallRunCapsule->GetComponentRotation().Yaw + 30.f, FVector::ZAxisVector) * 200;
 
-			auto params = FCollisionQueryParams(FName(TEXT("LineTrace")), true, Character);
-			WallIsToLeft = Traces::LineTraceGeneric(GetWorld(), params, start, end).GetActor() == WallRunObject;
+		auto params = FCollisionQueryParams(FName(TEXT("LineTrace")), true, Character);
+		WallIsToLeft = Traces::LineTraceGeneric(GetWorld(), params, start, end).GetActor() == WallRunObject;
 
-			return true;
-		}
+		return true;
 	}
 
+	// If we can't run on the provided object, reset state
+	WallRunObject = nullptr;
 	return false;
 }
 
@@ -110,7 +109,7 @@ void UWallRunAbility::Begin()
 {
 	// the super should always be called first as it sets isactive
 	Super::Begin();
-
+	
 	CharacterBaseGravityScale = Movement->GravityScale;
 	Movement->GravityScale = WallRunInitialGravityScale;
 
@@ -228,15 +227,25 @@ bool UWallRunAbility::ObjectIsWallRunnable(AActor* actor, USkeletalMeshComponent
 }
 
 void UWallRunAbility::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	// TODO: Factor in sprinting check
-	if(Movement->MovementMode == EMovementMode::MOVE_Falling && ShouldBegin())
-		Begin();
+{	
+	if(Movement->MovementMode != EMovementMode::MOVE_Falling)
+		return;
+		
+	// Handle through ASC
+
+	if (auto ASC = Character->GetComponentByClass<UAbilitySystemComponent>())
+	{
+		if (auto CastedMovement = Cast<UBMageCharacterMovementComponent>(Movement))
+		{
+			// tell server about the overlapped actor
+			CastedMovement->Server_RequestStartMovementAbility(OtherActor, MovementAbilityType::WallRun);
+		}
+	}
 }
 
 // TODO: Notify the character that the wall run has ended
 void UWallRunAbility::OnCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	if (IsActive && WallRunObject == OtherActor)
+	if (IsGAActive() && WallRunObject == OtherActor)
 		End();
 }

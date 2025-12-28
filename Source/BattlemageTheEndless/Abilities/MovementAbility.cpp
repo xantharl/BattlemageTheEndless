@@ -3,6 +3,9 @@
 
 #include "MovementAbility.h"
 
+#include "AbilitySystemComponent.h"
+#include "GameFramework/Character.h"
+
 //void UMovementAbility::onEndTransitionIn()
 //{
 //	isTransitioningIn = false;
@@ -20,6 +23,36 @@ UMovementAbility::~UMovementAbility()
 {
 }
 
+bool UMovementAbility::IsGAActive()
+{
+	if (!Character)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Character is NULL"));
+		return false;
+	}
+	if (auto ASC = Character->GetComponentByClass<UAbilitySystemComponent>())
+	{
+		TArray<FGameplayAbilitySpecHandle> OutAbilityHandles;
+		FString EnumName = StaticEnum<MovementAbilityType>()->GetNameStringByValue(static_cast<int64>(Type));
+		FString LookupTagName = FString::Printf(TEXT("Movement.%s"), *EnumName);
+		
+		// special case because I didn't name my tag and enum consistently :(
+		if (LookupTagName == "Movement.Launch")
+		{
+			LookupTagName = "Movement.LaunchJump";
+		}
+		
+		ASC->FindAllAbilitiesWithTags(OutAbilityHandles, FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName(LookupTagName))));
+		for (const auto Handle : OutAbilityHandles)
+		{
+			auto const Spec = ASC->FindAbilitySpecFromHandle(Handle);
+			if (Spec && Spec->GetPrimaryInstance() && Spec->GetPrimaryInstance()->IsActive())
+				return true;
+		}
+	}
+	return false;
+}
+
 void UMovementAbility::Init(UCharacterMovementComponent* movement, ACharacter* character, USkeletalMeshComponent* mesh)
 {
 	Movement = movement; 
@@ -30,7 +63,6 @@ void UMovementAbility::Init(UCharacterMovementComponent* movement, ACharacter* c
 void UMovementAbility::Begin()
 {
 	elapsed = (milliseconds)0;
-	IsActive = true;
 	shouldTransitionOut = false;
 	startTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 	if (TransitionInDuration > 0.00001f)
@@ -72,7 +104,6 @@ void UMovementAbility::Tick(float DeltaTime)
 }
 
 void UMovementAbility::DeactivateAndBroadcast() {
-	IsActive = false;
 	shouldTransitionOut = false;
 	OnMovementAbilityEnd.Broadcast(this);
 }

@@ -60,8 +60,11 @@ public:
 	bool IsEnabled = true;
 
 	// Determines whether the ability is currently active
-	UPROPERTY(BlueprintReadOnly)
-	bool IsActive = false;
+	UFUNCTION(BlueprintCallable)
+	bool IsGAActive();
+	
+	UFUNCTION(BlueprintCallable)
+	bool ISMAActive(){return elapsed > static_cast<milliseconds>(0);}
 
 	// Lower values are executed first
 	int Priority = 10;

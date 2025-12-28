@@ -3,6 +3,9 @@
 
 #include "VaultAbility.h"
 
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemLog.h"
+
 UVaultAbility::UVaultAbility(const FObjectInitializer& X) : Super(X)
 {
 	Type = MovementAbilityType::Vault;
@@ -22,13 +25,26 @@ void UVaultAbility::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPri
 	// We aren't checking for wallrun state since a vault should be able to override a wallrun
 	if (!ShouldBegin())
 		return;
-
-	Begin();
+	
+	// Handle through ASC
+	if (auto ASC = Character->GetComponentByClass<UAbilitySystemComponent>())
+		ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Movement.Vault"))), false);
+	else
+	{
+		UE_LOG(LogAbilitySystem, Error, TEXT("VaultAbility: Character has no AbilitySystemComponent, cannot activate vault ability"));
+	}
 }
 
 void UVaultAbility::Begin()
 {
 	Super::Begin();
+	
+	// Kind of a hack to stop the server overriding the client's vault data
+	if (VaultHit.GetActor() == nullptr)
+	{
+		Character->GetWorldTimerManager().SetTimer(VaultEndTimer, this, &UVaultAbility::OnEndTimer, VaultDurationSeconds, false);
+		return;
+	}
 	
 	Character->DisableInput(Cast<APlayerController>(Character->Controller));
 	// stop movement and gravity by enabling flying

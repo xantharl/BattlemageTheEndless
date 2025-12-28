@@ -118,7 +118,7 @@ public:
 	/// </summary>
 	/// <param name="abilityType"></param>
 	/// <returns></returns>
-	bool IsAbilityActive(MovementAbilityType abilityType) { return MovementAbilities.Contains(abilityType) && MovementAbilities[abilityType]->IsActive; }
+	bool IsAbilityActive(MovementAbilityType abilityType) { return MovementAbilities.Contains(abilityType) && MovementAbilities[abilityType]->IsGAActive(); }
 
 	/// <summary>
 	/// Checks whether the provided ability type is currently active
@@ -183,6 +183,11 @@ public:
 	void HandleJump(UCameraComponent* activeCamera);
 
 	void RedirectVelocityToLookDirection(bool wallrunEnded, UCameraComponent* activeCamera);
+	
+	// RPC to request starting a wall run with the overlapped actor
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_RequestStartMovementAbility(AActor* OtherActor, MovementAbilityType AbilityType);
+	
 
 private:
 	// Gravity over time operations

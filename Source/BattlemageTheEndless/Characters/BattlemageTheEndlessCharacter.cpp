@@ -57,7 +57,7 @@ void ABattlemageTheEndlessCharacter::PossessedBy(AController* NewController)
 
 	if (AbilitySystemComponent)
 	{
-		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+		// AbilitySystemComponent->InitAbilityActorInfo(this, this);
 		// See details of replication modes https://github.com/tranek/GASDocumentation?tab=readme-ov-file#concepts-asc-rm
 		// Update to mixed since this is a player character
 		AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
@@ -231,6 +231,8 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 	
 	GiveDefaultAbilities();
 	GiveStartingEquipment();
+	
+	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
 	AttributeSet->OnAttributeChanged.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnAttributeChanged);
 
@@ -361,6 +363,7 @@ void ABattlemageTheEndlessCharacter::GiveDefaultAbilities()
 	}
 
 	// add default abilities
+	AbilitySystemComponent->ClearAllAbilities();
 	for (auto Ability : DefaultAbilities)
 	{
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability.Key, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));

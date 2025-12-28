@@ -102,6 +102,48 @@ void UBMageCharacterMovementComponent::RedirectVelocityToLookDirection(bool wall
 	Velocity = Velocity.RotateAngleAxis(yawDifference, FVector::ZAxisVector);
 }
 
+void UBMageCharacterMovementComponent::Server_RequestStartMovementAbility_Implementation(AActor* OtherActor, MovementAbilityType AbilityType)
+{ 
+	if (!OtherActor || !IsValid(OtherActor))
+		return;
+
+	if (!MovementAbilities.Contains(AbilityType))
+		return;
+	
+	if (AbilityType == MovementAbilityType::WallRun)
+	{
+		// ShoulaAbilityBegin's override for Wall Run needs to know what wall we're trying to run on
+		auto Ability = Cast<UWallRunAbility>(MovementAbilities[AbilityType]);
+		Ability->WallRunObject = OtherActor;
+	}
+
+	if (!ShouldAbilityBegin(AbilityType))
+		return;
+	
+	// no parkour on other players
+	if (OtherActor->IsA(APawn::StaticClass()))
+		return;
+
+	UAbilitySystemComponent* ASC = Cast<UAbilitySystemComponent>(CharacterOwner->GetComponentByClass(UAbilitySystemComponent::StaticClass()));
+	if (!ASC)
+		return;
+
+	// Build GameplayEvent payload with the overlapped actor as the target
+	FGameplayEventData EventData;
+	EventData.Instigator = CharacterOwner;
+	EventData.Target = OtherActor;
+	EventData.EventTag = FGameplayTag::RequestGameplayTag(FName(TEXT("Movement.WallRun")));
+
+	// Deliver the event so abilities bound to the tag receive the actor
+	ASC->HandleGameplayEvent(EventData.EventTag, &EventData);
+}
+
+bool UBMageCharacterMovementComponent::Server_RequestStartMovementAbility_Validate(AActor* OtherActor, MovementAbilityType AbilityType)
+{
+	// basic quick validation (more checks below on server)
+	return true;
+}
+
 void UBMageCharacterMovementComponent::TickGravityOverTime(float DeltaTime)
 {
 	if (_gravityCurveElapsed >= _gravityCurveDuration)
@@ -129,7 +171,7 @@ void UBMageCharacterMovementComponent::TickComponent(float DeltaTime, enum ELeve
 		if (MovementAbilities[MovementAbilityType::Slide]->ShouldTransitionOut()) {
 			// determine the appropriate speed cap
 			// TODO: Figure out how to determine whether player wants to crouch at end of slide
-			float speedLimit = MovementAbilities[MovementAbilityType::Sprint]->IsActive ? SprintSpeed() : WalkSpeed;
+			float speedLimit = MovementAbilities[MovementAbilityType::Sprint]->IsGAActive() ? SprintSpeed() : WalkSpeed;
 			auto slideAbility = Cast<USlideAbility>(MovementAbilities[MovementAbilityType::Slide]);
 			// This is kind of a hack but we're still crouched during the transition out, so we need to set the crouched speed
 			MaxWalkSpeedCrouched = FMath::Min(MaxWalkSpeedCrouched + slideAbility->TransitionOutAccelertaionRate*DeltaTime, speedLimit);
@@ -146,7 +188,7 @@ void UBMageCharacterMovementComponent::TickComponent(float DeltaTime, enum ELeve
 		MovementAbilities[MovementAbilityType::WallRun]->Tick(DeltaTime);
 
 	// if we're past the apex, apply the falling gravity scale
-	// ignore this clause if we're wall runninx
+	// ignore this clause if we're wall running
 	if (PreviousVelocity.Z >= 0.0f && Velocity.Z < -0.00001f && !IsAbilityActive(MovementAbilityType::WallRun))
 		// this is undone in OnMovementModeChanged when the character lands
 		GravityScale = CharacterPastJumpApexGravityScale;
@@ -162,9 +204,19 @@ UMovementAbility* UBMageCharacterMovementComponent::TryStartAbility(MovementAbil
 	if (!MovementAbilities.Contains(abilityType))
 		return nullptr;
 
-	TObjectPtr<UMovementAbility> ability = MovementAbilities[abilityType];
-	if ((!ability->IsEnabled || ability->IsActive) || (abilityType == MovementAbilityType::WallRun && !ShouldAbilityBegin(abilityType)))
+	
+	TObjectPtr<UMovementAbility> ability = MovementAbilities[abilityType];	
+	
+	if (ability->IsGAActive())
+	{
+		if (!ability->ISMAActive())
+			ability->Begin();
 		return ability;
+	}
+	
+	// The rest of this function is likely redundant now that ASC is handling interactions
+	if ((!ability->IsEnabled || ability->IsGAActive()) || (abilityType == MovementAbilityType::WallRun && !ShouldAbilityBegin(abilityType)))
+		return nullptr;
 
 	// handle ability interactions
 	if (abilityType == MovementAbilityType::Sprint && IsCrouching())
@@ -208,7 +260,7 @@ bool UBMageCharacterMovementComponent::TryEndAbility(MovementAbilityType ability
 	if (!MovementAbilities.Contains(abilityType) || !IsAbilityActive(abilityType) || !MovementAbilities[abilityType]->ShouldEnd())
 		return false;
 
-	// handle abiltiy interactions
+	// handle ability interactions
 	// This can be called before the timer goes off, so check if we're actually wall running
 	if (abilityType == MovementAbilityType::WallRun)
 	{
@@ -291,7 +343,7 @@ void UBMageCharacterMovementComponent::OnMovementAbilityBegin(UMovementAbility* 
 		// end every other ability, vault is greedy
 		for (auto& a : MovementAbilities)
 		{
-			if (a.Value->IsActive && a.Value != MovementAbility)
+			if (a.Value->IsGAActive() && a.Value != MovementAbility)
 				TryEndAbility(a.Key);
 		}
 	}
@@ -307,7 +359,7 @@ void UBMageCharacterMovementComponent::OnMovementAbilityEnd(UMovementAbility* ab
 	MostImportantActiveAbility = nullptr;
 	for (auto& a : MovementAbilities)
 	{
-		if (a.Value->IsActive && (MostImportantActiveAbility == nullptr || a.Value->Priority > MostImportantActiveAbility->Priority))
+		if (a.Value->IsGAActive() && (MostImportantActiveAbility == nullptr || a.Value->Priority > MostImportantActiveAbility->Priority))
 			MostImportantActiveAbility = a.Value;
 	}
 
@@ -355,11 +407,11 @@ void UBMageCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previ
 	Super::OnMovementModeChanged(PreviousMovementMode, PreviousCustomMode);
 
 	// this is in case of falling off an object while already overlapping a wallrunable object
-	if (PreviousMovementMode == EMovementMode::MOVE_Walking && MovementMode == EMovementMode::MOVE_Falling)
-	{
-		TryStartAbility(MovementAbilityType::WallRun);
-	}
-	else if (PreviousMovementMode == EMovementMode::MOVE_Falling && MovementMode == EMovementMode::MOVE_Walking)
+	// if (PreviousMovementMode == EMovementMode::MOVE_Walking && MovementMode == EMovementMode::MOVE_Falling)
+	// {
+	// 	TryStartAbility(MovementAbilityType::WallRun);
+	// }
+	if (PreviousMovementMode == EMovementMode::MOVE_Falling && MovementMode == EMovementMode::MOVE_Walking)
 	{
 		TryEndAbility(MovementAbilityType::Launch);
 		LaunchesPerformed = 0;

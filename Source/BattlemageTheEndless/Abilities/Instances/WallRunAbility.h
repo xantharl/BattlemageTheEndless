@@ -19,11 +19,16 @@ class BATTLEMAGETHEENDLESS_API UWallRunAbility : public UMovementAbility
 
 public:
 	// Object currently being wallrunned
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	AActor* WallRunObject;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	FHitResult WallRunHit;
-	FVector WallRunAttachPoint;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	FTimerHandle WallRunTimer;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	FRotator TargetRotation;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float CharacterBaseGravityScale;
 
 	/** Wallrun overlap detection capsule **/
