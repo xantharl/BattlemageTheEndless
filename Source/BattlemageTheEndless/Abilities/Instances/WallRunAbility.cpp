@@ -23,7 +23,7 @@ void UWallRunAbility::Init(UCharacterMovementComponent* movement, ACharacter* ch
 	UMovementAbility::Init(movement, character, mesh);
 
 	// set up the wall run capsule
-	// TODO: Figure out why this is null on trainind dummy
+	// TODO: Figure out why this is null on training dummy
 	if (WallRunCapsule)
 	{
 		WallRunCapsule->InitCapsuleSize(55.f, 55.0f);
@@ -33,6 +33,8 @@ void UWallRunAbility::Init(UCharacterMovementComponent* movement, ACharacter* ch
 		WallRunCapsule->OnComponentBeginOverlap.AddDynamic(this, &UWallRunAbility::OnCapsuleBeginOverlap);
 		WallRunCapsule->OnComponentEndOverlap.AddDynamic(this, &UWallRunAbility::OnCapsuleEndOverlap);
 	}
+	
+	CharacterBaseGravityScale = Movement->GravityScale;
 }
 
 bool UWallRunAbility::ShouldBegin()
@@ -106,13 +108,20 @@ void UWallRunAbility::Tick(float DeltaTime)
 	}
 }
 void UWallRunAbility::Begin()
-{
+{	
 	// the super should always be called first as it sets isactive
 	Super::Begin();
 	
 	CharacterBaseGravityScale = Movement->GravityScale;
 	Movement->GravityScale = WallRunInitialGravityScale;
 
+	// If we're on the server, just validate that nothing looks fishy with the client's prediction
+	if (Character->HasAuthority())
+	{
+		// TODO: Validate client state here
+		return;
+	}
+	
 	// get vectors parallel to the wall
 	const FRotator PossibleWallRunDirectionOne = WallRunHit.ImpactNormal.RotateAngleAxis(90.f, FVector::ZAxisVector).Rotation();
 	const FRotator PossibleWallRunDirectionTwo = WallRunHit.ImpactNormal.RotateAngleAxis(-90.f, FVector::ZAxisVector).Rotation();
@@ -228,13 +237,20 @@ bool UWallRunAbility::ObjectIsWallRunnable(AActor* actor, USkeletalMeshComponent
 
 void UWallRunAbility::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {	
-	if(Movement->MovementMode != EMovementMode::MOVE_Falling)
+	// We only want local clients to trigger wall runs and request them on the server
+	if (Character->IsLocallyControlled()) // TODO: Account for AI?
+		return;
+	
+	if(Movement->MovementMode != MOVE_Falling)
 		return;
 		
 	// Handle through ASC
-
 	if (auto ASC = Character->GetComponentByClass<UAbilitySystemComponent>())
 	{
+		// Movement Abilities are assumed to be local predicted, so start it locally and then notify the server
+		//if (!Character->HasAuthority())
+		ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(FGameplayTag::RequestGameplayTag("Movement.WallRun")));
+		
 		if (auto CastedMovement = Cast<UBMageCharacterMovementComponent>(Movement))
 		{
 			// tell server about the overlapped actor

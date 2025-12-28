@@ -112,30 +112,30 @@ void UBMageCharacterMovementComponent::Server_RequestStartMovementAbility_Implem
 	
 	if (AbilityType == MovementAbilityType::WallRun)
 	{
-		// ShoulaAbilityBegin's override for Wall Run needs to know what wall we're trying to run on
+		// ShouldAbilityBegin's override for Wall Run needs to know what wall we're trying to run on
 		auto Ability = Cast<UWallRunAbility>(MovementAbilities[AbilityType]);
 		Ability->WallRunObject = OtherActor;
 	}
 
-	if (!ShouldAbilityBegin(AbilityType))
-		return;
-	
-	// no parkour on other players
-	if (OtherActor->IsA(APawn::StaticClass()))
-		return;
-
-	UAbilitySystemComponent* ASC = Cast<UAbilitySystemComponent>(CharacterOwner->GetComponentByClass(UAbilitySystemComponent::StaticClass()));
-	if (!ASC)
-		return;
-
-	// Build GameplayEvent payload with the overlapped actor as the target
-	FGameplayEventData EventData;
-	EventData.Instigator = CharacterOwner;
-	EventData.Target = OtherActor;
-	EventData.EventTag = FGameplayTag::RequestGameplayTag(FName(TEXT("Movement.WallRun")));
-
-	// Deliver the event so abilities bound to the tag receive the actor
-	ASC->HandleGameplayEvent(EventData.EventTag, &EventData);
+	// if (!ShouldAbilityBegin(AbilityType))
+	// 	return;
+	//
+	// // no parkour on other players
+	// if (OtherActor->IsA(APawn::StaticClass()))
+	// 	return;
+	//
+	// UAbilitySystemComponent* ASC = Cast<UAbilitySystemComponent>(CharacterOwner->GetComponentByClass(UAbilitySystemComponent::StaticClass()));
+	// if (!ASC)
+	// 	return;
+	//
+	// // Build GameplayEvent payload with the overlapped actor as the target
+	// FGameplayEventData EventData;
+	// EventData.Instigator = CharacterOwner;
+	// EventData.Target = OtherActor;
+	// EventData.EventTag = FGameplayTag::RequestGameplayTag(FName(TEXT("Movement.WallRun")));
+	//
+	// // Deliver the event so abilities bound to the tag receive the actor
+	// ASC->HandleGameplayEvent(EventData.EventTag, &EventData);
 }
 
 bool UBMageCharacterMovementComponent::Server_RequestStartMovementAbility_Validate(AActor* OtherActor, MovementAbilityType AbilityType)
@@ -201,9 +201,15 @@ void UBMageCharacterMovementComponent::TickComponent(float DeltaTime, enum ELeve
 
 UMovementAbility* UBMageCharacterMovementComponent::TryStartAbility(MovementAbilityType abilityType)
 {
+	// If we're on the server, just exit
+	if (GetCharacterOwner()->HasAuthority())
+	{
+		// TODO: Validate client state here
+		return nullptr;
+	}
+	
 	if (!MovementAbilities.Contains(abilityType))
 		return nullptr;
-
 	
 	TObjectPtr<UMovementAbility> ability = MovementAbilities[abilityType];	
 	
