@@ -120,7 +120,7 @@ bool UVaultAbility::ShouldBegin()
 	VaultHit = Traces::LineTraceMovementVector(Character, Movement, Mesh, FName("vaultRaycastSocket"), 50, drawTrace, FColor::Green, 0.f);
 
 	// If the vault raycast hit the object, we can vault
-	return VaultHit.GetActor() == VaultTarget;
+	return VaultHit.IsValidBlockingHit() && VaultHit.GetActor() == VaultTarget;
 }
 
 void UVaultAbility::Tick(float DeltaTime)

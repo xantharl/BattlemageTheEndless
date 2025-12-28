@@ -114,6 +114,11 @@ void UWallRunAbility::Begin()
 	
 	CharacterBaseGravityScale = Movement->GravityScale;
 	Movement->GravityScale = WallRunInitialGravityScale;
+	// kill any vertical movement
+	Movement->Velocity.Z = 0.f;	
+
+	// this is to work around double jump logic in ACharacter which auto increments the jump count if we're falling
+	Character->JumpCurrentCount -= 2;
 
 	// If we're on the server, just validate that nothing looks fishy with the client's prediction
 	if (Character->HasAuthority())
@@ -121,7 +126,6 @@ void UWallRunAbility::Begin()
 		// TODO: Validate client state here
 		return;
 	}
-	
 	// get vectors parallel to the wall
 	const FRotator PossibleWallRunDirectionOne = WallRunHit.ImpactNormal.RotateAngleAxis(90.f, FVector::ZAxisVector).Rotation();
 	const FRotator PossibleWallRunDirectionTwo = WallRunHit.ImpactNormal.RotateAngleAxis(-90.f, FVector::ZAxisVector).Rotation();
@@ -136,8 +140,6 @@ void UWallRunAbility::Begin()
 
 	// redirect character's velocity to be parallel to the wall, ignore input
 	Movement->Velocity = TargetRotation.Vector() * Movement->Velocity.Size();
-	// kill any vertical movement
-	Movement->Velocity.Z = 0.f;
 
 	Character->bUseControllerRotationYaw = false;
 	const auto State = Character->GetPlayerState();
@@ -178,9 +180,6 @@ void UWallRunAbility::End(bool bForce)
 		cameraManager->ViewYawMax = 359.998993f;
 		cameraManager->ViewYawMin = 0.f;
 	}
-
-	// this is to work around double jump logic in ACharacter which auto increments the jump count if we're falling
-	Character->JumpCurrentCount -= 1;
 
 	Super::End(bForce);
 }
@@ -238,7 +237,7 @@ bool UWallRunAbility::ObjectIsWallRunnable(AActor* actor, USkeletalMeshComponent
 void UWallRunAbility::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {	
 	// We only want local clients to trigger wall runs and request them on the server
-	if (Character->IsLocallyControlled()) // TODO: Account for AI?
+	if (!Character->IsLocallyControlled()) // TODO: Account for AI?
 		return;
 	
 	if(Movement->MovementMode != MOVE_Falling)
