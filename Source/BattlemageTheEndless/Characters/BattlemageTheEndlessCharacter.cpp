@@ -363,7 +363,6 @@ void ABattlemageTheEndlessCharacter::GiveDefaultAbilities()
 	}
 
 	// add default abilities
-	AbilitySystemComponent->ClearAllAbilities();
 	for (auto Ability : DefaultAbilities)
 	{
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability.Key, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
@@ -585,6 +584,7 @@ void ABattlemageTheEndlessCharacter::PawnClientRestart()
 	// Add Input Mapping Context and equipment, only do this for controlled players
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
+		AbilitySystemComponent->ClearAllAbilities();
 		GiveDefaultAbilities();
 		GiveStartingEquipment();
 	}
@@ -1064,6 +1064,12 @@ void ABattlemageTheEndlessCharacter::ProcessSpellInput(APickupActor* PickupActor
 	}
 
 	auto selectedAbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(PickupActor->Weapon->SelectedAbility);
+	if (!selectedAbilitySpec)
+	{
+		UE_LOG(LogTemp, Error, TEXT("'%s' ProcessSpellInput called without a valid Ability Spec!"), *GetNameSafe(this));
+		return;
+	}
+	
 	auto ability = Cast<UAttackBaseGameplayAbility>(selectedAbilitySpec->Ability);
 	auto isComboActive = AbilitySystemComponent->ComboManager->Combos.Contains(PickupActor) && AbilitySystemComponent->ComboManager->Combos[PickupActor].ActiveCombo;
 

@@ -324,9 +324,9 @@ public:
 	// Method called by Niagara specific impl of actor gameplay cue
 	bool TryRemovePreviousAbilityEffect(AGameplayCueNotify_Actor* Notify);
 
-	virtual void PawnClientRestart();
+	virtual void PawnClientRestart() override;
 
-	virtual void Crouch(bool bClientSimulation);
+	virtual void Crouch(bool bClientSimulation) override;
 
 	UFUNCTION(BlueprintCallable, Category = "Input")
 	void RequestUnCrouch();
