@@ -532,9 +532,9 @@ void ABattlemageTheEndlessCharacter::AbilityInputPressed(TSubclassOf<class UGame
 		
 		if (HasAuthority())
 			UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventData.EventTag,EventData);
-		else if (auto Controller = Cast<ABattlemageTheEndlessPlayerController>(GetController()))
+		else if (auto CastedController = Cast<ABattlemageTheEndlessPlayerController>(GetController()))
 		{
-			Controller->Server_HandleMovementEvent_Implementation(FGameplayTag::RequestGameplayTag("Movement.Dodge"), LastControlInputVector);
+			CastedController->Server_HandleMovementEvent_Implementation(FGameplayTag::RequestGameplayTag("Movement.Dodge"), LastControlInputVector);
 		}
 		
 		return;

@@ -24,7 +24,7 @@ void ABattlemageTheEndlessPlayerController::Server_HandleMovementEvent_Implement
 		EventData.Target = AcknowledgedPawn;
 		EventData.EventTag = EventTag;
 		EventData.OptionalObject = Optional;
-		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventData.EventTag,EventData);
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(AcknowledgedPawn, EventData.EventTag,EventData);
 	}
 }
 

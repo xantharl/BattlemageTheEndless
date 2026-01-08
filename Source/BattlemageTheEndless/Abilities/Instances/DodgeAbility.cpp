@@ -21,9 +21,11 @@ void UDodgeAbility::Begin(const FGameplayEventData* TriggerEventData)
 		InputVector = DodgeData->DodgeInputVector;
 	}
 	else
+	{
 		InputVector = Character->GetLastMovementInputVector();
-	// account for camera rotation
-	InputVector = InputVector.RotateAngleAxis(Movement->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector);
+		// account for camera rotation
+		InputVector = InputVector.RotateAngleAxis(Movement->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector);
+	}
 
 	// use the strongest input direction to decide which way to dodge
 	bool isLateral = FMath::Abs(InputVector.X) < FMath::Abs(InputVector.Y);
