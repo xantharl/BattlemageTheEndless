@@ -10,7 +10,7 @@ ULaunchAbility::ULaunchAbility(const FObjectInitializer& X) : Super(X)
 	Priority = 1;
 }
 
-void ULaunchAbility::Begin()
+void ULaunchAbility::Begin(const FGameplayEventData* TriggerEventData)
 {
 	Super::Begin();
 	Type = MovementAbilityType::Launch;

@@ -35,7 +35,7 @@ void UVaultAbility::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPri
 	}
 }
 
-void UVaultAbility::Begin()
+void UVaultAbility::Begin(const FGameplayEventData* TriggerEventData)
 {
 	Super::Begin();
 	

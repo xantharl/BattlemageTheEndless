@@ -2,6 +2,7 @@
 
 
 #include "DodgeAbility.h"
+#include "BattlemageTheEndless/Abilities/EventData/DodgeEventData.h"
 
 UDodgeAbility::UDodgeAbility(const FObjectInitializer& X) : Super(X)
 {
@@ -10,22 +11,30 @@ UDodgeAbility::UDodgeAbility(const FObjectInitializer& X) : Super(X)
 	Priority = 2;
 }
 
-void UDodgeAbility::Begin()
+void UDodgeAbility::Begin(const FGameplayEventData* TriggerEventData)
 {
-	FVector inputVector = Character->GetLastMovementInputVector();
+	FVector InputVector;
+	// Server path which takes input from event data provided by client
+	if (TriggerEventData && TriggerEventData->OptionalObject && TriggerEventData->OptionalObject->IsA(UDodgeEventData::StaticClass()))
+	{
+		const UDodgeEventData* DodgeData = Cast<UDodgeEventData>(TriggerEventData->OptionalObject);
+		InputVector = DodgeData->DodgeInputVector;
+	}
+	else
+		InputVector = Character->GetLastMovementInputVector();
 	// account for camera rotation
-	inputVector = inputVector.RotateAngleAxis(Movement->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector);
+	InputVector = InputVector.RotateAngleAxis(Movement->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector);
 
 	// use the strongest input direction to decide which way to dodge
-	bool isLateral = FMath::Abs(inputVector.X) < FMath::Abs(inputVector.Y);
+	bool isLateral = FMath::Abs(InputVector.X) < FMath::Abs(InputVector.Y);
 
 	FVector ImpulseToUse;
 	// if the movement is not lateral, dodge forward or backward
 	if (!isLateral)
-		ImpulseToUse = inputVector.X > 0.0f ? DodgeImpulseForward : DodgeImpulseBackward;
+		ImpulseToUse = InputVector.X > 0.0f ? DodgeImpulseForward : DodgeImpulseBackward;
 	// if the movement is lateral, dodge left or right
 	else
-		ImpulseToUse = DodgeImpulseLateral * ((inputVector.Y < 0.0f) ? 1.f : -1.f);
+		ImpulseToUse = DodgeImpulseLateral * ((InputVector.Y < 0.0f) ? 1.f : -1.f);
 	
 	// modify impulse if in air
 	if (Movement->MovementMode == EMovementMode::MOVE_Falling)
@@ -47,4 +56,11 @@ void UDodgeAbility::End(bool bForce)
 {
 	Super::End(bForce);
 	Movement->GroundFriction = PreviousFriction;
+}
+
+TObjectPtr<UObject> UDodgeAbility::BuildMovementAbilityEventData()
+{
+	UDodgeEventData* DodgeData = NewObject<UDodgeEventData>();
+	DodgeData->DodgeInputVector = Character->GetLastMovementInputVector();
+	return DodgeData;
 }

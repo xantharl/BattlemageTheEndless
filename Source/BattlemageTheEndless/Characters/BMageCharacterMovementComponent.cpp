@@ -3,6 +3,9 @@
 
 #include "BMageCharacterMovementComponent.h"
 
+#include "BattlemageTheEndlessPlayerController.h"
+#include "BattlemageTheEndless/Abilities/EventData/DodgeEventData.h"
+
 UBMageCharacterMovementComponent::UBMageCharacterMovementComponent()
 {
 	// MovementAbilities.Add(MovementAbilityType::WallRun, CreateDefaultSubobject<UWallRunAbility>(TEXT("WallRun")));
@@ -199,52 +202,61 @@ void UBMageCharacterMovementComponent::TickComponent(float DeltaTime, enum ELeve
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
-UMovementAbility* UBMageCharacterMovementComponent::TryStartAbility(MovementAbilityType abilityType)
-{
-	// If we're on the server, just exit
-	// if (GetCharacterOwner()->HasAuthority())
+UMovementAbility* UBMageCharacterMovementComponent::TryStartAbility(MovementAbilityType AbilityType)
+{	
+	// if (CharacterOwner && !CharacterOwner->IsLocallyControlled())
 	// {
-	// 	// TODO: Validate client state here
+	// 	// only the client should be starting abilities directly
+	// 	UE_LOG(LogTemp, Warning, TEXT("UBMageCharacterMovementComponent::TryStartAbility called on server"));
 	// 	return nullptr;
 	// }
 	
-	if (!MovementAbilities.Contains(abilityType))
+	if (!MovementAbilities.Contains(AbilityType))
 		return nullptr;
 	
-	TObjectPtr<UMovementAbility> ability = MovementAbilities[abilityType];	
+	TObjectPtr<UMovementAbility> Ability = MovementAbilities[AbilityType];	
+	
+	if (Ability->IsGAActive())
+	{
+		if (!Ability->ISMAActive())
+			Ability->Begin();
+		
+		if (const auto Controller = Cast<ABattlemageTheEndlessPlayerController>(GetController()))
+		{
+			const FString EnumName = StaticEnum<MovementAbilityType>()->GetNameStringByValue(static_cast<int64>(Ability->Type));
+			const FString LookupString = FString::Printf(TEXT("Movement.%s"), *EnumName);
+			Controller->Server_HandleMovementEvent(FGameplayTag::RequestGameplayTag(FName(LookupString)), CharacterOwner->GetLastMovementInputVector());
+		}
+		
+		return Ability;
+	}
+	
+	return nullptr;
+}
+
+UMovementAbility* UBMageCharacterMovementComponent::TryStartAbilityFromEvent(MovementAbilityType AbilityType,
+	const FGameplayEventData TriggerEventData)
+{
+	if (CharacterOwner && !CharacterOwner->HasAuthority())
+	{
+		// only the server should be starting abilities from events
+		UE_LOG(LogTemp, Warning, TEXT("UBMageCharacterMovementComponent::TryStartAbilityFromEvent called on client"));
+		return nullptr;
+	}
+	
+	if (!MovementAbilities.Contains(AbilityType))
+		return nullptr;
+	
+	TObjectPtr<UMovementAbility> ability = MovementAbilities[AbilityType];	
 	
 	if (ability->IsGAActive())
 	{
 		if (!ability->ISMAActive())
-			ability->Begin();
+			ability->Begin(&TriggerEventData);
 		return ability;
 	}
 	
-	// The rest of this function is likely redundant now that ASC is handling interactions
-	if ((!ability->IsEnabled || ability->IsGAActive()) || (abilityType == MovementAbilityType::WallRun && !ShouldAbilityBegin(abilityType)))
-		return nullptr;
-
-	// handle ability interactions
-	if (abilityType == MovementAbilityType::Sprint && IsCrouching())
-		CharacterOwner->UnCrouch();
-	if (abilityType == MovementAbilityType::Sprint && IsAbilityActive(MovementAbilityType::Slide))
-		ForceEndAbility(MovementAbilityType::Slide);
-	else if (abilityType == MovementAbilityType::Launch)
-	{
-		CharacterOwner->UnCrouch();		
-		TryEndAbility(MovementAbilityType::Slide);
-
-		// If we can't launch anymore, redirect to jump logic (which checks jump count and handles appropriately)
-		if (LaunchesPerformed >= MaxLaunches)
-		{
-			CharacterOwner->bPressedJump = true;
-			// this needs to account for jump
-			return nullptr;
-		}
-	}
-
-	ability->Begin();
-	return ability;
+	return nullptr;
 }
 
 // TODO: Remove this after full migration

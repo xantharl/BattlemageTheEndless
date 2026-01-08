@@ -13,6 +13,9 @@
 #include <GameFramework/FloatingPawnMovement.h>
 #include <format>
 #include <Kismet/GameplayStatics.h>
+#include "AbilitySystemBlueprintLibrary.h"
+#include "BattlemageTheEndless/Abilities/EventData/DodgeEventData.h"
+
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 //////////////////////////////////////////////////////////////////////////
@@ -501,12 +504,43 @@ void ABattlemageTheEndlessCharacter::EndSlide(UCharacterMovementComponent* movem
 void ABattlemageTheEndlessCharacter::AbilityInputPressed(TSubclassOf<class UGameplayAbility> ability)
 {
 	auto attributeSet = Cast<UBaseAttributeSet>(AbilitySystemComponent->GetAttributeSet(UBaseAttributeSet::StaticClass()));
-	auto speedBefore = attributeSet->GetMovementSpeed();
-	if (AbilitySystemComponent->FindAbilitySpecFromClass(ability)->IsActive())
+	auto spec = AbilitySystemComponent->FindAbilitySpecFromClass(ability);
+	if (spec->IsActive())
 		return;
 
-	auto success = AbilitySystemComponent->TryActivateAbilityByClass(ability);
-	auto speedAfter = attributeSet->GetMovementSpeed();
+	// If we define a trigger on the ability, use that to handle activation
+	auto abilityAsGABase = Cast<UGA_WithEffectsBase>(spec->Ability);
+	if (abilityAsGABase && abilityAsGABase->IsTriggered())
+	{
+		auto GameplayEventTriggers = abilityAsGABase->GetAbilityTriggers(EGameplayAbilityTriggerSource::Type::GameplayEvent);
+		if (GameplayEventTriggers.Num() > 0)
+		{
+			UE_LOG(LogTemp, Log, TEXT( "ABattlemageTheEndlessCharacter::AbilityInputPressed - More than one GameplayEvent trigger is specified for Ability %s, only the first will be used" ), *ability->GetName() );
+		}
+		if (GameplayEventTriggers.Num() == 0)
+		{
+			UE_LOG( LogTemp, Warning, TEXT( "ABattlemageTheEndlessCharacter::AbilityInputPressed - No GameplayEvent trigger is specified for Ability %s, the default activation path will be used" ), *ability->GetName() );
+		}
+		
+		auto Optional = NewObject<UDodgeEventData>(this);
+		Optional->DodgeInputVector = LastControlInputVector;
+		FGameplayEventData EventData;
+		EventData.Instigator = this;
+		EventData.Target = this;
+		EventData.EventTag = FGameplayTag::RequestGameplayTag("Movement.Dodge");
+		EventData.OptionalObject = Optional;	
+		
+		if (HasAuthority())
+			UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventData.EventTag,EventData);
+		else if (auto Controller = Cast<ABattlemageTheEndlessPlayerController>(GetController()))
+		{
+			Controller->Server_HandleMovementEvent_Implementation(FGameplayTag::RequestGameplayTag("Movement.Dodge"), LastControlInputVector);
+		}
+		
+		return;
+	}
+	
+	AbilitySystemComponent->TryActivateAbilityByClass(ability);
 	/*if (success && GEngine)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, FString::Printf(TEXT("Activated ability %s"), *ability->GetName()));

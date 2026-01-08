@@ -60,7 +60,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float RotationRateZ = 250.f;
 	
-	void Begin() override;
+	virtual void Begin(const FGameplayEventData* TriggerEventData = nullptr) override;
 	void End(bool bForce = false) override;
 	void Tick(float DeltaTime) override;
 

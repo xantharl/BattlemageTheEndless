@@ -11,7 +11,7 @@ USlideAbility::USlideAbility(const FObjectInitializer& X) : Super(X)
 	Priority = 2;
 }
 
-void USlideAbility::Begin()
+void USlideAbility::Begin(const FGameplayEventData* TriggerEventData)
 {
 	Super::Begin();
 	Movement->SetCrouchedHalfHeight(SlideHalfHeight);

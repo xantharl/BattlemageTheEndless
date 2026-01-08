@@ -87,12 +87,13 @@ public:
 	/// <summary>
 	/// Tries to start an ability and returns whether it was successful
 	/// </summary>
-	/// <param name="abilityType"></param>
-	/// <param name="Character"></param>
-	/// <param name="mesh"></param>
+	/// <param name="AbilityType"></param>
 	/// <returns></returns>
 	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
-	UMovementAbility* TryStartAbility(MovementAbilityType abilityType);
+	UMovementAbility* TryStartAbility(MovementAbilityType AbilityType);
+	
+	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
+	UMovementAbility* TryStartAbilityFromEvent(MovementAbilityType AbilityType, const FGameplayEventData TriggerEventData);
 
 	bool ShouldAbilityBegin(MovementAbilityType abilityType);
 
@@ -186,8 +187,7 @@ public:
 	
 	// RPC to request starting a wall run with the overlapped actor
 	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_RequestStartMovementAbility(AActor* OtherActor, MovementAbilityType AbilityType);
-	
+	void Server_RequestStartMovementAbility(AActor* OtherActor, MovementAbilityType AbilityType);	
 
 private:
 	// Gravity over time operations

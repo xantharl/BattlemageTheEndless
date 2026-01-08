@@ -71,11 +71,16 @@ public:
 
 	UPROPERTY(BlueprintReadOnly)
 	MovementAbilityType Type;
-
+	
+	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle,
+									const FGameplayAbilityActorInfo* ActorInfo,
+									const FGameplayAbilityActivationInfo ActivationInfo,
+									const FGameplayEventData* TriggerEventData) override;
+	
 	virtual void Init(UCharacterMovementComponent* movement, ACharacter* character, USkeletalMeshComponent* mesh);
 	virtual bool ShouldBegin() { return true; }
 	virtual bool ShouldEnd() { return true; }
-	virtual void Begin();
+	virtual void Begin(const FGameplayEventData* TriggerEventData = nullptr);
 	virtual void End(bool bForce = false);
 	// This is so we have a parameterless function for simple timer invocations
 	virtual void OnEndTimer() { End(); }
@@ -103,4 +108,7 @@ public:
 	FMovementAbilityEndSignature OnMovementAbilityEnd;
 	UPROPERTY(BlueprintAssignable, Category = "MovementAbility")
 	FMovementAbilityShouldTransitionOutSignature OnMovementAbilityShouldTransitionOut;
+	
+	// Intended to be overridden to provide custom event data when starting from an event
+	virtual TObjectPtr<UObject> BuildMovementAbilityEventData() { return nullptr; }
 };

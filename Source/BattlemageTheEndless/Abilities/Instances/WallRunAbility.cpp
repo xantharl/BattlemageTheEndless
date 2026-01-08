@@ -107,7 +107,7 @@ void UWallRunAbility::Tick(float DeltaTime)
 		}
 	}
 }
-void UWallRunAbility::Begin()
+void UWallRunAbility::Begin(const FGameplayEventData* TriggerEventData)
 {	
 	// the super should always be called first as it sets isactive
 	Super::Begin();

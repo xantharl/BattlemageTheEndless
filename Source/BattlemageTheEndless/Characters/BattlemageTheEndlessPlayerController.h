@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "GameFramework/PlayerController.h"
 #include "BattlemageTheEndlessPlayerController.generated.h"
 
@@ -16,14 +17,15 @@ class BATTLEMAGETHEENDLESS_API ABattlemageTheEndlessPlayerController : public AP
 {
 	GENERATED_BODY()
 	
+public:	
+	UFUNCTION(Server, Reliable)
+	void Server_HandleMovementEvent(FGameplayTag EventTag, FVector OptionalVector = FVector::ZeroVector);
+	
 protected:
 
 	/** Input Mapping Context to be used for player input */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputMappingContext* InputMappingContext;
-
-	// Begin Actor interface
-protected:
 
 	virtual void BeginPlay() override;
 

@@ -14,7 +14,7 @@ class BATTLEMAGETHEENDLESS_API USprintAbility : public UMovementAbility
 {
 	GENERATED_BODY()
 	
-	void Begin() override;
+	virtual void Begin(const FGameplayEventData* TriggerEventData = nullptr) override;
 
 public:
 	USprintAbility(const FObjectInitializer& X);

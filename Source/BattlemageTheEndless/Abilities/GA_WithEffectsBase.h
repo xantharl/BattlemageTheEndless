@@ -102,6 +102,8 @@ public:
 	bool IsFirstInCombo();
 
 	FGameplayTagContainer GetComboTags();
+	
+	TArray<FAbilityTriggerData> GetAbilityTriggers(EGameplayAbilityTriggerSource::Type TriggerSource);
 
 protected:
 	FTimerHandle EndTimerHandle;

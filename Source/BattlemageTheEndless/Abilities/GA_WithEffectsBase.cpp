@@ -213,3 +213,11 @@ FGameplayTagContainer UGA_WithEffectsBase::GetComboTags()
 
 	return comboTags;
 }
+
+TArray<FAbilityTriggerData> UGA_WithEffectsBase::GetAbilityTriggers(EGameplayAbilityTriggerSource::Type TriggerSource)
+{
+	return AbilityTriggers.FilterByPredicate([TriggerSource](const FAbilityTriggerData Trigger)
+	{
+		return Trigger.TriggerSource == TriggerSource;
+	});
+}

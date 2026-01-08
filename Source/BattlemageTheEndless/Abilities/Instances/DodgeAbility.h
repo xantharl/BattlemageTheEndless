@@ -14,7 +14,8 @@ UCLASS()
 class BATTLEMAGETHEENDLESS_API UDodgeAbility : public UMovementAbility
 {
 	GENERATED_BODY()
-
+	
+public:
 	FTimerHandle DodgeEndTimer;
 	float PreviousFriction = 8.0f;
 
@@ -35,7 +36,11 @@ class BATTLEMAGETHEENDLESS_API UDodgeAbility : public UMovementAbility
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float ImpulseMultiplierAir = 0.5f;
 
-	virtual void Begin() override;
+	virtual void Begin(const FGameplayEventData* TriggerEventData = nullptr) override;
 	virtual void End(bool bForce = false) override;
 	
+	virtual TObjectPtr<UObject> BuildMovementAbilityEventData() override;
+	
+private:
+	FVector LastInputVector = FVector::ZeroVector;
 };

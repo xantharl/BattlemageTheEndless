@@ -53,6 +53,13 @@ bool UMovementAbility::IsGAActive()
 	return false;
 }
 
+void UMovementAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo,
+	const FGameplayEventData* TriggerEventData)
+{
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+}
+
 void UMovementAbility::Init(UCharacterMovementComponent* movement, ACharacter* character, USkeletalMeshComponent* mesh)
 {
 	Movement = movement; 
@@ -60,7 +67,7 @@ void UMovementAbility::Init(UCharacterMovementComponent* movement, ACharacter* c
 	Mesh = mesh;
 }
 
-void UMovementAbility::Begin()
+void UMovementAbility::Begin(const FGameplayEventData* TriggerEventData)
 {
 	elapsed = (milliseconds)0;
 	shouldTransitionOut = false;
