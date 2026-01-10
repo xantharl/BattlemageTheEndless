@@ -237,12 +237,12 @@ UMovementAbility* UBMageCharacterMovementComponent::TryStartAbility(MovementAbil
 UMovementAbility* UBMageCharacterMovementComponent::TryStartAbilityFromEvent(MovementAbilityType AbilityType,
 	const FGameplayEventData TriggerEventData)
 {
-	if (CharacterOwner && !CharacterOwner->HasAuthority())
-	{
-		// only the server should be starting abilities from events
-		UE_LOG(LogTemp, Warning, TEXT("UBMageCharacterMovementComponent::TryStartAbilityFromEvent called on client"));
-		return nullptr;
-	}
+	// if (CharacterOwner && !CharacterOwner->HasAuthority())
+	// {
+	// 	// only the server should be starting abilities from events
+	// 	UE_LOG(LogTemp, Warning, TEXT("UBMageCharacterMovementComponent::TryStartAbilityFromEvent called on client"));
+	// 	return nullptr;
+	// }
 	
 	if (!MovementAbilities.Contains(AbilityType))
 		return nullptr;

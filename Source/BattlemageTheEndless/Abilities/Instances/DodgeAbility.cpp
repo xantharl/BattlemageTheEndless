@@ -15,10 +15,22 @@ void UDodgeAbility::Begin(const FGameplayEventData* TriggerEventData)
 {
 	FVector InputVector;
 	// Server path which takes input from event data provided by client
-	if (TriggerEventData && TriggerEventData->OptionalObject && TriggerEventData->OptionalObject->IsA(UDodgeEventData::StaticClass()))
+	// if (TriggerEventData && TriggerEventData->OptionalObject && TriggerEventData->OptionalObject->IsA(UDodgeEventData::StaticClass()))
+	// {
+	// 	const UDodgeEventData* DodgeData = Cast<UDodgeEventData>(TriggerEventData->OptionalObject);
+	// 	InputVector = DodgeData->DodgeInputVector;
+	// 	if (GEngine)
+	// 	{
+	// 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("(%s: %s) LastUpdateInverseYaw: %f"), 
+	// 			*TriggerEventData->Instigator.GetName(), *TriggerEventData->OptionalObject->GetName(), Movement->GetLastUpdateRotation().GetInverse().Yaw));
+	// 	}
+	// 	InputVector = InputVector.RotateAngleAxis(Movement->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector);
+	// }
+	if (LastInputVector != FVector::ZeroVector)
 	{
-		const UDodgeEventData* DodgeData = Cast<UDodgeEventData>(TriggerEventData->OptionalObject);
-		InputVector = DodgeData->DodgeInputVector;
+		InputVector = LastInputVector;
+		// account for camera rotation
+		InputVector = InputVector.RotateAngleAxis(Movement->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector);
 	}
 	else
 	{

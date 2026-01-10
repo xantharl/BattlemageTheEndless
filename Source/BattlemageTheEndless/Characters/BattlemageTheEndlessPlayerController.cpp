@@ -6,7 +6,6 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "BattlemageTheEndlessCharacter.h"
 #include "EnhancedInputSubsystems.h"
-#include "BattlemageTheEndless/Abilities/EventData/DodgeEventData.h"
 
 void ABattlemageTheEndlessPlayerController::Server_HandleMovementEvent_Implementation(FGameplayTag EventTag, FVector OptionalVector)
 {
@@ -15,17 +14,21 @@ void ABattlemageTheEndlessPlayerController::Server_HandleMovementEvent_Implement
 		UE_LOG(LogTemp, Warning, TEXT("Server_HandleMovementEvent called but AcknowledgedPawn is null"));
 		return;
 	}
-	if (UAbilitySystemComponent* ASC = AcknowledgedPawn->FindComponentByClass<UAbilitySystemComponent>())
+	if (auto Movement = Cast<UBMageCharacterMovementComponent>(AcknowledgedPawn->GetMovementComponent()))
 	{
-		auto Optional = NewObject<UDodgeEventData>(AcknowledgedPawn);
-		Optional->DodgeInputVector = OptionalVector;
-		FGameplayEventData EventData;
-		EventData.Instigator = AcknowledgedPawn;
-		EventData.Target = AcknowledgedPawn;
-		EventData.EventTag = EventTag;
-		EventData.OptionalObject = Optional;
-		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(AcknowledgedPawn, EventData.EventTag,EventData);
+		auto dodge = Cast<UDodgeAbility>(Movement->MovementAbilities[MovementAbilityType::Dodge]);
+		dodge->LastInputVector = OptionalVector;
+		dodge->Begin();
 	}
+	
+	// if (UAbilitySystemComponent* ASC = AcknowledgedPawn->FindComponentByClass<UAbilitySystemComponent>())
+	// {
+	// 	FGameplayEventData EventData;
+	// 	EventData.Instigator = AcknowledgedPawn;
+	// 	EventData.Target = AcknowledgedPawn;
+	// 	EventData.EventTag = EventTag;
+	// 	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(AcknowledgedPawn, EventData.EventTag,EventData);
+	// }
 }
 
 void ABattlemageTheEndlessPlayerController::BeginPlay()

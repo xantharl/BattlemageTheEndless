@@ -513,7 +513,7 @@ void ABattlemageTheEndlessCharacter::AbilityInputPressed(TSubclassOf<class UGame
 	if (abilityAsGABase && abilityAsGABase->IsTriggered())
 	{
 		auto GameplayEventTriggers = abilityAsGABase->GetAbilityTriggers(EGameplayAbilityTriggerSource::Type::GameplayEvent);
-		if (GameplayEventTriggers.Num() > 0)
+		if (GameplayEventTriggers.Num() > 1)
 		{
 			UE_LOG(LogTemp, Log, TEXT( "ABattlemageTheEndlessCharacter::AbilityInputPressed - More than one GameplayEvent trigger is specified for Ability %s, only the first will be used" ), *ability->GetName() );
 		}
@@ -530,11 +530,10 @@ void ABattlemageTheEndlessCharacter::AbilityInputPressed(TSubclassOf<class UGame
 		EventData.EventTag = FGameplayTag::RequestGameplayTag("Movement.Dodge");
 		EventData.OptionalObject = Optional;	
 		
-		if (HasAuthority())
-			UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventData.EventTag,EventData);
-		else if (auto CastedController = Cast<ABattlemageTheEndlessPlayerController>(GetController()))
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventData.EventTag,EventData);
+		if (auto CastedController = Cast<ABattlemageTheEndlessPlayerController>(GetController()))
 		{
-			CastedController->Server_HandleMovementEvent_Implementation(FGameplayTag::RequestGameplayTag("Movement.Dodge"), LastControlInputVector);
+			CastedController->Server_HandleMovementEvent(FGameplayTag::RequestGameplayTag("Movement.Dodge"), LastControlInputVector);
 		}
 		
 		return;

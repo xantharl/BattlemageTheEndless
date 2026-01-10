@@ -9,7 +9,7 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(BlueprintType, Blueprintable)
 class BATTLEMAGETHEENDLESS_API UDodgeEventData : public UObject
 {
 	GENERATED_BODY()

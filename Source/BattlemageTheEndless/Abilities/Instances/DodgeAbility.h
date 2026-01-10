@@ -41,6 +41,5 @@ public:
 	
 	virtual TObjectPtr<UObject> BuildMovementAbilityEventData() override;
 	
-private:
 	FVector LastInputVector = FVector::ZeroVector;
 };
