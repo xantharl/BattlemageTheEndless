@@ -6,6 +6,7 @@
 #include "Abilities/GameplayAbility.h"
 #include "MovementAbilityInstance.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/Character.h"
 #include "Engine/World.h"
 #include <chrono>
 #include "GameFramework/CharacterMovementComponent.h"
@@ -24,6 +25,21 @@ enum class MovementAbilityType: uint8
 };
 
 using namespace std::chrono;
+
+USTRUCT(BlueprintType)
+struct FMovementEventData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MovementEventData, meta = (AllowPrivateAccess = "true"))
+	FVector OptionalVector = FVector::ZeroVector;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MovementEventData, meta = (AllowPrivateAccess = "true"))
+	float OptionalFloat = 0.f;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MovementEventData, meta = (AllowPrivateAccess = "true"))
+	FHitResult OptionalHitResult = FHitResult();
+};
 
 /**
  * This class is intended to be used as a base class for all movement abilities which have a ticking element
@@ -80,7 +96,7 @@ public:
 	virtual void Init(UCharacterMovementComponent* movement, ACharacter* character, USkeletalMeshComponent* mesh);
 	virtual bool ShouldBegin() { return true; }
 	virtual bool ShouldEnd() { return true; }
-	virtual void Begin(const FGameplayEventData* TriggerEventData = nullptr);
+	virtual void Begin(const FMovementEventData& MovementEventData);
 	virtual void End(bool bForce = false);
 	// This is so we have a parameterless function for simple timer invocations
 	virtual void OnEndTimer() { End(); }

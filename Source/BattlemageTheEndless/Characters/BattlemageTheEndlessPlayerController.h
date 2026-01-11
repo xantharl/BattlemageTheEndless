@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "GameFramework/PlayerController.h"
+#include "BattlemageTheEndless/Abilities/MovementAbility.h"
 #include "BattlemageTheEndlessPlayerController.generated.h"
 
 class UInputMappingContext;
@@ -19,7 +20,7 @@ class BATTLEMAGETHEENDLESS_API ABattlemageTheEndlessPlayerController : public AP
 	
 public:	
 	UFUNCTION(Server, Reliable)
-	void Server_HandleMovementEvent(FGameplayTag EventTag, FVector OptionalVector = FVector::ZeroVector);
+	void Server_HandleMovementEvent(const FGameplayTag EventTag, const FMovementEventData& MovementEventData);
 	
 protected:
 

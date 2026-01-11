@@ -8,8 +8,8 @@ USprintAbility::USprintAbility(const FObjectInitializer& X) : Super(X)
 	Priority = 5;
 }
 
-void USprintAbility::Begin(const FGameplayEventData* TriggerEventData)
+void USprintAbility::Begin(const FMovementEventData& MovementEventData)
 {
-	UMovementAbility::Begin();
+	UMovementAbility::Begin(MovementEventData);
 	Movement->MaxWalkSpeed = SprintSpeed;
 }

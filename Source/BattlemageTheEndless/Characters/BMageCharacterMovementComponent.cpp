@@ -219,14 +219,14 @@ UMovementAbility* UBMageCharacterMovementComponent::TryStartAbility(MovementAbil
 	if (Ability->IsGAActive())
 	{
 		if (!Ability->ISMAActive())
-			Ability->Begin();
+			Ability->Begin(FMovementEventData());
 		
-		if (const auto Controller = Cast<ABattlemageTheEndlessPlayerController>(GetController()))
-		{
-			const FString EnumName = StaticEnum<MovementAbilityType>()->GetNameStringByValue(static_cast<int64>(Ability->Type));
-			const FString LookupString = FString::Printf(TEXT("Movement.%s"), *EnumName);
-			Controller->Server_HandleMovementEvent(FGameplayTag::RequestGameplayTag(FName(LookupString)), CharacterOwner->GetLastMovementInputVector());
-		}
+		// if (const auto Controller = Cast<ABattlemageTheEndlessPlayerController>(GetController()))
+		// {
+		// 	const FString EnumName = StaticEnum<MovementAbilityType>()->GetNameStringByValue(static_cast<int64>(Ability->Type));
+		// 	const FString LookupString = FString::Printf(TEXT("Movement.%s"), *EnumName);
+		// 	Controller->Server_HandleMovementEvent(FGameplayTag::RequestGameplayTag(FName(LookupString)), CharacterOwner->GetLastMovementInputVector());
+		// }
 		
 		return Ability;
 	}
@@ -237,12 +237,12 @@ UMovementAbility* UBMageCharacterMovementComponent::TryStartAbility(MovementAbil
 UMovementAbility* UBMageCharacterMovementComponent::TryStartAbilityFromEvent(MovementAbilityType AbilityType,
 	const FGameplayEventData TriggerEventData)
 {
-	// if (CharacterOwner && !CharacterOwner->HasAuthority())
-	// {
-	// 	// only the server should be starting abilities from events
-	// 	UE_LOG(LogTemp, Warning, TEXT("UBMageCharacterMovementComponent::TryStartAbilityFromEvent called on client"));
-	// 	return nullptr;
-	// }
+	// only the client should be running this code, the server uses an RPC to handle activation
+	if (!CharacterOwner->IsLocallyControlled())
+	{		
+		UE_LOG(LogTemp, Warning, TEXT("UBMageCharacterMovementComponent::TryStartAbilityFromEvent called on client"));
+		return nullptr;
+	}
 	
 	if (!MovementAbilities.Contains(AbilityType))
 		return nullptr;
@@ -252,7 +252,7 @@ UMovementAbility* UBMageCharacterMovementComponent::TryStartAbilityFromEvent(Mov
 	if (ability->IsGAActive())
 	{
 		if (!ability->ISMAActive())
-			ability->Begin(&TriggerEventData);
+			ability->Begin(FMovementEventData());
 		return ability;
 	}
 	

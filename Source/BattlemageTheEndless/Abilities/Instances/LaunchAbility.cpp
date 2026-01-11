@@ -10,9 +10,9 @@ ULaunchAbility::ULaunchAbility(const FObjectInitializer& X) : Super(X)
 	Priority = 1;
 }
 
-void ULaunchAbility::Begin(const FGameplayEventData* TriggerEventData)
+void ULaunchAbility::Begin(const FMovementEventData& MovementEventData)
 {
-	Super::Begin();
+	Super::Begin(MovementEventData);
 	Type = MovementAbilityType::Launch;
 
 	// Create the launch vector

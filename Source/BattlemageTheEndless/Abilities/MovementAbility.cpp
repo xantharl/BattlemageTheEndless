@@ -67,7 +67,7 @@ void UMovementAbility::Init(UCharacterMovementComponent* movement, ACharacter* c
 	Mesh = mesh;
 }
 
-void UMovementAbility::Begin(const FGameplayEventData* TriggerEventData)
+void UMovementAbility::Begin(const FMovementEventData& MovementEventData)
 {
 	elapsed = (milliseconds)0;
 	shouldTransitionOut = false;

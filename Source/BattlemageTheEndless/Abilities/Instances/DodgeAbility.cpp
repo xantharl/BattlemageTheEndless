@@ -1,8 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "DodgeAbility.h"
-#include "BattlemageTheEndless/Abilities/EventData/DodgeEventData.h"
 
 UDodgeAbility::UDodgeAbility(const FObjectInitializer& X) : Super(X)
 {
@@ -11,21 +9,12 @@ UDodgeAbility::UDodgeAbility(const FObjectInitializer& X) : Super(X)
 	Priority = 2;
 }
 
-void UDodgeAbility::Begin(const FGameplayEventData* TriggerEventData)
+void UDodgeAbility::Begin(const FMovementEventData& MovementEventData)
 {
 	FVector InputVector;
-	// Server path which takes input from event data provided by client
-	// if (TriggerEventData && TriggerEventData->OptionalObject && TriggerEventData->OptionalObject->IsA(UDodgeEventData::StaticClass()))
-	// {
-	// 	const UDodgeEventData* DodgeData = Cast<UDodgeEventData>(TriggerEventData->OptionalObject);
-	// 	InputVector = DodgeData->DodgeInputVector;
-	// 	if (GEngine)
-	// 	{
-	// 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("(%s: %s) LastUpdateInverseYaw: %f"), 
-	// 			*TriggerEventData->Instigator.GetName(), *TriggerEventData->OptionalObject->GetName(), Movement->GetLastUpdateRotation().GetInverse().Yaw));
-	// 	}
-	// 	InputVector = InputVector.RotateAngleAxis(Movement->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector);
-	// }
+	// If MovementEventData was not provided, we are using the local path and can rely on local vars
+	LastInputVector = MovementEventData.OptionalVector == FVector::ZeroVector ? Character->GetLastMovementInputVector() : MovementEventData.OptionalVector;
+	PreviousFriction = MovementEventData.OptionalFloat == 0.f ? Movement->GroundFriction : MovementEventData.OptionalFloat;
 	if (LastInputVector != FVector::ZeroVector)
 	{
 		InputVector = LastInputVector;
@@ -57,24 +46,16 @@ void UDodgeAbility::Begin(const FGameplayEventData* TriggerEventData)
 	}
 
 	// Launch the character
-	PreviousFriction = Movement->GroundFriction;
 	Movement->GroundFriction = 0.0f;
 	FVector dodgeVector = FVector(ImpulseToUse.RotateAngleAxis(Movement->GetLastUpdateRotation().Yaw, FVector::ZAxisVector));
 	Character->LaunchCharacter(dodgeVector, true, true);
 	Character->GetWorldTimerManager().SetTimer(DodgeEndTimer, this, &UDodgeAbility::OnEndTimer, DodgeDurationSeconds, false);
 
-	Super::Begin();
+	Super::Begin(MovementEventData);
 }
 
 void UDodgeAbility::End(bool bForce)
 {
 	Super::End(bForce);
 	Movement->GroundFriction = PreviousFriction;
-}
-
-TObjectPtr<UObject> UDodgeAbility::BuildMovementAbilityEventData()
-{
-	UDodgeEventData* DodgeData = NewObject<UDodgeEventData>();
-	DodgeData->DodgeInputVector = Character->GetLastMovementInputVector();
-	return DodgeData;
 }

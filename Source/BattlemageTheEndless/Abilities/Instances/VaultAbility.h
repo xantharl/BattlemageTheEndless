@@ -38,7 +38,7 @@ public:
 	float VaultEndForwardDistance = 25.0f;
 
 	virtual void Init(UCharacterMovementComponent* movement, ACharacter* character, USkeletalMeshComponent* mesh) override;
-	virtual void Begin(const FGameplayEventData* TriggerEventData = nullptr) override;
+	virtual void Begin(const FMovementEventData& MovementEventData) override;
 	virtual void End(bool bForce = false) override;
 	virtual bool ShouldBegin() override;
 	virtual void Tick(float DeltaTime) override;

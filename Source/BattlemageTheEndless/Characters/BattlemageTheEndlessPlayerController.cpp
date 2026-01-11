@@ -7,7 +7,7 @@
 #include "BattlemageTheEndlessCharacter.h"
 #include "EnhancedInputSubsystems.h"
 
-void ABattlemageTheEndlessPlayerController::Server_HandleMovementEvent_Implementation(FGameplayTag EventTag, FVector OptionalVector)
+void ABattlemageTheEndlessPlayerController::Server_HandleMovementEvent_Implementation(const FGameplayTag EventTag, const FMovementEventData& MovementEventData)
 {
 	if (!AcknowledgedPawn)
 	{
@@ -17,18 +17,8 @@ void ABattlemageTheEndlessPlayerController::Server_HandleMovementEvent_Implement
 	if (auto Movement = Cast<UBMageCharacterMovementComponent>(AcknowledgedPawn->GetMovementComponent()))
 	{
 		auto dodge = Cast<UDodgeAbility>(Movement->MovementAbilities[MovementAbilityType::Dodge]);
-		dodge->LastInputVector = OptionalVector;
-		dodge->Begin();
+		dodge->Begin(MovementEventData);
 	}
-	
-	// if (UAbilitySystemComponent* ASC = AcknowledgedPawn->FindComponentByClass<UAbilitySystemComponent>())
-	// {
-	// 	FGameplayEventData EventData;
-	// 	EventData.Instigator = AcknowledgedPawn;
-	// 	EventData.Target = AcknowledgedPawn;
-	// 	EventData.EventTag = EventTag;
-	// 	UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(AcknowledgedPawn, EventData.EventTag,EventData);
-	// }
 }
 
 void ABattlemageTheEndlessPlayerController::BeginPlay()

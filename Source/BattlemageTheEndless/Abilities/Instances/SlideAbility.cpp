@@ -11,9 +11,9 @@ USlideAbility::USlideAbility(const FObjectInitializer& X) : Super(X)
 	Priority = 2;
 }
 
-void USlideAbility::Begin(const FGameplayEventData* TriggerEventData)
+void USlideAbility::Begin(const FMovementEventData& MovementEventData)
 {
-	Super::Begin();
+	Super::Begin(MovementEventData);
 	Movement->SetCrouchedHalfHeight(SlideHalfHeight);
 	Movement->bWantsToCrouch = true;
 	_previousLocation = Movement->GetActorLocation();

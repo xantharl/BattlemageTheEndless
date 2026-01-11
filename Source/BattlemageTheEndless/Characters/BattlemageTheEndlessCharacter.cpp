@@ -522,18 +522,22 @@ void ABattlemageTheEndlessCharacter::AbilityInputPressed(TSubclassOf<class UGame
 			UE_LOG( LogTemp, Warning, TEXT( "ABattlemageTheEndlessCharacter::AbilityInputPressed - No GameplayEvent trigger is specified for Ability %s, the default activation path will be used" ), *ability->GetName() );
 		}
 		
-		auto Optional = NewObject<UDodgeEventData>(this);
-		Optional->DodgeInputVector = LastControlInputVector;
 		FGameplayEventData EventData;
 		EventData.Instigator = this;
 		EventData.Target = this;
-		EventData.EventTag = FGameplayTag::RequestGameplayTag("Movement.Dodge");
-		EventData.OptionalObject = Optional;	
+		EventData.EventTag = GameplayEventTriggers[0].TriggerTag;
 		
 		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventData.EventTag,EventData);
 		if (auto CastedController = Cast<ABattlemageTheEndlessPlayerController>(GetController()))
 		{
-			CastedController->Server_HandleMovementEvent(FGameplayTag::RequestGameplayTag("Movement.Dodge"), LastControlInputVector);
+			FMovementEventData MovementEventData = FMovementEventData();
+			MovementEventData.OptionalVector = LastControlInputVector;
+			if (GetCharacterMovement())
+				MovementEventData.OptionalFloat = GetCharacterMovement()->GroundFriction;
+			else
+				UE_LOG(LogTemp, Warning, TEXT( "ABattlemageTheEndlessCharacter::AbilityInputPressed - Character %s has no CharacterMovementComponent, cannot populate MovementEventData.OptionalFloat" ), *GetName() );
+			
+			CastedController->Server_HandleMovementEvent(EventData.EventTag, MovementEventData);
 		}
 		
 		return;

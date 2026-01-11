@@ -107,10 +107,10 @@ void UWallRunAbility::Tick(float DeltaTime)
 		}
 	}
 }
-void UWallRunAbility::Begin(const FGameplayEventData* TriggerEventData)
+void UWallRunAbility::Begin(const FMovementEventData& MovementEventData)
 {	
 	// the super should always be called first as it sets isactive
-	Super::Begin();
+	Super::Begin(MovementEventData);
 	
 	CharacterBaseGravityScale = Movement->GravityScale;
 	Movement->GravityScale = WallRunInitialGravityScale;
@@ -120,12 +120,6 @@ void UWallRunAbility::Begin(const FGameplayEventData* TriggerEventData)
 	// this is to work around double jump logic in ACharacter which auto increments the jump count if we're falling
 	Character->JumpCurrentCount -= 2;
 
-	// If we're on the server, just validate that nothing looks fishy with the client's prediction
-	if (Character->HasAuthority())
-	{
-		// TODO: Validate client state here
-		return;
-	}
 	// get vectors parallel to the wall
 	const FRotator PossibleWallRunDirectionOne = WallRunHit.ImpactNormal.RotateAngleAxis(90.f, FVector::ZAxisVector).Rotation();
 	const FRotator PossibleWallRunDirectionTwo = WallRunHit.ImpactNormal.RotateAngleAxis(-90.f, FVector::ZAxisVector).Rotation();

@@ -35,9 +35,9 @@ void UVaultAbility::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPri
 	}
 }
 
-void UVaultAbility::Begin(const FGameplayEventData* TriggerEventData)
+void UVaultAbility::Begin(const FMovementEventData& MovementEventData)
 {
-	Super::Begin();
+	Super::Begin(MovementEventData);
 	
 	// Kind of a hack to stop the server overriding the client's vault data
 	if (VaultHit.GetActor() == nullptr)

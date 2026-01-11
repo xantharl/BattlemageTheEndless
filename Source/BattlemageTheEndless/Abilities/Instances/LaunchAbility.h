@@ -20,6 +20,6 @@ class BATTLEMAGETHEENDLESS_API ULaunchAbility : public UMovementAbility
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	FVector LaunchImpulse = FVector(400.f, 0.f, 850.f);
 
-	virtual void Begin(const FGameplayEventData* TriggerEventData = nullptr) override;
+	virtual void Begin(const FMovementEventData& MovementEventData) override;
 	virtual bool ShouldBegin() override;
 };

@@ -62,7 +62,7 @@ public:
 	virtual bool ShouldBegin() override;
 	virtual bool ShouldEnd() override;
 	virtual void Tick(float DeltaTime) override;
-	virtual void Begin(const FGameplayEventData* TriggerEventData = nullptr) override;
+	virtual void Begin(const FMovementEventData& MovementEventData) override;
 
 	UFUNCTION(BlueprintCallable, Category = CharacterMovement)
 	virtual void End(bool bForce = false) override;

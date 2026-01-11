@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "../MovementAbility.h"
-#include "GameFramework/Character.h"
 #include "DodgeAbility.generated.h"
 
 /**
@@ -36,10 +35,8 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	float ImpulseMultiplierAir = 0.5f;
 
-	virtual void Begin(const FGameplayEventData* TriggerEventData = nullptr) override;
+	virtual void Begin(const FMovementEventData& MovementEventData) override;
 	virtual void End(bool bForce = false) override;
-	
-	virtual TObjectPtr<UObject> BuildMovementAbilityEventData() override;
 	
 	FVector LastInputVector = FVector::ZeroVector;
 };
