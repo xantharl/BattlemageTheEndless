@@ -58,6 +58,7 @@ protected:
 
 	bool isTransitioningIn = false;
 	bool shouldTransitionOut = false;
+	bool IsActive = false;
 
 	milliseconds startTime;
 	milliseconds elapsed;
@@ -80,7 +81,7 @@ public:
 	bool IsGAActive();
 	
 	UFUNCTION(BlueprintCallable)
-	bool ISMAActive(){return elapsed > static_cast<milliseconds>(0);}
+	bool ISMAActive(){return IsActive;}
 
 	// Lower values are executed first
 	int Priority = 10;
@@ -96,6 +97,7 @@ public:
 	virtual void Init(UCharacterMovementComponent* movement, ACharacter* character, USkeletalMeshComponent* mesh);
 	virtual bool ShouldBegin() { return true; }
 	virtual bool ShouldEnd() { return true; }
+	/** Begins the movement ability. MovementEventData will only be populated on Server side path, use local Character info otherwise **/
 	virtual void Begin(const FMovementEventData& MovementEventData);
 	virtual void End(bool bForce = false);
 	// This is so we have a parameterless function for simple timer invocations
@@ -125,6 +127,6 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "MovementAbility")
 	FMovementAbilityShouldTransitionOutSignature OnMovementAbilityShouldTransitionOut;
 	
-	// Intended to be overridden to provide custom event data when starting from an event
-	virtual TObjectPtr<UObject> BuildMovementAbilityEventData() { return nullptr; }
+	static MovementAbilityType GetMovementAbilityTypeFromTag(FGameplayTag Tag);
+	virtual FMovementEventData BuildMovementEventData() const { return FMovementEventData();}
 };

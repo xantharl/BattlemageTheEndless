@@ -37,6 +37,7 @@ public:
 
 	virtual void Begin(const FMovementEventData& MovementEventData) override;
 	virtual void End(bool bForce = false) override;
+	virtual FMovementEventData BuildMovementEventData() const override;
 	
 	FVector LastInputVector = FVector::ZeroVector;
 };

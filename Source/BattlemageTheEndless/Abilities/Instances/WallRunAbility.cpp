@@ -4,8 +4,10 @@
 #include "WallRunAbility.h"
 #include <BattlemageTheEndless/Helpers/VectorMath.h>
 
+#include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemLog.h"
+#include "BattlemageTheEndless/Characters/BattlemageTheEndlessPlayerController.h"
 #include "BattlemageTheEndless/Characters/BMageCharacterMovementComponent.h"
 #include "GameFramework/PlayerState.h"
 
@@ -26,12 +28,16 @@ void UWallRunAbility::Init(UCharacterMovementComponent* movement, ACharacter* ch
 	// TODO: Figure out why this is null on training dummy
 	if (WallRunCapsule)
 	{
-		WallRunCapsule->InitCapsuleSize(55.f, 55.0f);
+		WallRunCapsule->InitCapsuleSize(75.f, 75.0f);
 		WallRunCapsule->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Overlap);
 		WallRunCapsule->AttachToComponent(Character->GetCapsuleComponent(), FAttachmentTransformRules::KeepWorldTransform);
 		WallRunCapsule->SetRelativeLocation(FVector(0.f, 0.f, -35.f));
-		WallRunCapsule->OnComponentBeginOverlap.AddDynamic(this, &UWallRunAbility::OnCapsuleBeginOverlap);
-		WallRunCapsule->OnComponentEndOverlap.AddDynamic(this, &UWallRunAbility::OnCapsuleEndOverlap);
+		
+		if (Character && Character->IsLocallyControlled())
+		{
+			WallRunCapsule->OnComponentBeginOverlap.AddDynamic(this, &UWallRunAbility::OnCapsuleBeginOverlap);
+			WallRunCapsule->OnComponentEndOverlap.AddDynamic(this, &UWallRunAbility::OnCapsuleEndOverlap);
+		}
 	}
 	
 	CharacterBaseGravityScale = Movement->GravityScale;
@@ -42,25 +48,17 @@ bool UWallRunAbility::ShouldBegin()
 	if (!WallRunCapsule)
 		return false;
 
-	// WallRunObject has already been set before we get here by the server RPC fired from client Actor overlap
-	if (ObjectIsWallRunnable(WallRunObject, Mesh))
-	{
-		// WallRunHit is set in ObjectIsWallRunnable
+	// WallRunHit is set in ObjectIsWallRunnable
 
-		// This is used by the anim graph to determine which way to mirror the wallrun animation
-		FVector start = Mesh->GetSocketLocation(FName("feetRaycastSocket"));
-		// add 30 degrees to the left of the forward vector to account for wall runs starting near the start of the wall
-		FVector end = start + FVector::LeftVector.RotateAngleAxis(WallRunCapsule->GetComponentRotation().Yaw + 30.f, FVector::ZAxisVector) * 200;
+	// This is used by the anim graph to determine which way to mirror the wallrun animation
+	FVector start = Mesh->GetSocketLocation(FName("feetRaycastSocket"));
+	// add 30 degrees to the left of the forward vector to account for wall runs starting near the start of the wall
+	FVector end = start + FVector::LeftVector.RotateAngleAxis(WallRunCapsule->GetComponentRotation().Yaw + 30.f, FVector::ZAxisVector) * 200;
 
-		auto params = FCollisionQueryParams(FName(TEXT("LineTrace")), true, Character);
-		WallIsToLeft = Traces::LineTraceGeneric(GetWorld(), params, start, end).GetActor() == WallRunObject;
+	auto params = FCollisionQueryParams(FName(TEXT("LineTrace")), true, Character);
+	WallIsToLeft = Traces::LineTraceGeneric(GetWorld(), params, start, end).GetActor() == WallRunObject;
 
-		return true;
-	}
-
-	// If we can't run on the provided object, reset state
-	WallRunObject = nullptr;
-	return false;
+	return true;
 }
 
 bool UWallRunAbility::ShouldEnd()
@@ -86,15 +84,17 @@ bool UWallRunAbility::ShouldEnd()
 
 void UWallRunAbility::Tick(float DeltaTime)
 {
+	Super::Tick(DeltaTime);
+	
 	// end conditions for wall run
 	//	no need to check time since there's a timer running for that
 	//	if we are on the ground, end the wall run
 	//	if a raycast doesn't find the wall, end the wall run
-	if (Movement->MovementMode == EMovementMode::MOVE_Walking || !ShouldEnd())
+	if (Movement->MovementMode == EMovementMode::MOVE_Walking)// || !ShouldEnd())
 	{
 		End();
 	}
-	else // if we're still wall running
+	else if (elapsed > duration_cast<milliseconds>(WallRunGravityDelay * 1000ms)) // if we're still wall running
 	{
 		// increase gravity linearly based on time elapsed
 		Movement->GravityScale += (DeltaTime / (WallRunMaxDuration - WallRunGravityDelay)) * (CharacterBaseGravityScale - WallRunInitialGravityScale);
@@ -112,7 +112,12 @@ void UWallRunAbility::Begin(const FMovementEventData& MovementEventData)
 	// the super should always be called first as it sets isactive
 	Super::Begin(MovementEventData);
 	
-	CharacterBaseGravityScale = Movement->GravityScale;
+	//CharacterBaseGravityScale = MovementEventData.OptionalFloat != 0.f ? MovementEventData.OptionalFloat : Movement->GravityScale;
+	if (MovementEventData.OptionalHitResult.IsValidBlockingHit())
+	{
+		WallRunHit = MovementEventData.OptionalHitResult;
+	}
+	
 	Movement->GravityScale = WallRunInitialGravityScale;
 	// kill any vertical movement
 	Movement->Velocity.Z = 0.f;	
@@ -165,8 +170,13 @@ void UWallRunAbility::End(bool bForce)
 {
 	Character->bUseControllerRotationYaw = true;
 
+	if (CharacterBaseGravityScale < 0.001f && GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("WallRunAbility: CharacterBaseGravityScale is zero, resetting to 1.0f"));
+		CharacterBaseGravityScale = 1.0f;
+	}
 	Movement->GravityScale = CharacterBaseGravityScale;
-	WallRunObject = NULL;
+	WallRunObject = nullptr;
 
 	// reset to full rotation
 	if (APlayerCameraManager* cameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0))
@@ -240,14 +250,24 @@ void UWallRunAbility::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedCompo
 	// Handle through ASC
 	if (auto ASC = Character->GetComponentByClass<UAbilitySystemComponent>())
 	{
-		// Movement Abilities are assumed to be local predicted, so start it locally and then notify the server
-		//if (!Character->HasAuthority())
-		ASC->TryActivateAbilitiesByTag(FGameplayTagContainer(FGameplayTag::RequestGameplayTag("Movement.WallRun")));
+		auto WallRunTag = FGameplayTag::RequestGameplayTag("Movement.WallRun");
+		WallRunObject = OtherActor;
+		if (!ObjectIsWallRunnable(WallRunObject, Mesh))
+			return;
+				
+		FGameplayEventData EventData;
+		EventData.Instigator = Character;
+		EventData.Target = Character;
+		EventData.EventTag = WallRunTag;
 		
-		if (auto CastedMovement = Cast<UBMageCharacterMovementComponent>(Movement))
+		// This needs to happen before we call the local since we sometimes modify dependent character data in begin ability
+		auto MovementEventData = BuildMovementEventData();
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Character, EventData.EventTag,EventData);
+
+		if (auto CastedController = Cast<ABattlemageTheEndlessPlayerController>(Character->GetController()))
 		{
 			// tell server about the overlapped actor
-			CastedMovement->Server_RequestStartMovementAbility(OtherActor, MovementAbilityType::WallRun);
+			CastedController->Server_HandleMovementEvent(WallRunTag, MovementEventData);
 		}
 	}
 }
@@ -255,6 +275,26 @@ void UWallRunAbility::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedCompo
 // TODO: Notify the character that the wall run has ended
 void UWallRunAbility::OnCapsuleEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-	if (IsGAActive() && WallRunObject == OtherActor)
+	// This is a bit of a hack but we immediately fire EndOverlap from server due to replication lag
+	if (elapsed < duration_cast<milliseconds>(250ms))
+		return;
+	
+ 	if (IsGAActive() && WallRunObject == OtherActor)
 		End();
+}
+
+FMovementEventData UWallRunAbility::BuildMovementEventData() const
+{
+	auto PawnMovement = Character->GetMovementComponent();
+	if (!PawnMovement)
+	{
+		UE_LOG(LogTemp, Warning, TEXT( "UWallRunAbility::BuildMovementEventDataFromPawn - Pawn %s has no "
+						   "MovementComponent, cannot build MovementEventData" ), *Character->GetName() );
+		return FMovementEventData();
+	}
+	
+	FMovementEventData ReturnData = FMovementEventData();
+	ReturnData.OptionalHitResult = WallRunHit;
+	ReturnData.OptionalFloat = Movement->GravityScale;
+	return ReturnData;
 }

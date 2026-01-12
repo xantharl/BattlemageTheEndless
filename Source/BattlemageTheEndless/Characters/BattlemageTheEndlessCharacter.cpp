@@ -532,10 +532,6 @@ void ABattlemageTheEndlessCharacter::AbilityInputPressed(TSubclassOf<class UGame
 		{
 			FMovementEventData MovementEventData = FMovementEventData();
 			MovementEventData.OptionalVector = LastControlInputVector;
-			if (GetCharacterMovement())
-				MovementEventData.OptionalFloat = GetCharacterMovement()->GroundFriction;
-			else
-				UE_LOG(LogTemp, Warning, TEXT( "ABattlemageTheEndlessCharacter::AbilityInputPressed - Character %s has no CharacterMovementComponent, cannot populate MovementEventData.OptionalFloat" ), *GetName() );
 			
 			CastedController->Server_HandleMovementEvent(EventData.EventTag, MovementEventData);
 		}

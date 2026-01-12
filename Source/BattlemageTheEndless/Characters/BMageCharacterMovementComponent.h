@@ -187,7 +187,7 @@ public:
 	
 	// RPC to request starting a wall run with the overlapped actor
 	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_RequestStartMovementAbility(AActor* OtherActor, MovementAbilityType AbilityType);	
+	void Server_RequestStartMovementAbility(AActor* OtherActor, MovementAbilityType AbilityType, FMovementEventData MovementEventData);	
 
 private:
 	// Gravity over time operations

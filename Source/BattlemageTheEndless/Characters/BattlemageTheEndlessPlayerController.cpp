@@ -14,10 +14,18 @@ void ABattlemageTheEndlessPlayerController::Server_HandleMovementEvent_Implement
 		UE_LOG(LogTemp, Warning, TEXT("Server_HandleMovementEvent called but AcknowledgedPawn is null"));
 		return;
 	}
-	if (auto Movement = Cast<UBMageCharacterMovementComponent>(AcknowledgedPawn->GetMovementComponent()))
+	if (const auto Movement = Cast<UBMageCharacterMovementComponent>(AcknowledgedPawn->GetMovementComponent()))
 	{
-		auto dodge = Cast<UDodgeAbility>(Movement->MovementAbilities[MovementAbilityType::Dodge]);
-		dodge->Begin(MovementEventData);
+		// Work backwards from the Tag to determine which ability we want to activate
+		const MovementAbilityType AbilityType = UMovementAbility::GetMovementAbilityTypeFromTag(EventTag);
+		if (AbilityType == MovementAbilityType::None)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Server_HandleMovementEvent called with invalid ability tag: %s"), *EventTag.ToString());
+			return;
+		}		
+		
+		if (const auto Ability = Movement->MovementAbilities.Find(AbilityType))
+			(*Ability)->Begin(MovementEventData);
 	}
 }
 

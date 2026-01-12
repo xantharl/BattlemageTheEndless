@@ -64,7 +64,9 @@ void UBMageCharacterMovementComponent::HandleJump(UCameraComponent* activeCamera
 	else if (CharacterOwner->bIsCrouched)
 		CharacterOwner->UnCrouch();
 
-	bool wallrunEnded = TryEndAbility(MovementAbilityType::WallRun);
+	bool wallrunEnded = false;
+	if (IsAbilityActive(MovementAbilityType::WallRun))
+ 		wallrunEnded = TryEndAbility(MovementAbilityType::WallRun);
 
 	// movement redirection logic
 	if (CharacterOwner->JumpCurrentCount < CharacterOwner->JumpMaxCount)
@@ -105,7 +107,7 @@ void UBMageCharacterMovementComponent::RedirectVelocityToLookDirection(bool wall
 	Velocity = Velocity.RotateAngleAxis(yawDifference, FVector::ZAxisVector);
 }
 
-void UBMageCharacterMovementComponent::Server_RequestStartMovementAbility_Implementation(AActor* OtherActor, MovementAbilityType AbilityType)
+void UBMageCharacterMovementComponent::Server_RequestStartMovementAbility_Implementation(AActor* OtherActor, MovementAbilityType AbilityType, FMovementEventData MovementEventData)
 { 
 	if (!OtherActor || !IsValid(OtherActor))
 		return;
@@ -141,7 +143,7 @@ void UBMageCharacterMovementComponent::Server_RequestStartMovementAbility_Implem
 	ASC->HandleGameplayEvent(EventData.EventTag, &EventData);
 }
 
-bool UBMageCharacterMovementComponent::Server_RequestStartMovementAbility_Validate(AActor* OtherActor, MovementAbilityType AbilityType)
+bool UBMageCharacterMovementComponent::Server_RequestStartMovementAbility_Validate(AActor* OtherActor, MovementAbilityType AbilityType, FMovementEventData MovementEventData)
 {
 	// basic quick validation (more checks below on server)
 	return true;

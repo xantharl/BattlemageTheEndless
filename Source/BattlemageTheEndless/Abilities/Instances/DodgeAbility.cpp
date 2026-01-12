@@ -59,3 +59,23 @@ void UDodgeAbility::End(bool bForce)
 	Super::End(bForce);
 	Movement->GroundFriction = PreviousFriction;
 }
+
+FMovementEventData UDodgeAbility::BuildMovementEventData() const
+{
+	auto PawnMovement = Character->GetMovementComponent();
+	if (!PawnMovement)
+	{
+		UE_LOG(LogTemp, Warning, TEXT( "UMovementAbility::BuildMovementEventDataFromPawn - Pawn %s has no "
+						   "MovementComponent, cannot build MovementEventData" ), *Character->GetName() );
+		return FMovementEventData();
+	}
+	
+	FMovementEventData ReturnData = FMovementEventData();
+	ReturnData.OptionalVector = PawnMovement->GetLastInputVector();						
+	if (IsValid(Movement))
+		ReturnData.OptionalFloat = Movement->GroundFriction;
+	else
+		UE_LOG(LogTemp, Warning, TEXT( "UMovementAbility::BuildMovementEventDataFromPawn - Character %s has no "
+						   "CharacterMovementComponent, cannot populate MovementEventData.OptionalFloat" ), *GetName() );
+	return ReturnData;
+}

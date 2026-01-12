@@ -70,6 +70,7 @@ void UMovementAbility::Init(UCharacterMovementComponent* movement, ACharacter* c
 void UMovementAbility::Begin(const FMovementEventData& MovementEventData)
 {
 	elapsed = (milliseconds)0;
+	IsActive = true;
 	shouldTransitionOut = false;
 	startTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 	if (TransitionInDuration > 0.00001f)
@@ -112,5 +113,19 @@ void UMovementAbility::Tick(float DeltaTime)
 
 void UMovementAbility::DeactivateAndBroadcast() {
 	shouldTransitionOut = false;
+	IsActive = false;
+	elapsed = 0ms;
 	OnMovementAbilityEnd.Broadcast(this);
+}
+
+MovementAbilityType UMovementAbility::GetMovementAbilityTypeFromTag(FGameplayTag Tag)
+{
+	// check for enum value on MovementType where the name is equal to the tag name after "Movement."
+	FString EnumName = Tag.ToString().RightChop(9); // length of "Movement."
+	int64 EnumValue = StaticEnum<MovementAbilityType>()->GetValueByName(FName(*EnumName));
+	if (EnumValue == INDEX_NONE)
+	{
+		return MovementAbilityType::None;
+	}
+	return static_cast<MovementAbilityType>(EnumValue);
 }
