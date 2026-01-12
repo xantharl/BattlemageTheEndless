@@ -252,7 +252,7 @@ void UWallRunAbility::OnCapsuleBeginOverlap(UPrimitiveComponent* OverlappedCompo
 	{
 		auto WallRunTag = FGameplayTag::RequestGameplayTag("Movement.WallRun");
 		WallRunObject = OtherActor;
-		if (!ObjectIsWallRunnable(WallRunObject, Mesh))
+		if (!ObjectIsWallRunnable(WallRunObject, Mesh) || !ShouldBegin())
 			return;
 				
 		FGameplayEventData EventData;
