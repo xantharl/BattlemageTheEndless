@@ -169,8 +169,14 @@ void UBMageCharacterMovementComponent::TickComponent(float DeltaTime, enum ELeve
 	if (_activeGravityCurve)
 		TickGravityOverTime(DeltaTime);
 
+	for (auto MovementAbilityTuple : MovementAbilities)
+	{
+		if (auto MovementAbility = Cast<UMovementAbility>(MovementAbilityTuple.Value); MovementAbility->ISMAActive())
+			MovementAbility->Tick(DeltaTime);
+	}
+	
 	// TODO: determine these based on priority
-	if (IsAbilityActive(MovementAbilityType::Slide))
+	if (MovementAbilities.Contains(MovementAbilityType::Slide) && MovementAbilities[MovementAbilityType::Slide]->ISMAActive())
 	{
 		MovementAbilities[MovementAbilityType::Slide]->Tick(DeltaTime);
 		if (MovementAbilities[MovementAbilityType::Slide]->ShouldTransitionOut()) {
@@ -183,18 +189,9 @@ void UBMageCharacterMovementComponent::TickComponent(float DeltaTime, enum ELeve
 		}
 	}
 
-	if (IsAbilityActive(MovementAbilityType::Launch))
-		MovementAbilities[MovementAbilityType::Launch]->Tick(DeltaTime);
-
-	if (IsAbilityActive(MovementAbilityType::Vault))
-		MovementAbilities[MovementAbilityType::Vault]->Tick(DeltaTime);
-
-	if (IsAbilityActive(MovementAbilityType::WallRun))
-		MovementAbilities[MovementAbilityType::WallRun]->Tick(DeltaTime);
-
 	// if we're past the apex, apply the falling gravity scale
 	// ignore this clause if we're wall running
-	if (PreviousVelocity.Z >= 0.0f && Velocity.Z < -0.00001f && !IsAbilityActive(MovementAbilityType::WallRun))
+	if (PreviousVelocity.Z >= 0.0f && Velocity.Z < -0.00001f && (!MovementAbilities.Contains(MovementAbilityType::Slide) || !MovementAbilities[MovementAbilityType::WallRun]->ISMAActive()))
 		// this is undone in OnMovementModeChanged when the character lands
 		GravityScale = CharacterPastJumpApexGravityScale;
 
