@@ -28,6 +28,8 @@ UAttackBaseGameplayAbility::UAttackBaseGameplayAbility()
 
 void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+	
 	UWorld* const world = GetWorld();
 	_bIsCharged = false;
 	auto character = Cast<ACharacter>(ActorInfo->OwnerActor);
@@ -96,7 +98,7 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	if(HitType == HitType::Self)
 	{
 		auto asc = ActorInfo->AbilitySystemComponent.Get();
-		ApplyEffects(character, ActorInfo->AbilitySystemComponent.Get(), character, ActorInfo->AvatarActor.Get());
+		ActiveEffectHandles = ApplyEffects(character, ActorInfo->AbilitySystemComponent.Get(), character, ActorInfo->AvatarActor.Get());
 
 		auto durationEffects = EffectsToApply.FilterByPredicate([](TSubclassOf<UGameplayEffect> effect) {
 			return effect.GetDefaultObject()->DurationPolicy == EGameplayEffectDurationType::HasDuration;
@@ -190,11 +192,17 @@ void UAttackBaseGameplayAbility::CreateAndDispatchMontageTask()
 
 void UAttackBaseGameplayAbility::ApplyChainEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser, bool isLastTarget)
 {
-	ApplyEffects(target, targetAsc, instigator, effectCauser);
+	ActiveEffectHandles = ApplyEffects(target, targetAsc, instigator, effectCauser);
 	if (isLastTarget)
 	{
 		EndSelf();
 	}
+}
+
+void UAttackBaseGameplayAbility::AddActiveEffectHandles(const TArray<FActiveGameplayEffectHandle>& Handles)
+{
+	for (auto Handle: Handles)
+		ActiveEffectHandles.Add(Handle);
 }
 
 TArray<FActiveGameplayEffectHandle> UAttackBaseGameplayAbility::ApplyEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser) const

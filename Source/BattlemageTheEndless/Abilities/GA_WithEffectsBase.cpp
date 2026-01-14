@@ -49,7 +49,7 @@ void UGA_WithEffectsBase::ActivateAbility(const FGameplayAbilitySpecHandle Handl
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
 	// Default impl assumes applying effects to self, override if needed
-	if (EffectsToApply.Num() > 0)
+	if (ActiveEffectHandles.IsEmpty() && EffectsToApply.Num() > 0)
 	{		
 		ActiveEffectHandles = ApplyEffects(ActorInfo->OwnerActor.Get(), ActorInfo->AbilitySystemComponent.Get(), ActorInfo->OwnerActor.Get(), ActorInfo->AvatarActor.Get());
 	}

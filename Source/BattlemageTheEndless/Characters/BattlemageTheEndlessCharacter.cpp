@@ -1284,12 +1284,13 @@ void ABattlemageTheEndlessCharacter::OnProjectileHit(UPrimitiveComponent* HitCom
 	if (!projectile)
 		return;
 	
-	const UAttackBaseGameplayAbility* ability = Cast<UAttackBaseGameplayAbility>(projectile->SpawningAbility);
+	UAttackBaseGameplayAbility* ability = Cast<UAttackBaseGameplayAbility>(projectile->SpawningAbility);
 	if (!ability)
 		return;
 
 	// apply effects to the hit actor (this character)
-	ability->ApplyEffects(this, AbilitySystemComponent, nullptr, projectile);
+	auto const Handles = ability->ApplyEffects(this, AbilitySystemComponent, nullptr, projectile);
+	ability->AddActiveEffectHandles(Handles);
 	if (projectile->ShouldDestroyOnHit())
 		projectile->Destroy();
 }

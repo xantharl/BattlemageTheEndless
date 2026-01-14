@@ -47,6 +47,11 @@ void UBaseAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 void UBaseAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
 {
 	Super::PostAttributeChange(Attribute, OldValue, NewValue);
+	
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage( -1, 5.f, FColor::Green, FString::Printf(TEXT("Attribute %s changed from %f to %f"), *Attribute.GetName(), OldValue, NewValue));
+	}
 
 	OnAttributeChanged.Broadcast(Attribute, OldValue, NewValue);
 }

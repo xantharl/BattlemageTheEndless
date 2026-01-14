@@ -69,6 +69,8 @@ public:
 #endif
 	FTimerHandle TimeoutTimerHandle;
 
+	void AddActiveEffectHandles(const TArray<FActiveGameplayEffectHandle>& Handles);
+	
 	UAttackBaseGameplayAbility();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HitBehavior)
@@ -175,7 +177,7 @@ public:
 	/// <param name="ActorInfo"></param>
 	/// <param name="ActivationInfo"></param>
 	/// <param name="TriggerEventData"></param>
-	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData);
+	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
 	void CreateAndDispatchMontageTask();
 
