@@ -180,7 +180,6 @@ void UBMageAbilitySystemComponent::BuildAbilityRangeCache()
 		entry.Range = abilityRange;
 		entry.SourceObject = resolvedSource;
 		_abilitiesByRangeCache.Add(entry);
-		continue;
 	}
 
 	_abilitiesByRangeCache.Sort([](const FAbilitiesByRangeCacheEntry& A, const FAbilitiesByRangeCacheEntry& B) {

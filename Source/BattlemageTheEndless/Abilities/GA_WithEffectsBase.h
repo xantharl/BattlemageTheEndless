@@ -109,5 +109,6 @@ protected:
 	FTimerHandle EndTimerHandle;
 
 	TArray<FActiveGameplayEffectHandle> ActiveEffectHandles;
-
+	
+	bool bApplyEffectsOnActivate = true;
 };

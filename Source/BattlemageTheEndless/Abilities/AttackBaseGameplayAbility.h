@@ -72,6 +72,8 @@ public:
 	void AddActiveEffectHandles(const TArray<FActiveGameplayEffectHandle>& Handles);
 	
 	UAttackBaseGameplayAbility();
+	void ActivateSelfAbility(const FGameplayAbilityActorInfo* ActorInfo, const UWorld* world,
+	                         TCopyQualifiersFromTo_T<AActor, ACharacter>* Character);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HitBehavior)
 	HitType HitType = HitType::None;
@@ -178,6 +180,8 @@ public:
 	/// <param name="ActivationInfo"></param>
 	/// <param name="TriggerEventData"></param>
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+	
+	void SetTimerOrEndImmediately(const UWorld* world, float montageDuration, FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo& ActivationInfo);
 
 	void CreateAndDispatchMontageTask();
 
@@ -270,7 +274,7 @@ private:
 		See GetChainTimerHandles **/
 	TArray<FTimerHandle> chainTimerHandles;
 
-	bool _bIsCharged = false;
+	bool _bIsChargeComplete = false;
 
 	FTimerHandle ChargeCompleteSoundTimerHandle;
 

@@ -24,19 +24,59 @@ bool UAttackBaseGameplayAbility::CanEditChange(const FProperty* InProperty) cons
 
 UAttackBaseGameplayAbility::UAttackBaseGameplayAbility()
 {
+	// Kind of hacky but this allows us to call the super ActivateAbility without having to worry about double applying effects
+	bApplyEffectsOnActivate = false;
+}
+
+void UAttackBaseGameplayAbility::ActivateSelfAbility(const FGameplayAbilityActorInfo* ActorInfo, const UWorld* const world, TCopyQualifiersFromTo_T<AActor, ACharacter>* Character)
+{
+	auto asc = ActorInfo->AbilitySystemComponent.Get();
+	ActiveEffectHandles = ApplyEffects(Character, ActorInfo->AbilitySystemComponent.Get(), Character, ActorInfo->AvatarActor.Get());
+
+	auto durationEffects = EffectsToApply.FilterByPredicate([](TSubclassOf<UGameplayEffect> effect) {
+		return effect.GetDefaultObject()->DurationPolicy == EGameplayEffectDurationType::HasDuration;
+	});
+
+	// if we have any duration effects, we need to keep the ability alive until they expire
+	if (durationEffects.Num() == 0)
+		return;
+	
+	auto maxDuration = 0.f;
+	TArray<FGameplayEffectSpec> specs;
+	asc->GetAllActiveGameplayEffectSpecs(specs);
+
+	for (auto effect : durationEffects)
+	{
+		auto activeEffect = specs.FindByPredicate([effect](const FGameplayEffectSpec& spec) {
+			return spec.Def == effect.GetDefaultObject();
+		});
+
+		// this can happen if a required tag on the GE is not met, thus the ability was applied but not the effect
+		if (!activeEffect)
+			continue;
+
+		float calculatedMagnitude = 0.f;
+		bool success = effect.GetDefaultObject()->DurationMagnitude.AttemptCalculateMagnitude(*activeEffect, calculatedMagnitude);
+		if (success && calculatedMagnitude > maxDuration)
+			maxDuration = calculatedMagnitude;
+	}
+
+	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UAttackBaseGameplayAbility::EndSelf);
+	world->GetTimerManager().SetTimer(EndTimerHandle, TimerDelegate, maxDuration, false);
 }
 
 void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
-{
-	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-	
-	UWorld* const world = GetWorld();
-	_bIsCharged = false;
-	auto character = Cast<ACharacter>(ActorInfo->OwnerActor);
-	if (!world || !character)
+{		
+	const UWorld* const world = GetWorld();
+	auto Character = Cast<ACharacter>(ActorInfo->OwnerActor);
+	if (!world || !Character)
 	{
 		return;
 	}
+	
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+	
+	_bIsChargeComplete = false;
 
 	// Activation time is only used to determine if the ability is charged, so if this isn't a charge ability we don't need to set it
 	if (ChargeDuration > 0.001f) {
@@ -45,7 +85,7 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	// charge abilities have a separate workflow for when to play the sound
 	else if (CastSound)
 	{
-		UGameplayStatics::SpawnSoundAttached(CastSound, character->GetRootComponent(),
+		UGameplayStatics::SpawnSoundAttached(CastSound, Character->GetRootComponent(),
 			// The next two lines are all default values, just making them explicit to get to the attenuation parameter
 			NAME_None, FVector(ForceInit), FRotator::ZeroRotator, EAttachLocation::KeepRelativeOffset, false,
 			1.f, 1.f, 0.f,
@@ -53,7 +93,7 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	}
 
 	// Try and play a firing animation if specified
-	auto animInstance = character->GetMesh()->GetAnimInstance();
+	auto animInstance = Character->GetMesh()->GetAnimInstance();
 	float montageDuration = 0.f;
 	if (FireAnimation && animInstance && ChargeDuration <= 0.001f)
 	{
@@ -71,7 +111,7 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		// play the charge sound if present
 		if (ChargeSound)
 		{
-			ChargeSoundComponent = UGameplayStatics::SpawnSoundAttached(ChargeSound, character->GetRootComponent(),
+			ChargeSoundComponent = UGameplayStatics::SpawnSoundAttached(ChargeSound, Character->GetRootComponent(),
 				// The next two lines are all default values, just making them explicit to get to the attenuation parameter
 				NAME_None, FVector(ForceInit), FRotator::ZeroRotator, EAttachLocation::KeepRelativeOffset, false,
 				1.f, 1.f, 0.f,
@@ -84,7 +124,7 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 				world->GetTimerManager().SetTimer(ChargeCompleteSoundTimerHandle, TimerDelegate, ChargeDuration, false);
 			}
 		}
-	};
+	}
 
 	CommitAbility(Handle, ActorInfo, ActivationInfo);
 
@@ -97,46 +137,26 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	// Apply effects to the character, these will in turn spawn any configured cues (Particles and/or sound)
 	if(HitType == HitType::Self)
 	{
-		auto asc = ActorInfo->AbilitySystemComponent.Get();
-		ActiveEffectHandles = ApplyEffects(character, ActorInfo->AbilitySystemComponent.Get(), character, ActorInfo->AvatarActor.Get());
-
-		auto durationEffects = EffectsToApply.FilterByPredicate([](TSubclassOf<UGameplayEffect> effect) {
-			return effect.GetDefaultObject()->DurationPolicy == EGameplayEffectDurationType::HasDuration;
-		});
-
-		// if we have any duration effects, we need to keep the ability alive until they expire
-		if (durationEffects.Num() > 0)
-		{
-			auto maxDuration = 0.f;
-			TArray<FGameplayEffectSpec> specs;
-			asc->GetAllActiveGameplayEffectSpecs(specs);
-
-			for (auto effect : durationEffects)
-			{
-				auto activeEffect = specs.FindByPredicate([effect](const FGameplayEffectSpec& spec) {
-					return spec.Def == effect.GetDefaultObject();
-				});
-
-				// this can happen if a required tag on the GE is not met, thus the ability was applied but not the effect
-				if (!activeEffect)
-					continue;
-
-				float calculatedMagnitude = 0.f;
-				bool success = effect.GetDefaultObject()->DurationMagnitude.AttemptCalculateMagnitude(*activeEffect, calculatedMagnitude);
-				if (success && calculatedMagnitude > maxDuration)
-					maxDuration = calculatedMagnitude;
-			}
-
-			FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UAttackBaseGameplayAbility::EndSelf);
-			world->GetTimerManager().SetTimer(EndTimerHandle, TimerDelegate, maxDuration, false);
-			return;
-		}
+		ActivateSelfAbility(ActorInfo, world, Character);
 	}
 	else if (HitType == HitType::Actor)
 	{		
-		SpawnSpellActors(false, character);
+		SpawnSpellActors(false, Character);
 	}
 
+	if (!world->GetTimerManager().IsTimerActive(EndTimerHandle))
+		SetTimerOrEndImmediately(world, montageDuration, Handle, ActorInfo, ActivationInfo);
+
+	// set a timeout for safety (in case we've neglected to end this gracefully)
+	if (IsActive())
+	{
+		FTimerDelegate TimeoutDelegate = FTimerDelegate::CreateUObject(this, &UAttackBaseGameplayAbility::EndAbilityByTimeout, Handle, ActorInfo, ActivationInfo, true, true);
+		world->GetTimerManager().SetTimer(TimeoutTimerHandle, TimeoutDelegate, montageDuration + 1.f, false);
+	}
+}
+
+void UAttackBaseGameplayAbility::SetTimerOrEndImmediately(const UWorld* world, float montageDuration, FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo& ActivationInfo)
+{
 	// if there is chain delay, set a timer to end the ability after that duration
 	if (ChainDelay > 0.001f && NumberOfChains > 0)
 	{
@@ -162,13 +182,6 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	// otherwise set a timer to end the ability when the montage is done
 	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UAttackBaseGameplayAbility::EndAbility, Handle, ActorInfo, ActivationInfo, true, true);
 	world->GetTimerManager().SetTimer(EndTimerHandle, TimerDelegate, montageDuration, false);
-
-	// set a timeout for safety (in case we've neglected to end this gracefully)
-	if (IsActive())
-	{
-		FTimerDelegate TimeoutDelegate = FTimerDelegate::CreateUObject(this, &UAttackBaseGameplayAbility::EndAbilityByTimeout, Handle, ActorInfo, ActivationInfo, true, true);
-		world->GetTimerManager().SetTimer(TimeoutTimerHandle, TimeoutDelegate, montageDuration + 1.f, false);
-	}
 }
 
 void UAttackBaseGameplayAbility::CreateAndDispatchMontageTask()
@@ -238,7 +251,7 @@ void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Han
 	if (ChargeDuration > 0.0001f)
 	{
 		// reset charged status for next invocation
-		_bIsCharged = false;
+		_bIsChargeComplete = false;
 		CurrentChargeDuration = 0ms;
 		CurrentChargeDamage = 1.f;
 		if (ShouldCastOnPartialCharge)
@@ -313,7 +326,7 @@ void UAttackBaseGameplayAbility::OnMontageBlendOut()
 
 bool UAttackBaseGameplayAbility::IsCharged()
 {
-	return _bIsCharged;
+	return _bIsChargeComplete;
 }
 
 void UAttackBaseGameplayAbility::HandleChargeProgress()
@@ -338,7 +351,7 @@ void UAttackBaseGameplayAbility::HandleChargeProgress()
 
 	if (CurrentChargeDuration >= (ChargeDuration * 1000ms))
 	{
-		_bIsCharged = true;
+		_bIsChargeComplete = true;
 		// if (GEngine)
 		// 	GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ability %s is now charged with multiplier of %f"), *GetName(), CurrentChargeDamage));
 	}

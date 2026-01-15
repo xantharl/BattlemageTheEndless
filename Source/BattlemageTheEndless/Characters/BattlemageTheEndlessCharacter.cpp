@@ -239,9 +239,10 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 
 	AttributeSet->OnAttributeChanged.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnAttributeChanged);
 
+	// This needs to be after abilities are granted but before healthbar init
+	Super::BeginPlay();
 	InitHealthbar();
 	SpawnTransform = GetActorTransform();
-	Super::BeginPlay();
 }
 
 void ABattlemageTheEndlessCharacter::InitHealthbar()
@@ -1059,27 +1060,26 @@ void ABattlemageTheEndlessCharacter::OnCrouchedSpeedChanged(const FOnAttributeCh
 
 void ABattlemageTheEndlessCharacter::ProcessMeleeInput(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)
 {
-	switch (triggerEvent)
+	if (!PickupActor)
 	{
-		// melee requires a completed event whether that's tap for light or hold for heavy
-		case ETriggerEvent::Completed:
-		{
-			// if we have a pickup actor, process the input
-			if (PickupActor)
-			{
-				//ProcessSpellInput(PickupActor, AttackType, triggerEvent);
-				AbilitySystemComponent->ProcessInputAndBindAbilityCancelled(PickupActor, AttackType);
-			}
-			else
-			{
-				UE_LOG(LogTemplateCharacter, Warning, TEXT("'%s' ProcessMeleeInput called without a PickupActor!"), *GetNameSafe(this));
-			}
-			break;
-		}
-		default:
-			break;
+		UE_LOG(LogTemplateCharacter, Warning, TEXT("'%s' ProcessMeleeInput called without a PickupActor!"), *GetNameSafe(this));
+		return;
 	}
-
+	
+	if (_bHeavyInputActive && (triggerEvent == ETriggerEvent::Canceled || triggerEvent == ETriggerEvent::Completed))
+	{
+		_bHeavyInputActive = false;
+		return;
+	}
+		
+	bool bShouldProcess = (triggerEvent == ETriggerEvent::Completed && AttackType == EAttackType::Light) ||
+		(!_bHeavyInputActive && triggerEvent == ETriggerEvent::Triggered && AttackType == EAttackType::Heavy);
+	
+	if (!_bHeavyInputActive && bShouldProcess)
+		_bHeavyInputActive = true;
+	
+	if (bShouldProcess)
+		AbilitySystemComponent->ProcessInputAndBindAbilityCancelled(PickupActor, AttackType);
 }
 
 void ABattlemageTheEndlessCharacter::ProcessSpellInput(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)

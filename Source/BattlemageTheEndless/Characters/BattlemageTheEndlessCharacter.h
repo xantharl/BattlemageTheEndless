@@ -91,6 +91,7 @@ private:
 	FGameplayTag _crouchTag = FGameplayTag::RequestGameplayTag(FName("Movement.Crouch"));
 	FGameplayTag _slideTag = FGameplayTag::RequestGameplayTag(FName("Movement.Slide"));
 	FGameplayTag _dodgeTag = FGameplayTag::RequestGameplayTag(FName("Movement.Dodge"));
+	bool _bHeavyInputActive;
 
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
@@ -277,7 +278,7 @@ protected:
 	float MaxHealth = 100;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
-	float HealthRegenRate = 2.f;
+	float HealthRegenRate = 0.f;
 
 	ACheckPoint* LastCheckPoint;
 

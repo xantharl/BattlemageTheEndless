@@ -13,6 +13,11 @@ FGameplayAbilitySpecHandle* UAbilityCombo::StartCombo(int startAtAttackNumber)
 	//GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Green, FString::Printf(TEXT("Started Combo %s"), *BaseComboIdentifier.ToString()));
 
 	LastComboAttackNumber = startAtAttackNumber;
+	if (startAtAttackNumber > AbilityHandles.Num() - 1)
+	{
+		UE_LOG( LogTemp, Error, TEXT("Attempted to start combo at attack %d but combo only has %d attacks."), startAtAttackNumber+1, AbilityHandles.Num());
+		return nullptr;
+	}
 	return &AbilityHandles[startAtAttackNumber];
 }
 
