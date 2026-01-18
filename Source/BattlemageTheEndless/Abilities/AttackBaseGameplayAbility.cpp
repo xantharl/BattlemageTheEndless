@@ -230,7 +230,7 @@ TArray<FActiveGameplayEffectHandle> UAttackBaseGameplayAbility::ApplyEffects(AAc
 	return Super::ApplyEffects(target, targetAsc, instigator, effectCauser);
 }
 
-void UAttackBaseGameplayAbility::HandleSetByCaller(TSubclassOf<UGameplayEffect> effect, FGameplayEffectSpecHandle specHandle, AActor* effectCauser, UAbilitySystemComponent* targetAsc)
+void UAttackBaseGameplayAbility::HandleSetByCaller(TSubclassOf<UGameplayEffect> effect, FGameplayEffectSpecHandle specHandle, AActor* effectCauser, UAbilitySystemComponent* targetAsc) const
 {
 	// This sets the damage manually for a Set By Caller type effect
 	ABattlemageTheEndlessProjectile* projectile = Cast<ABattlemageTheEndlessProjectile>(effectCauser);
