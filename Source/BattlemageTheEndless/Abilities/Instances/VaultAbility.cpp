@@ -107,7 +107,7 @@ bool UVaultAbility::ShouldBegin()
 	if (VaultTarget->IsA(APawn::StaticClass()) || Movement->MovementMode != EMovementMode::MOVE_Falling)
 		return false;
 
-	bool drawTrace = false;
+	bool drawTrace = true;
 
 	// Raycast from cameraSocket straight forward to see if Object is in the way	
 	VaultHit = Traces::LineTraceMovementVector(Character, Movement, Mesh, FName("cameraSocket"), 50, drawTrace, FColor::Green, 0.f);
@@ -117,7 +117,7 @@ bool UVaultAbility::ShouldBegin()
 		return false;
 
 	// Repeat the same process but use socket vaultRaycastSocket
-	VaultHit = Traces::LineTraceMovementVector(Character, Movement, Mesh, FName("vaultRaycastSocket"), 50, drawTrace, FColor::Green, 0.f);
+	VaultHit = Traces::LineTraceMovementVector(Character, Movement, Mesh, FName("vaultRaycastSocket"), 50, drawTrace, FColor::Blue, 0.f);
 
 	// If the vault raycast hit the object, we can vault
 	return VaultHit.IsValidBlockingHit() && VaultHit.GetActor() == VaultTarget;
