@@ -141,17 +141,13 @@ void UWallRunAbility::Begin(const FMovementEventData& MovementEventData)
 	Movement->Velocity = TargetRotation.Vector() * Movement->Velocity.Size();
 
 	Character->bUseControllerRotationYaw = false;
-	const auto State = Character->GetPlayerState();
-	if (!State)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("WallRunAbility: Character has no PlayerState, cannot set wall run camera settings"));
-	}
-	// set max pan angle to 60 degrees
-	else if (APlayerCameraManager* cameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), State->GetPlayerId()))
+	
+	const APlayerController* PC = Cast<APlayerController>(Character->GetController());
+	if (PC->PlayerCameraManager)
 	{
 		float currentYaw = TargetRotation.Yaw;
-		cameraManager->ViewYawMax = currentYaw + 90.f;
-		cameraManager->ViewYawMin = currentYaw - 90.f;
+		PC->PlayerCameraManager->ViewYawMax = currentYaw + 60.f;
+		PC->PlayerCameraManager->ViewYawMin = currentYaw - 60.f;
 	}
 
 	// set air control to 100% to allow for continued movement parallel to the wall
@@ -179,10 +175,11 @@ void UWallRunAbility::End(bool bForce)
 	WallRunObject = nullptr;
 
 	// reset to full rotation
-	if (APlayerCameraManager* cameraManager = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0))
+	const APlayerController* PC = Cast<APlayerController>(Character->GetController());
+	if (PC->PlayerCameraManager)
 	{
-		cameraManager->ViewYawMax = 359.998993f;
-		cameraManager->ViewYawMin = 0.f;
+		PC->PlayerCameraManager->ViewYawMax = 359.998993f;
+		PC->PlayerCameraManager->ViewYawMin = 0.f;
 	}
 
 	Super::End(bForce);

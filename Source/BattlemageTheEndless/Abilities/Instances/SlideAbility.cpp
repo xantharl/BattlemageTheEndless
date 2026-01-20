@@ -2,6 +2,9 @@
 
 
 #include "SlideAbility.h"
+
+#include "GameFramework/PlayerState.h"
+
 USlideAbility::USlideAbility(const FObjectInitializer& X) : Super(X)
 {
 	Type = MovementAbilityType::Slide;
@@ -39,12 +42,25 @@ void USlideAbility::End(bool bForce)
 	Character->bUseControllerRotationYaw = true;
 	Movement->RotationRate.Yaw = _priorRotationRateZ;
 	Movement->bWantsToCrouch = false;
+
+	// reset to full rotation	
+	const APlayerController* PC = Cast<APlayerController>(Character->GetController());
+	if (PC->PlayerCameraManager)
+	{
+		PC->PlayerCameraManager->ViewYawMax = 359.998993f;
+		PC->PlayerCameraManager->ViewYawMin = 0.f;
+	}
+	
 	Super::End(bForce);
 }
 
 void USlideAbility::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	
+	if (!IsGAActive())
+		return;
+	
 	FVector currentLocation = Movement->GetActorLocation();
 
 	// Don't count time till we're done transitioning in
@@ -104,4 +120,13 @@ void USlideAbility::Tick(float DeltaTime)
 	}
 
 	_previousLocation = currentLocation;
+	
+	// update camera yaw limits
+	const APlayerController* PC = Cast<APlayerController>(Character->GetController());
+	if (PC->PlayerCameraManager)
+	{		
+		float currentYaw = Movement->GetForwardVector().Rotation().Yaw;
+		PC->PlayerCameraManager->ViewYawMax = currentYaw + 60.f;
+		PC->PlayerCameraManager->ViewYawMin = currentYaw - 60.f;
+	}
 }
