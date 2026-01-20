@@ -63,11 +63,22 @@ void UVaultAbility::Begin(const FMovementEventData& MovementEventData)
 	}
 
 	// determine the highest point on the vaulted face
-	// NOTE: This logic will only work for objects with flat tops
 	VaultAttachPoint = VaultHit.ImpactPoint;
-	// Box extent seems to be distance from origin (so we're not halving it)
-	VaultAttachPoint.Z = VaultHit.Component->Bounds.Origin.Z + VaultHit.Component->Bounds.BoxExtent.Z;
-
+	
+	// Perform a raycast straight down from VaultHit but with Z replaced by character's CameraSocket since we know it
+	//	is currently above the top of the object (required for vaulting)
+	FVector RayStart = VaultHit.ImpactPoint;
+	RayStart.Z = Mesh->GetSocketLocation(FName("cameraSocket")).Z;
+	FHitResult DownHit = Traces::LineTraceGeneric(GetWorld(), FCollisionQueryParams(FName(TEXT("VaultDownTrace")), 
+		true, Character), RayStart, RayStart - FVector(0, 0, 200.f));
+	
+	// if we hit something, use that Z as the attach point
+	if (DownHit.bBlockingHit)
+		VaultAttachPoint.Z = DownHit.ImpactPoint.Z;
+	// Otherwise use the simple box extent as a fallback, this can have undesired effects on oddly shaped objects
+	else
+		VaultAttachPoint.Z = VaultHit.Component->Bounds.Origin.Z + VaultHit.Component->Bounds.BoxExtent.Z;
+	
 	//DrawDebugSphere(GetWorld(), VaultAttachPoint, 10.0f, 12, FColor::Green, false, 1.0f, 0, 1.0f);
 
 	// check which hand is higher
