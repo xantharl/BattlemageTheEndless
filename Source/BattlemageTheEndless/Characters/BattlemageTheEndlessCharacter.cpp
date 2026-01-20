@@ -520,19 +520,37 @@ void ABattlemageTheEndlessCharacter::AbilityInputPressed(TSubclassOf<class UGame
 		}
 		if (GameplayEventTriggers.Num() == 0)
 		{
-			UE_LOG( LogTemp, Warning, TEXT( "ABattlemageTheEndlessCharacter::AbilityInputPressed - No GameplayEvent trigger is specified for Ability %s, the default activation path will be used" ), *ability->GetName() );
+			UE_LOG( LogTemp, Verbose, TEXT( "ABattlemageTheEndlessCharacter::AbilityInputPressed - No GameplayEvent trigger is specified for Ability %s, the default activation path will be used" ), *ability->GetName() );
 		}
 		
-		FGameplayEventData EventData;
+		FGameplayEventData EventData;	
 		EventData.Instigator = this;
 		EventData.Target = this;
 		EventData.EventTag = GameplayEventTriggers[0].TriggerTag;
 		
+		// Movement event data for RPC must be built BEFORE local activation so we capture correct before state
+		FMovementEventData MovementEventData;
+		if (const auto Movement = Cast<UBMageCharacterMovementComponent>(GetMovementComponent()))
+		{
+			// Work backwards from the Tag to determine which ability we want to activate
+			const MovementAbilityType AbilityType = UMovementAbility::GetMovementAbilityTypeFromTag(GameplayEventTriggers[0].TriggerTag);
+			if (AbilityType == MovementAbilityType::None)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("AbilityInputPressed called with invalid ability tag: %s"), *GameplayEventTriggers[0].TriggerTag.ToString());
+				return;
+			}		
+		
+			if (const auto Ability = Movement->MovementAbilities.Find(AbilityType))
+				MovementEventData = (*Ability)->BuildMovementEventData();
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT( "ABattlemageTheEndlessCharacter::AbilityInputPressed - No Movement Component found for Ability %s" ), *ability->GetName() );		
+		}
+		
 		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(this, EventData.EventTag,EventData);
 		if (auto CastedController = Cast<ABattlemageTheEndlessPlayerController>(GetController()))
 		{
-			FMovementEventData MovementEventData = FMovementEventData();
-			MovementEventData.OptionalVector = LastControlInputVector;
 			
 			CastedController->Server_HandleMovementEvent(EventData.EventTag, MovementEventData);
 		}
