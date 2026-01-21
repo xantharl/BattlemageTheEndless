@@ -97,6 +97,8 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	float montageDuration = 0.f;
 	if (FireAnimation && animInstance && ChargeDuration <= 0.001f)
 	{
+		if (FireAnimation->HasRootMotion())
+			Character->bUseControllerRotationYaw = false;
 		// if it's not a charge ability, play the fire animation and possibly end the ability on callback (it will check for active effects)
 		CreateAndDispatchMontageTask();
 
@@ -304,7 +306,11 @@ void UAttackBaseGameplayAbility::OnMontageCompleted()
 	// check if effects are still active, if so keep the ability alive
 	if (ActiveEffectHandles.Num() > 0)
 		return;
-
+	
+	auto Character = Cast<ACharacter>(CurrentActorInfo->OwnerActor);
+	if (Character && FireAnimation->HasRootMotion())
+		Character->bUseControllerRotationYaw = true;
+	
 	/*if (GEngine)
 		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ending ability %s due to montage finish"), *GetName()));*/
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);

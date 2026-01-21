@@ -804,43 +804,76 @@ void ABattlemageTheEndlessCharacter::SetActivePickup(APickupActor* pickup)
 		}
 
 		auto bindingHandles = FBindingHandles();
-		for (ETriggerEvent triggerEvent : TEnumRange<ETriggerEvent>())
+		if (pickup->PickupType == EPickupType::SpellClass)
+		{
+			for (ETriggerEvent triggerEvent : TEnumRange<ETriggerEvent>())
+			{
+				bindingHandles.Handles.Add(
+					EnhancedInputComponent->BindAction(
+						pickup->Weapon->FireActionTap, 
+						triggerEvent,
+						this, 
+						&ABattlemageTheEndlessCharacter::ProcessSpellInput,
+						pickup, 
+						EAttackType::Light, 
+						triggerEvent)
+					.GetHandle());
+
+				// Charge abilities start immediately 
+				bindingHandles.Handles.Add(
+					EnhancedInputComponent->BindAction(
+						pickup->Weapon->FireActionHold,
+						triggerEvent,
+						this,
+						&ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged,
+						pickup,
+						EAttackType::Heavy,
+						triggerEvent)
+					.GetHandle());
+
+				// placed abilities
+				bindingHandles.Handles.Add(
+					EnhancedInputComponent->BindAction(
+						pickup->Weapon->FireActionHoldAndRelease,
+						triggerEvent,
+						this,
+						&ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed,
+						pickup,
+						EAttackType::Light,
+						triggerEvent)
+					.GetHandle());
+			}
+		}
+		else
 		{
 			bindingHandles.Handles.Add(
 				EnhancedInputComponent->BindAction(
 					pickup->Weapon->FireActionTap, 
-					triggerEvent,
+					ETriggerEvent::Completed,
 					this, 
-					pickup->PickupType == EPickupType::Weapon ? &ABattlemageTheEndlessCharacter::ProcessMeleeInput : & ABattlemageTheEndlessCharacter::ProcessSpellInput,
+					&ABattlemageTheEndlessCharacter::ProcessMeleeInput,
 					pickup, 
 					EAttackType::Light, 
-					triggerEvent)
+					ETriggerEvent::Completed)
 				.GetHandle());
 
 			// Charge abilities start immediately 
-			bindingHandles.Handles.Add(
-				EnhancedInputComponent->BindAction(
-					pickup->Weapon->FireActionHold,
-					triggerEvent,
-					this,
-					pickup->PickupType == EPickupType::Weapon ? &ABattlemageTheEndlessCharacter::ProcessMeleeInput : &ABattlemageTheEndlessCharacter::ProcessSpellInput_Charged,
-					pickup,
-					EAttackType::Heavy,
-					triggerEvent)
-				.GetHandle());
-
-			// placed abilities
-			bindingHandles.Handles.Add(
-				EnhancedInputComponent->BindAction(
-					pickup->Weapon->FireActionHoldAndRelease,
-					triggerEvent,
-					this,
-					pickup->PickupType == EPickupType::Weapon ? &ABattlemageTheEndlessCharacter::ProcessMeleeInput : &ABattlemageTheEndlessCharacter::ProcessSpellInput_Placed,
-					pickup,
-					EAttackType::Light,
-					triggerEvent)
-				.GetHandle());
+			for (auto triggerEvent : {ETriggerEvent::Triggered, ETriggerEvent::Completed, ETriggerEvent::Canceled})
+			{
+				bindingHandles.Handles.Add(
+				   EnhancedInputComponent->BindAction(
+					   pickup->Weapon->FireActionHold,
+					   triggerEvent,
+					   this,
+					   &ABattlemageTheEndlessCharacter::ProcessMeleeInput,
+					   pickup,
+					   EAttackType::Heavy,
+					   triggerEvent)
+				   .GetHandle());
+			}
 		}
+		
+		
 		EquipmentBindingHandles.Add(pickup, bindingHandles);
 	}
 	// todo: make this work
@@ -1078,26 +1111,39 @@ void ABattlemageTheEndlessCharacter::OnCrouchedSpeedChanged(const FOnAttributeCh
 
 void ABattlemageTheEndlessCharacter::ProcessMeleeInput(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)
 {
+	// Note that light attacks are only bound for Completed events, so we don't need to check for those here
+	// Heavy attacks are bound for Triggered, Completed, and Canceled events
+	
 	if (!PickupActor)
 	{
 		UE_LOG(LogTemplateCharacter, Warning, TEXT("'%s' ProcessMeleeInput called without a PickupActor!"), *GetNameSafe(this));
 		return;
 	}
 	
+	if (AttackType == EAttackType::Light)
+	{
+		AbilitySystemComponent->ProcessInputAndBindAbilityCancelled(PickupActor, AttackType);
+		return;
+	}
+				
 	if (_bHeavyInputActive && (triggerEvent == ETriggerEvent::Canceled || triggerEvent == ETriggerEvent::Completed))
 	{
 		_bHeavyInputActive = false;
 		return;
 	}
 		
-	bool bShouldProcess = (triggerEvent == ETriggerEvent::Completed && AttackType == EAttackType::Light) ||
-		(!_bHeavyInputActive && triggerEvent == ETriggerEvent::Triggered && AttackType == EAttackType::Heavy);
+	bool bShouldProcess = !_bHeavyInputActive && triggerEvent == ETriggerEvent::Triggered && AttackType == EAttackType::Heavy;
 	
 	if (!_bHeavyInputActive && bShouldProcess)
 		_bHeavyInputActive = true;
 	
 	if (bShouldProcess)
+	{
+		if (GEngine)
+			GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("ProcessMeleeInput: Ability %s, AttackType %d, TriggerEvent %d"),
+				*(PickupActor->Weapon->SelectedAbility->GetName()), static_cast<int32>(AttackType), static_cast<int32>(triggerEvent)));
 		AbilitySystemComponent->ProcessInputAndBindAbilityCancelled(PickupActor, AttackType);
+	}
 }
 
 void ABattlemageTheEndlessCharacter::ProcessSpellInput(APickupActor* PickupActor, EAttackType AttackType, ETriggerEvent triggerEvent)

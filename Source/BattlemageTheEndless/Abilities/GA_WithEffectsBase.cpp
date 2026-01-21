@@ -157,6 +157,7 @@ void UGA_WithEffectsBase::EndSelf()
 {
 	if (IsActive())
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+	
 	// else if (GEngine)
 	// 	GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Blue, FString::Printf(TEXT("Ability %s is not active, cannot end it"), *GetName()));
 }
