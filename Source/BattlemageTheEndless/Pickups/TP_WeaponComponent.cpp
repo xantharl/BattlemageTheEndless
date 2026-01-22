@@ -130,15 +130,14 @@ void UTP_WeaponComponent::RemoveContext(ACharacter* character)
 
 // This is called by the AnimNotify_Collision Blueprint
 bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult& Hit, FString attackAnimationName)
-{	
-	// TODO: This isn't working for clients, need to find a way to replicate hits properly
-	
-	if (!character->IsLocallyControlled())
-		return false;
-	
+{		
 	// if (GEngine)
 	// 	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("%s hit character %s"),
 	// 		*(character->GetName()), *(Hit.GetActor()->GetName())));
+	
+	// We only want local clients to trigger weapon hits checks
+	if (!character->IsLocallyControlled()) // TODO: Account for AI?
+		return false;
 	
 	if (attackAnimationName != LastAttackAnimationName)
 	{
@@ -169,18 +168,23 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 
 	LastHitCharacters.Add(hitActor);
 
-	auto ability = attackerAsc->FindAbilitySpecFromHandle(attackerAsc->ComboManager->LastActivatedAbilityHandle);
-	if (!ability)
+	auto abilitySpec = attackerAsc->FindAbilitySpecFromClass(attackerAsc->ComboManager->LastActivatedAbilityClass);
+	if (!abilitySpec)
 	{
 		UE_LOG(LogTemp, Error, TEXT("LastActivatedAbility Not found, if you hit this ActivateAbility was probably called directly, use UFUNCTION ProcessInputAndBindAbilityCancelled"));
 		return false;
 	}
-	// get the active ability
-	auto abilitySpec = Cast<UAttackBaseGameplayAbility>(
-		attackerAsc->FindAbilitySpecFromHandle(attackerAsc->ComboManager->LastActivatedAbilityHandle)->Ability);
 
 	// apply any on hit effects from the weapon attack, all effects on a weapon are assumed to be on hit
-	abilitySpec->ApplyEffects(hitActor, hitActorAsc, character, GetOwner());
+	const auto Casted = Cast<UGA_WithEffectsBase>(abilitySpec->Ability);
+	if (Casted)
+		Casted->ApplyEffects(hitActor, hitActorAsc, character, GetOwner());
+	
+	// We've applied locally, now inform the server (as long as we aren't the listen server host, which would double apply)
+	if (const auto CastedController = Cast<ABattlemageTheEndlessPlayerController>(character->GetController()); !character->HasAuthority())
+	{
+		CastedController->Server_ApplyEffects(Casted->GetClass(), Hit);
+	}
 	
 	return true;
 }

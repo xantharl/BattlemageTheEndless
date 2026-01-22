@@ -65,8 +65,9 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	
 	UPROPERTY(BlueprintReadOnly, Category = Combo, meta = (AllowPrivateAccess = "true"))
-	FGameplayAbilitySpecHandle LastActivatedAbilityHandle;
+	TSubclassOf<UGameplayAbility> LastActivatedAbilityClass;
 
+	// Is this actually in use?
 	TObjectPtr<UNiagaraComponent> LastAbilityNiagaraInstance;
 
 	void OnAbilityFailed(const UGameplayAbility* ability, const FGameplayTagContainer& reason);

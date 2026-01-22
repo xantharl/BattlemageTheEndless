@@ -128,9 +128,9 @@ FGameplayAbilitySpecHandle UComboManagerComponent::ProcessInput(APickupActor* Pi
 
 	// we've only gotten this far if we're in a combo, so we can assume the ability is part of a combo
 	// if there is an ongoing ability, queue the next one and subscribe to the end event
-	if (LastActivatedAbilityHandle.IsValid())
+	if (LastActivatedAbilityClass)
 	{
-		auto lastAbility = AbilitySystemComponent->FindAbilitySpecFromHandle(LastActivatedAbilityHandle);
+		auto lastAbility = AbilitySystemComponent->FindAbilitySpecFromClass(LastActivatedAbilityClass);
 		TArray<TObjectPtr<UGameplayAbility>> instances = lastAbility->Ability->GetReplicationPolicy() == EGameplayAbilityReplicationPolicy::ReplicateNo
 			? lastAbility->NonReplicatedInstances : lastAbility->ReplicatedInstances;
 
@@ -216,7 +216,7 @@ void UComboManagerComponent::ActivateAbilityAndResetTimer(FGameplayAbilitySpec a
 		NextAbilityHandle = nullptr;
 
 		// unsubscribe from the last ability's end event
-		auto lastAbility = AbilitySystemComponent->FindAbilitySpecFromHandle(LastActivatedAbilityHandle);
+		auto lastAbility = AbilitySystemComponent->FindAbilitySpecFromClass(LastActivatedAbilityClass);
 		TArray<TObjectPtr<UGameplayAbility>> instances = lastAbility->Ability->GetReplicationPolicy() == EGameplayAbilityReplicationPolicy::ReplicateNo
 			? lastAbility->NonReplicatedInstances : lastAbility->ReplicatedInstances;
 
@@ -230,7 +230,7 @@ void UComboManagerComponent::ActivateAbilityAndResetTimer(FGameplayAbilitySpec a
 
 	bool activated = CheckCooldownAndTryActivate(abilitySpec);
 	if (activated)
-		LastActivatedAbilityHandle = abilitySpec.Handle;
+		LastActivatedAbilityClass = abilitySpec.Ability->GetClass();
 
 	//if (GEngine && abilitySpec.Ability)
 	//{
@@ -269,7 +269,7 @@ void UComboManagerComponent::EndComboHandler()
 	}
 
 	// Reset combo manager state
-	LastActivatedAbilityHandle = FGameplayAbilitySpecHandle();
+	LastActivatedAbilityClass = nullptr;
 	NextAbilityHandle = nullptr;
 	LastAbilityNiagaraInstance = nullptr;
 	if (GetWorld()->GetTimerManager().IsTimerActive(ComboTimerHandle))

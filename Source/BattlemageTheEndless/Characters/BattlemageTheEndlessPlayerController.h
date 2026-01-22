@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
+#include "BattlemageTheEndless/Abilities/GA_WithEffectsBase.h"
 #include "GameFramework/PlayerController.h"
 #include "BattlemageTheEndless/Abilities/MovementAbility.h"
 #include "BattlemageTheEndlessPlayerController.generated.h"
@@ -21,6 +22,9 @@ class BATTLEMAGETHEENDLESS_API ABattlemageTheEndlessPlayerController : public AP
 public:	
 	UFUNCTION(Server, Reliable)
 	void Server_HandleMovementEvent(const FGameplayTag EventTag, const FMovementEventData& MovementEventData);
+	
+	UFUNCTION(Server, Reliable)
+	void Server_ApplyEffects(TSubclassOf<UGA_WithEffectsBase> EffectClass, const FHitResult& Hit);
 	
 protected:
 
