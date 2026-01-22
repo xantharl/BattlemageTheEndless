@@ -294,6 +294,9 @@ void UAttackBaseGameplayAbility::TryPlayComboPause(const FGameplayAbilityActorIn
 
 void UAttackBaseGameplayAbility::OnMontageCancelled()
 {
+	auto Character = Cast<ACharacter>(CurrentActorInfo->OwnerActor);
+	if (Character && FireAnimation->HasRootMotion())
+		Character->bUseControllerRotationYaw = true;
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 }
 

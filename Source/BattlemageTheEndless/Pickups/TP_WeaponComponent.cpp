@@ -130,11 +130,16 @@ void UTP_WeaponComponent::RemoveContext(ACharacter* character)
 
 // This is called by the AnimNotify_Collision Blueprint
 bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult& Hit, FString attackAnimationName)
-{
+{	
+	// TODO: This isn't working for clients, need to find a way to replicate hits properly
+	
+	if (!character->IsLocallyControlled())
+		return false;
+	
 	// if (GEngine)
 	// 	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("%s hit character %s"),
 	// 		*(character->GetName()), *(Hit.GetActor()->GetName())));
-
+	
 	if (attackAnimationName != LastAttackAnimationName)
 	{
 		ResetHits();
@@ -146,21 +151,21 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 		return false;
 	}
 
-	// if either actor involed does not have an ASC, exit
+	// if either actor involved does not have an ASC, exit
 	auto attackerAsc = character->FindComponentByClass<UBMageAbilitySystemComponent>();
 	auto hitActor = Hit.GetActor();
 	auto hitActorAsc = hitActor->FindComponentByClass<UAbilitySystemComponent>();
 
+	if (hitActor != character && GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("%s Hit by Animation %s"), *character->GetName(), *LastAttackAnimationName));
+	}
+	
 	// If this character has already been hit by this stage of the combo, don't hit them again
 	if (!attackerAsc || !hitActorAsc || LastHitCharacters.Contains(hitActor) || hitActor == character)
 	{
 		return false;
 	}
-
-	/*if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("Hit by Animation %s"), *LastAttackAnimationName));
-	}*/
 
 	LastHitCharacters.Add(hitActor);
 
