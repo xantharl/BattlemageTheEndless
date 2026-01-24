@@ -923,6 +923,16 @@ bool ABattlemageTheEndlessCharacter::HasWeapon(EquipSlot SlotType)
 
 void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
 {
+	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
+	{
+		AbilitySystemComponent->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag("Movement.Falling"));
+	}
+	
+	if (PrevMovementMode == EMovementMode::MOVE_Falling)
+	{
+		AbilitySystemComponent->RemoveLooseGameplayTag(FGameplayTag::RequestGameplayTag("Movement.Falling"));
+	}
+	
 	if (PrevMovementMode == EMovementMode::MOVE_Falling && GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Walking)
 	{
 		// TODO: Use anim notify instead

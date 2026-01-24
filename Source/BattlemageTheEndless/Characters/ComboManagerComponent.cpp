@@ -70,7 +70,7 @@ void UComboManagerComponent::AddAbilityToCombo(APickupActor* PickupActor, UGA_Wi
 	}
 }
 
-FGameplayAbilitySpecHandle UComboManagerComponent::ProcessInput(APickupActor* PickupActor, EAttackType AttackType)
+FGameplayAbilitySpecHandle UComboManagerComponent::ProcessInput_Legacy(APickupActor* PickupActor, EAttackType AttackType)
 {
 	// ignore input if there is a queued action and we are requesting the same combo
 	bool activeComboContainsRequestedAttack = Combos.Contains(PickupActor) && Combos[PickupActor].ActiveCombo
@@ -164,6 +164,122 @@ FGameplayAbilitySpecHandle UComboManagerComponent::ProcessInput(APickupActor* Pi
 	}
 
 	return *toActivate;
+}
+
+FGameplayAbilitySpecHandle UComboManagerComponent::ProcessInput(APickupActor* PickupActor, EAttackType AttackType)
+{
+	// Ignore input if there is a queued action
+	if (NextAbilityHandle)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, TEXT("Ignoring input, requested action already queued"));
+		}
+		return FGameplayAbilitySpecHandle();
+	}	
+	
+	// Start building search tags based on input
+	FGameplayTagContainer OwnedTags = FGameplayTagContainer(AttackType == EAttackType::Light
+			? FGameplayTag::RequestGameplayTag(FName("Weapon.AttackType.Light"))
+			: FGameplayTag::RequestGameplayTag(FName("Weapon.AttackType.Heavy")));
+	
+	// If we are currently in a combo, look for the next ability in the combo, otherwise look for the first
+	if (const FTimerManager& TimerManager = GetWorld()->GetTimerManager(); TimerManager.IsTimerActive(ComboTimerHandle))
+	{
+		if (!LastActivatedAbilityClass)
+			OwnedTags.AddTagFast(FGameplayTag::RequestGameplayTag("State.Combo.1"));
+		else
+		{
+			FGameplayTag ComboBaseTag = FGameplayTag::RequestGameplayTag("State.Combo");
+			FGameplayTagContainer Matches = LastActivatedAbilityClass->GetDefaultObject<UGameplayAbility>()->AbilityTags.Filter(FGameplayTagContainer(ComboBaseTag));
+			if (Matches.Num() > 0)
+			{
+				int ComboStage = 1;
+				FString LastComboTagStr = Matches.First().ToString();
+				// extract the numeric suffix, this assumes we will never have more than 10 stages in a combo
+				int32 LastStage = FCString::Atoi(*LastComboTagStr.Right(1));
+				ComboStage = LastStage + 1;
+				FString NewComboTagStr = FString::Printf(TEXT("State.Combo.%d"), ComboStage);
+				OwnedTags.AddTagFast(FGameplayTag::RequestGameplayTag(*NewComboTagStr));
+			}
+			else
+			{
+				// fallback to first in combo
+				OwnedTags.AddTagFast(FGameplayTag::RequestGameplayTag("State.Combo.1"));
+			}
+		}
+	}
+	else		
+		OwnedTags.AddTagFast(FGameplayTag::RequestGameplayTag("State.Combo.1"));
+	
+	// Interrogate the owner to see if we have any active abilities which will modify the outcome
+	// NOTE: We technically could just try to activate the ability and let GAS handle the failure, but this way we can avoid unnecessary network traffic
+	auto IsSprinting = AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Movement.Sprint")));
+	auto IsFalling = false;
+	const auto Owner = GetOwner();
+	if (!Owner)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ComboManagerComponent has no owner"));
+		return FGameplayAbilitySpecHandle();
+	}
+	
+	if (const auto Character = Cast<ACharacter>(Owner); Character->GetCharacterMovement())
+	{
+		IsFalling = Character->GetCharacterMovement()->IsFalling();
+	}
+	
+	// Determine the best ability to use based on current state
+	FGameplayTagContainer RequiredTags;
+	if (IsFalling)
+		RequiredTags.AddTagFast(FGameplayTag::RequestGameplayTag(FName("Movement.Falling")));
+	else if (IsSprinting)
+		RequiredTags.AddTagFast(FGameplayTag::RequestGameplayTag(FName("Movement.Sprint")));
+	
+	auto Result = PickupActor->Weapon->GrantedAbilities
+		.FindByPredicate([OwnedTags, RequiredTags](TSubclassOf<UGameplayAbility> abilityClass)
+	    {
+			const auto AbilityDefault = abilityClass->GetDefaultObject<UGA_WithEffectsBase>();
+			return AbilityDefault->AbilityTags.HasAll(OwnedTags)
+				&& (RequiredTags.IsEmpty() || AbilityDefault->GetActivationRequiredTags().HasAll(RequiredTags));
+	    });
+	
+	// If no ability found with state tags, try again with first stage in combo
+	if (!Result)
+	{
+		// TODO: Find a more efficient way to do this
+		OwnedTags.RemoveTags(OwnedTags.Filter(FGameplayTagContainer(FGameplayTag::RequestGameplayTag("State.Combo"))));
+		OwnedTags.AddTagFast(FGameplayTag::RequestGameplayTag("State.Combo.1"));
+	
+		Result = PickupActor->Weapon->GrantedAbilities.FindByPredicate([OwnedTags](TSubclassOf<UGameplayAbility> abilityClass)
+		{
+		   return abilityClass->GetDefaultObject<UGameplayAbility>()->AbilityTags.HasAll(OwnedTags);
+		});
+	}
+	
+	// If we still got nothing, ask the weapon to decide
+	if (!Result)
+		return DelegateToWeapon(PickupActor, AttackType);
+	
+	FGameplayAbilitySpec* ToActivate = AbilitySystemComponent->FindAbilitySpecFromClass(Result->Get());
+	
+	UE_LOG( LogTemp, Log, TEXT("ComboManagerComponent::ProcessInput activating ability %s"), *Result->Get()->GetName());
+	
+	// If the last ability is still active, queue the next one
+	if (LastActivatedAbilityClass)
+	{
+		const auto LastActivatedSpec = AbilitySystemComponent->FindAbilitySpecFromClass(LastActivatedAbilityClass);
+		if (const auto PrimaryInstance = LastActivatedSpec->GetPrimaryInstance(); 
+			PrimaryInstance && PrimaryInstance->IsActive())
+		{			
+			NextAbilityHandle = &ToActivate->Handle;
+			LastActivatedSpec->GetPrimaryInstance()->OnGameplayAbilityEnded.AddLambda([this, ToActivate](UGameplayAbility* _) {
+				ActivateAbilityAndResetTimer(*ToActivate);
+			});
+		}
+	}
+	// Otherwise activate immediately
+	ActivateAbilityAndResetTimer(*ToActivate);
+	return ToActivate->Handle;
 }
 
 // TODO: Separate the logic for spell and melee

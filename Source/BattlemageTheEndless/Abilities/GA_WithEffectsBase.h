@@ -105,6 +105,8 @@ public:
 	
 	TArray<FAbilityTriggerData> GetAbilityTriggers(EGameplayAbilityTriggerSource::Type TriggerSource);
 
+	FGameplayTagContainer GetActivationRequiredTags() { return this->ActivationRequiredTags; }
+	
 protected:
 	FTimerHandle EndTimerHandle;
 

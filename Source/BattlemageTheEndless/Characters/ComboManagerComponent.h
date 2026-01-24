@@ -11,7 +11,6 @@
 #include "Components/ActorComponent.h"
 #include "ComboManagerComponent.generated.h"
 
-
 USTRUCT(BlueprintType)
 struct FPickupCombos
 {
@@ -79,14 +78,17 @@ public:
 	void AddAbilityToCombo(APickupActor* PickupActor, UGA_WithEffectsBase* Ability, FGameplayAbilitySpecHandle Handle);
 
 	/** Processes input from the player, can activate immediately or queue an action. Returns an invalid handle if no ability was activated. **/
-	FGameplayAbilitySpecHandle ProcessInput(APickupActor* PickupActor, EAttackType AttackType);
+	FGameplayAbilitySpecHandle ProcessInput_Legacy(APickupActor* PickupActor, EAttackType AttackType);
 
+	FGameplayAbilitySpecHandle ProcessInput(APickupActor* PickupActor, EAttackType AttackType);
+	
 	FGameplayAbilitySpecHandle DelegateToWeapon(APickupActor* PickupActor, EAttackType AttackType);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Combo, meta = (AllowPrivateAccess = "true"))
 	// one second in std::chrono::milliseconds
 	double ComboExpiryTime = 1.0;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Combo, meta = (AllowPrivateAccess = "true"))
 	UAbilitySystemComponent* AbilitySystemComponent;
 
 	UAbilityCombo* FindComboByTag(APickupActor* PickupActor, const FGameplayTag& ComboTag);
