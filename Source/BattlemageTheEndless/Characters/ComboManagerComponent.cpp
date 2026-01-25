@@ -366,6 +366,8 @@ void UComboManagerComponent::ActivateAbilityAndResetTimer(FGameplayAbilitySpec a
 	if (attackBase && attackBase->FireAnimation)
 		timerDuration += attackBase->FireAnimation->GetPlayLength();
 
+	UE_LOG( LogTemp, Log, TEXT("ComboManagerComponent::ActivateAbilityAndResetTimer setting combo timer for %f seconds"), timerDuration);
+	
 	GetWorld()->GetTimerManager().SetTimer(ComboTimerHandle, [&] {EndComboHandler(); }, timerDuration, false);
 }
 
