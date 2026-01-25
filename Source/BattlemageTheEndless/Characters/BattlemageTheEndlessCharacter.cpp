@@ -935,6 +935,20 @@ void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMov
 	
 	if (PrevMovementMode == EMovementMode::MOVE_Falling && GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Walking)
 	{
+		// Special case for plunging attack		
+		if (AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag("Weapon.AttackType.Plunging")))
+		{
+			const auto AnimInstance = GetMesh()->GetAnimInstance();
+			if (auto ActiveMontage = GetCurrentMontage(); AnimInstance && ActiveMontage)
+			{
+				auto OutSection = ActiveMontage->CompositeSections.FindByPredicate([](const FCompositeSection& Section) {
+					   return Section.SectionName == FName("Out");
+				   });
+				if (OutSection)
+					AnimInstance->Montage_JumpToSection(OutSection->SectionName, ActiveMontage);
+			}
+		}
+		
 		// TODO: Use anim notify instead
 		UGameplayStatics::PlaySoundAtLocation(this,
 			JumpLandingSound,

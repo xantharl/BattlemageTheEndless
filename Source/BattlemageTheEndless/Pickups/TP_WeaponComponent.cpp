@@ -154,11 +154,6 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 	auto attackerAsc = character->FindComponentByClass<UBMageAbilitySystemComponent>();
 	auto hitActor = Hit.GetActor();
 	auto hitActorAsc = hitActor->FindComponentByClass<UAbilitySystemComponent>();
-
-	if (hitActor != character && GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("%s Hit by Animation %s"), *character->GetName(), *LastAttackAnimationName));
-	}
 	
 	// If this character has already been hit by this stage of the combo, don't hit them again
 	if (!attackerAsc || !hitActorAsc || LastHitCharacters.Contains(hitActor) || hitActor == character)
@@ -166,6 +161,11 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 		return false;
 	}
 
+	if (hitActor != character && GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("%s Hit by Animation %s"), *character->GetName(), *LastAttackAnimationName));
+	}
+	
 	LastHitCharacters.Add(hitActor);
 
 	auto abilitySpec = attackerAsc->FindAbilitySpecFromClass(attackerAsc->ComboManager->LastActivatedAbilityClass);
