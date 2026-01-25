@@ -321,7 +321,11 @@ void UAttackBaseGameplayAbility::OnMontageCompleted()
 
 // TODO: Deprecate this, with proper montage setup it is not needed.
 void UAttackBaseGameplayAbility::OnMontageBlendOut()
-{
+{	
+	auto Character = Cast<ACharacter>(CurrentActorInfo->OwnerActor);
+	if (Character && FireAnimation->HasRootMotion())
+		Character->bUseControllerRotationYaw = true;
+	
 	if (FireAnimation->bLoop)
 	{
 		// if the montage is looping, we don't end the ability here, just spin up another task
