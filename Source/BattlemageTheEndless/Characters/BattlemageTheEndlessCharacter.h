@@ -108,6 +108,13 @@ public:
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCamera;
+	
+	/** First person camera start position */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	FTransform FirstPersonCamera_BeginPlayTransform;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	bool IsRootMotionAnimActive = false;
 
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
@@ -259,6 +266,12 @@ public:
 	void ProcessCharacterCreationData(TArray<FString> ArchetypeNames,TArray<FString> SpellNames);
 	
 protected:
+	UFUNCTION()
+	void OnMontageStarted(UAnimMontage* Montage);
+
+	UFUNCTION()
+	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	
 	virtual void BeginPlay();
 	void InitHealthbar();
 

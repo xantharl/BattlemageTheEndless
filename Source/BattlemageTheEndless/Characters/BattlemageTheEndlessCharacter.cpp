@@ -142,7 +142,7 @@ void ABattlemageTheEndlessCharacter::SetupCameras()
 {
 	// Create FirstPersonCamera
 	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
-	FirstPersonCamera->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, FName("cameraSocket"));
+	FirstPersonCamera->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, FName("VB head_root"));
 	FirstPersonCamera->SetRelativeRotation(FRotator(0.f, 90.f, 0.f)); // Position the camera
 	FirstPersonCamera->bUsePawnControlRotation = true;
 
@@ -214,6 +214,17 @@ void ABattlemageTheEndlessCharacter::ProcessCharacterCreationData(TArray<FString
 	CharacterCreationData->InitSelections(ArchetypeNames, SpellNames);
 }
 
+void ABattlemageTheEndlessCharacter::OnMontageStarted(UAnimMontage* Montage)
+{
+	IsRootMotionAnimActive = Montage->HasRootMotion();
+}
+
+void ABattlemageTheEndlessCharacter::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	IsRootMotionAnimActive = false;	
+	FirstPersonCamera->SetRelativeTransform(FirstPersonCamera_BeginPlayTransform);
+}
+
 void ABattlemageTheEndlessCharacter::BeginPlay()
 {
 	CheckRequiredObjects();
@@ -238,11 +249,20 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 	AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
 	AttributeSet->OnAttributeChanged.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnAttributeChanged);
+	if (auto AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		AnimInstance->OnMontageStarted.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnMontageStarted);
+		AnimInstance->OnMontageEnded.AddDynamic(this, &ABattlemageTheEndlessCharacter::OnMontageEnded);
+	}
 
 	// This needs to be after abilities are granted but before healthbar init
 	Super::BeginPlay();
 	InitHealthbar();
 	SpawnTransform = GetActorTransform();
+	
+	FirstPersonCamera_BeginPlayTransform = FirstPersonCamera->GetRelativeTransform();	
+	// FirstPersonCamera->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	// FirstPersonCamera->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, FName("VB head_root"));
 }
 
 void ABattlemageTheEndlessCharacter::InitHealthbar()
@@ -475,6 +495,21 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 	// Uncrouch if requested unless sliding
 	if (movement->ShouldUnCrouch && !movement->IsAbilityActive(MovementAbilityType::Slide))
 		DoUnCrouch(movement);
+	
+	if (IsRootMotionAnimActive)
+	{
+		// Formula: Offset from Head attachment = FirstPersonCamera_BeginPlayPosition + HeadRadius * Look Direction Unit Vector
+		float HeadRadius = 20.f; // approximate radius of head model
+		auto HeadLocation = GetMesh()->GetBoneLocation(FName("Head"), EBoneSpaces::Type::WorldSpace);
+		auto MovementVector = movement->GetLastUpdateRotation().Vector();
+		auto TargetLocation = HeadLocation + (MovementVector * HeadRadius);
+		auto CurrentLocation = FirstPersonCamera->GetComponentLocation();
+		auto DeltaVector = TargetLocation - CurrentLocation;
+		
+		FirstPersonCamera->SetWorldLocation(TargetLocation);
+		// FirstPersonCamera->SetRelativeLocation(FirstPersonCamera->GetRelativeLocation() + DeltaVector);
+		FirstPersonCamera->SetWorldRotation(movement->GetLastUpdateRotation());
+	}
 
 	// call super to apply movement before we evaluate a change in z velocity
 	AActor::TickActor(DeltaTime, TickType, ThisTickFunction);

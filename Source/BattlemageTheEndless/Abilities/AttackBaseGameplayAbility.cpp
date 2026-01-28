@@ -268,7 +268,11 @@ void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Han
 			}
 
 			if (animInstance && FireAnimation)
+			{
 				animInstance->Montage_Play(FireAnimation);
+				if (FireAnimation->HasRootMotion())
+					owner->bUseControllerRotationYaw = false;
+			}
 		}
 	}
 
