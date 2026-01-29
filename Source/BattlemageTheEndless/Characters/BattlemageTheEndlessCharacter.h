@@ -371,7 +371,7 @@ protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	void EndSprint();
-	void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction);
+	virtual void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction) override;
 	void DoUnCrouch(UBMageCharacterMovementComponent* movement);
 	void EndSlide(UCharacterMovementComponent* movement);
 	void AbilityInputPressed(TSubclassOf<class UGameplayAbility> ability);

@@ -14,6 +14,7 @@
 #include <format>
 #include <Kismet/GameplayStatics.h>
 #include "AbilitySystemBlueprintLibrary.h"
+#include "RootAnimCameraComponent.h"
 #include "BattlemageTheEndless/Abilities/EventData/DodgeEventData.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
@@ -142,6 +143,7 @@ void ABattlemageTheEndlessCharacter::SetupCameras()
 {
 	// Create FirstPersonCamera
 	FirstPersonCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
+	FirstPersonCamera->ComponentTags.Add(FName("FirstPersonCamera"));
 	FirstPersonCamera->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, FName("VB head_root"));
 	FirstPersonCamera->SetRelativeRotation(FRotator(0.f, 90.f, 0.f)); // Position the camera
 	FirstPersonCamera->bUsePawnControlRotation = true;
@@ -218,14 +220,22 @@ void ABattlemageTheEndlessCharacter::OnMontageStarted(UAnimMontage* Montage)
 {
 	IsRootMotionAnimActive = Montage->HasRootMotion();
 	if (IsRootMotionAnimActive)
-		FirstPersonCamera->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	{
+		if (auto RootAnimCameraComponent = FindComponentByClass<URootAnimCameraComponent>())
+		{
+			RootAnimCameraComponent->Activate();
+		}
+	}
 }
 
 void ABattlemageTheEndlessCharacter::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	if (!FirstPersonCamera->IsAttachedTo(GetMesh()))
 	{		
-		FirstPersonCamera->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, FName("Head"));
+		if (auto RootAnimCameraComponent = FindComponentByClass<URootAnimCameraComponent>())
+		{
+			RootAnimCameraComponent->Deactivate();
+		}
 		FirstPersonCamera->SetRelativeTransform(FirstPersonCamera_BeginPlayTransform);
 		IsRootMotionAnimActive = false;	
 	}
@@ -501,17 +511,6 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 	// Uncrouch if requested unless sliding
 	if (movement->ShouldUnCrouch && !movement->IsAbilityActive(MovementAbilityType::Slide))
 		DoUnCrouch(movement);
-	
-	if (IsRootMotionAnimActive || !FirstPersonCamera->IsAttachedTo(GetMesh()))
-	{
-		// Formula: Offset from Head attachment = FirstPersonCamera_BeginPlayPosition + HeadRadius * Look Direction Unit Vector
-		float HeadRadius = 20.f; // approximate radius of head model
-		auto HeadLocation = GetMesh()->GetBoneLocation(FName("Head"), EBoneSpaces::Type::WorldSpace);
-		auto TargetLocation = HeadLocation + (movement->GetForwardVector() * HeadRadius);
-		auto CurrentLocation = FirstPersonCamera->GetComponentLocation();
-		FirstPersonCamera->SetWorldLocation(TargetLocation);
-		FirstPersonCamera->SetWorldRotation(movement->GetLastUpdateRotation());
-	}
 
 	// call super to apply movement before we evaluate a change in z velocity
 	AActor::TickActor(DeltaTime, TickType, ThisTickFunction);

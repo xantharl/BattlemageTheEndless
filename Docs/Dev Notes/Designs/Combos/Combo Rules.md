@@ -1,0 +1,7 @@
+- Light combos can mix quick spells in between phases
+- Heavy combos cannot (should be 2h grip to indicate?)
+- Do all weapons have heavy combos?
+	- Dagger might not, backstab instead?
+- Combo Modifiers:
+	- Sprinting has a separate combo focused on a quick strike and disengage
+	- Falling does not combo, but on hit grants a jump back
