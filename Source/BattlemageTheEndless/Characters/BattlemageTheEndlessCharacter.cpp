@@ -217,12 +217,18 @@ void ABattlemageTheEndlessCharacter::ProcessCharacterCreationData(TArray<FString
 void ABattlemageTheEndlessCharacter::OnMontageStarted(UAnimMontage* Montage)
 {
 	IsRootMotionAnimActive = Montage->HasRootMotion();
+	if (IsRootMotionAnimActive)
+		FirstPersonCamera->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 }
 
 void ABattlemageTheEndlessCharacter::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	IsRootMotionAnimActive = false;	
-	FirstPersonCamera->SetRelativeTransform(FirstPersonCamera_BeginPlayTransform);
+	if (!FirstPersonCamera->IsAttachedTo(GetMesh()))
+	{		
+		FirstPersonCamera->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, FName("Head"));
+		FirstPersonCamera->SetRelativeTransform(FirstPersonCamera_BeginPlayTransform);
+		IsRootMotionAnimActive = false;	
+	}
 }
 
 void ABattlemageTheEndlessCharacter::BeginPlay()
@@ -496,18 +502,14 @@ void ABattlemageTheEndlessCharacter::TickActor(float DeltaTime, ELevelTick TickT
 	if (movement->ShouldUnCrouch && !movement->IsAbilityActive(MovementAbilityType::Slide))
 		DoUnCrouch(movement);
 	
-	if (IsRootMotionAnimActive)
+	if (IsRootMotionAnimActive || !FirstPersonCamera->IsAttachedTo(GetMesh()))
 	{
 		// Formula: Offset from Head attachment = FirstPersonCamera_BeginPlayPosition + HeadRadius * Look Direction Unit Vector
 		float HeadRadius = 20.f; // approximate radius of head model
 		auto HeadLocation = GetMesh()->GetBoneLocation(FName("Head"), EBoneSpaces::Type::WorldSpace);
-		auto MovementVector = movement->GetLastUpdateRotation().Vector();
-		auto TargetLocation = HeadLocation + (MovementVector * HeadRadius);
+		auto TargetLocation = HeadLocation + (movement->GetForwardVector() * HeadRadius);
 		auto CurrentLocation = FirstPersonCamera->GetComponentLocation();
-		auto DeltaVector = TargetLocation - CurrentLocation;
-		
 		FirstPersonCamera->SetWorldLocation(TargetLocation);
-		// FirstPersonCamera->SetRelativeLocation(FirstPersonCamera->GetRelativeLocation() + DeltaVector);
 		FirstPersonCamera->SetWorldRotation(movement->GetLastUpdateRotation());
 	}
 
