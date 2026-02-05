@@ -279,9 +279,6 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 	InitHealthbar();
 	SpawnTransform = GetActorTransform();
 	
-	// Default to 3p camera
-	SwitchCamera();
-	
 	FirstPersonCamera_BeginPlayTransform = FirstPersonCamera->GetRelativeTransform();	
 	// FirstPersonCamera->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
 	// FirstPersonCamera->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, FName("VB head_root"));
