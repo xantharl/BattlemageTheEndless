@@ -10,12 +10,9 @@
 #include "InputActionValue.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/PawnMovementComponent.h"
-#include <GameFramework/FloatingPawnMovement.h>
-#include <format>
 #include <Kismet/GameplayStatics.h>
 #include "AbilitySystemBlueprintLibrary.h"
 #include "RootAnimCameraComponent.h"
-#include "BattlemageTheEndless/Abilities/EventData/DodgeEventData.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -233,7 +230,7 @@ void ABattlemageTheEndlessCharacter::OnMontageStarted(UAnimMontage* Montage)
 
 void ABattlemageTheEndlessCharacter::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	if (!FirstPersonCamera->IsAttachedTo(GetMesh()))
+	if (FirstPersonCamera->IsActive() && !FirstPersonCamera->IsAttachedTo(GetMesh()))
 	{		
 		if (auto RootAnimCameraComponent = FindComponentByClass<URootAnimCameraComponent>())
 		{
@@ -411,7 +408,7 @@ void ABattlemageTheEndlessCharacter::GiveDefaultAbilities()
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(Ability.Key, 1, static_cast<int32>(EGASAbilityInputId::Confirm), this));
 
 		// Abilities with input actions will not be activated immediately
-		if (!Ability.Key->GetDefaultObject<UGameplayAbility>()->AbilityTags.HasTag(FGameplayTag::RequestGameplayTag(FName("Ability.ActivateImmediately"))))
+		if (!Ability.Key->GetDefaultObject<UGameplayAbility>()->GetAssetTags().HasTag(FGameplayTag::RequestGameplayTag(FName("Ability.ActivateImmediately"))))
 			continue;
 
 		// Try to activate abilities that don't require input
@@ -472,14 +469,14 @@ void ABattlemageTheEndlessCharacter::SetupPlayerInputComponent(UInputComponent* 
 	}
 
 	// Bind abilities to input
-	if (AbilitySystemComponent) 
-	{
-		AbilitySystemComponent->BindAbilityActivationToInputComponent(
-			EnhancedInputComponent, FGameplayAbilityInputBinds(
-				"Confirm", "Cancel", "EGASAbilityInputID", 
-				static_cast<int32>(EGASAbilityInputId::Confirm), 
-				static_cast<int32>(EGASAbilityInputId::Cancel)));
-	}
+	// if (AbilitySystemComponent) 
+	// {
+	// 	AbilitySystemComponent->BindAbilityActivationToInputComponent(
+	// 		EnhancedInputComponent, FGameplayAbilityInputBinds(
+	// 			"Confirm", "Cancel", "EGASAbilityInputID", 
+	// 			static_cast<int32>(EGASAbilityInputId::Confirm), 
+	// 			static_cast<int32>(EGASAbilityInputId::Cancel)));
+	// }
 }
 
 void ABattlemageTheEndlessCharacter::Crouch(bool bClientSimulation)

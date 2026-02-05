@@ -191,7 +191,8 @@ FGameplayAbilitySpecHandle UComboManagerComponent::ProcessInput(APickupActor* Pi
 		else
 		{
 			FGameplayTag ComboBaseTag = FGameplayTag::RequestGameplayTag("State.Combo");
-			FGameplayTagContainer Matches = LastActivatedAbilityClass->GetDefaultObject<UGameplayAbility>()->AbilityTags.Filter(FGameplayTagContainer(ComboBaseTag));
+			FGameplayTagContainer Matches = LastActivatedAbilityClass->GetDefaultObject<UGameplayAbility>()->GetAssetTags()
+												.Filter(FGameplayTagContainer(ComboBaseTag));
 			if (Matches.Num() > 0)
 			{
 				int ComboStage = 1;

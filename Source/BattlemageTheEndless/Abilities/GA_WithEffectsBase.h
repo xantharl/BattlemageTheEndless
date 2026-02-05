@@ -59,7 +59,7 @@ public:
 	/// <param name="Instigator">Character causing the effect(s)</param>
 	/// <param name="Target">Target of the effect(s)</param>
 	/// <param name="EffectCauser">EffectCauser is the actor that is the physical source of the effect</param>
-	virtual TArray<FActiveGameplayEffectHandle> ApplyEffects(const AActor* Target, UAbilitySystemComponent* TargetAsc, AActor* Instigator = nullptr, AActor* EffectCauser = nullptr)  const;
+	virtual TArray<FActiveGameplayEffectHandle> ApplyEffects(const AActor* Target, UAbilitySystemComponent* TargetAsc, AActor* Instigator = nullptr, AActor* EffectCauser = nullptr) const;
 
 	/// <summary>
 	/// Override this method to set any SetByCaller values on the specHandle before applying it

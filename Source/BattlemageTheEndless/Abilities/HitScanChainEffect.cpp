@@ -10,11 +10,11 @@ AHitScanChainEffect::AHitScanChainEffect()
 	PrimaryActorTick.bCanEverTick = true;
 }
 
-void AHitScanChainEffect::Init(TObjectPtr<AActor> originatingActor, TObjectPtr<AActor> targetActor, TObjectPtr<UNiagaraSystem> hitScanChainEffect, FVector beamEnd)
+void AHitScanChainEffect::Init(TObjectPtr<AActor> originatingActor, FVector targetLocation, TObjectPtr<UNiagaraSystem> hitScanChainEffect, FVector beamEnd)
 {
 	HitScanChainEffect = hitScanChainEffect;
 	OriginatingActor = originatingActor;
-	TargetActor = targetActor;
+	TargetLocation = targetLocation;
 
 	// Spawn the system and subscribe
 	HitScanChainEffectInstance = UNiagaraFunctionLibrary::SpawnSystemAtLocation(OriginatingActor, HitScanChainEffect, OriginatingActor->GetActorLocation());
@@ -23,7 +23,7 @@ void AHitScanChainEffect::Init(TObjectPtr<AActor> originatingActor, TObjectPtr<A
 	// Set the location of the beam endpoints
 	HitScanChainEffectInstance->SetVariablePosition(FName("BeamStart"), OriginatingActor->GetActorLocation());
 	// Use beam end override if passed, otherwise use target's location
-	HitScanChainEffectInstance->SetVariablePosition(FName("BeamEnd"), beamEnd == FVector::ZeroVector ? TargetActor->GetActorLocation() : beamEnd);
+	HitScanChainEffectInstance->SetVariablePosition(FName("BeamEnd"), beamEnd == FVector::ZeroVector ? TargetLocation : beamEnd);
 }
 
 // Called when the game starts or when spawned

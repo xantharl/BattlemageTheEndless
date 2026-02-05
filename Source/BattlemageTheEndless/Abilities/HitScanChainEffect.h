@@ -27,10 +27,10 @@ public:
 	/// Initializes the hitscan chain effect actor with the necessary data to spawn and manage the effect
 	/// </summary>
 	/// @param originatingActor Actor where the chain originates, e.g. the caster
-	/// @param targetActor Actor being hit by the chain
+	/// @param targetLocation Location being hit by the chain
 	/// @param hitScanChainEffect Niagara system to use for the effect
 	/// @param beamEnd Optional Override for beam end location instead of using target actor location
-	void Init(TObjectPtr<AActor> originatingActor, TObjectPtr<AActor> targetActor, TObjectPtr<UNiagaraSystem> hitScanChainEffect, FVector beamEnd = FVector::ZeroVector);
+	void Init(TObjectPtr<AActor> originatingActor, FVector targetLocation, TObjectPtr<UNiagaraSystem> hitScanChainEffect, FVector beamEnd = FVector::ZeroVector);
 
 protected:
 	// Called when the game starts or when spawned
@@ -40,13 +40,16 @@ protected:
 	void OnSystemFinished(UNiagaraComponent* finishedComponent);
 
 	/** Spawned instance of effect class **/
+	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = "Effects" )
 	TObjectPtr<UNiagaraComponent> HitScanChainEffectInstance;
 
 	/** Actor to anchor to on start of chain **/
+	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = "Effects" )
 	TObjectPtr<AActor> OriginatingActor;
 
 	/** Actor to anchor to on end of chain **/
-	TObjectPtr<AActor> TargetActor;
+	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = "Effects" )
+	FVector TargetLocation;
 
 	/** Override for Actor Location based beam end **/
 	FVector BeamEnd;

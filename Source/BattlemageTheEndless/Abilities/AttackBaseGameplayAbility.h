@@ -201,7 +201,7 @@ public:
 	/// <param name="instigator">Character causing the effect(s)</param>
 	/// <param name="target">Target of the effect(s)</param>
 	/// <param name="effectCauser">EffectCauser is the actor that is the physical source of the effect</param>
-	virtual TArray<FActiveGameplayEffectHandle> ApplyEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator = nullptr, AActor* effectCauser = nullptr) const;
+	virtual TArray<FActiveGameplayEffectHandle> ApplyEffects(const AActor* Target, UAbilitySystemComponent* TargetAsc, AActor* Instigator = nullptr, AActor* EffectCauser = nullptr) const override;
 
 	/// <summary>
 	/// Handles any SetByCaller values needed for the effect being applied

@@ -220,16 +220,16 @@ void UAttackBaseGameplayAbility::AddActiveEffectHandles(const TArray<FActiveGame
 		ActiveEffectHandles.Add(Handle);
 }
 
-TArray<FActiveGameplayEffectHandle> UAttackBaseGameplayAbility::ApplyEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser) const
+TArray<FActiveGameplayEffectHandle> UAttackBaseGameplayAbility::ApplyEffects(const AActor* Target, UAbilitySystemComponent* TargetAsc, AActor* Instigator, AActor* EffectCauser) const
 {
-	if (ChainSystem && instigator)
+	if (ChainSystem && Instigator)
 	{
 		// We don't need to keep the reference, UE will handle disposing when it is destroyed
-		auto chainEffectActor = instigator->GetWorld()->SpawnActor<AHitScanChainEffect>(AHitScanChainEffect::StaticClass(), instigator->GetActorLocation(), FRotator::ZeroRotator);
-		chainEffectActor->Init(instigator, target, ChainSystem);
+		auto chainEffectActor = Instigator->GetWorld()->SpawnActor<AHitScanChainEffect>(AHitScanChainEffect::StaticClass(), Instigator->GetActorLocation(), FRotator::ZeroRotator);
+		chainEffectActor->Init(Instigator, Target->GetActorLocation(), ChainSystem);
 	}
 
-	return Super::ApplyEffects(target, targetAsc, instigator, effectCauser);
+	return Super::ApplyEffects(Target, TargetAsc, Instigator, EffectCauser);
 }
 
 void UAttackBaseGameplayAbility::HandleSetByCaller(TSubclassOf<UGameplayEffect> effect, FGameplayEffectSpecHandle specHandle, AActor* effectCauser, UAbilitySystemComponent* targetAsc) const

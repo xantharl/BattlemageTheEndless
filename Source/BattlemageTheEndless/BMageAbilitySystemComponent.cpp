@@ -243,7 +243,7 @@ void UBMageAbilitySystemComponent::TickComponent(float DeltaTime, ELevelTick Tic
 EAttackType UBMageAbilitySystemComponent::GetAbilityAttackType(UGameplayAbility* ability)
 {
 	auto attackTypeTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("Weapon.AttackType")));
-	auto filteredTags = ability->AbilityTags.Filter(attackTypeTags);
+	auto filteredTags = ability->GetAssetTags().Filter(attackTypeTags);
 	if (filteredTags.Num() == 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No Attack Type found for ability %s"), *ability->GetName());
@@ -342,7 +342,7 @@ TObjectPtr<UGameplayAbility> UBMageAbilitySystemComponent::GetActivatableAbility
 		if (!primaryInstance)
 			continue;
 
-		if (primaryInstance->AbilityTags.HasTag(FGameplayTag::RequestGameplayTag(abilityTag)))
+		if (primaryInstance->GetAssetTags().HasTag(FGameplayTag::RequestGameplayTag(abilityTag)))
 		{
 			return primaryInstance;
 		}
@@ -523,7 +523,7 @@ void UBMageAbilitySystemComponent::HandleHitScan(UAttackBaseGameplayAbility* abi
 		// We don't need to keep the reference, UE will handle disposing when it is destroyed
 		auto chainEffectActor = GetWorld()->SpawnActor<AHitScanChainEffect>(AHitScanChainEffect::StaticClass(),
 			ownerCharacter->GetActorLocation(), FRotator::ZeroRotator);
-		chainEffectActor->Init(GetOwnerActor(), hitActor, ability->ChainSystem, hit.Location);
+		chainEffectActor->Init(GetOwnerActor(), hitActor->GetActorLocation(), ability->ChainSystem, hit.Location);
 		return;
 	}
 

@@ -12,7 +12,7 @@ FGameplayTag UGA_WithEffectsBase::GetAbilityIdentifierTag()
 	baseComboIdentifierTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Spells")));
 
 	// otherwise identify this ability's BaseComboIdentifier
-	auto Tags = AbilityTags.Filter(baseComboIdentifierTags);
+	auto Tags = GetAssetTags().Filter(baseComboIdentifierTags);
 	auto TypesTag = FGameplayTag::RequestGameplayTag(FName("Spells.Types"));
 	if (Tags.Num() > 0)
 	{
@@ -44,7 +44,7 @@ FName UGA_WithEffectsBase::GetAbilityName()
 	return IdentifierTag.GetTagLeafName();
 }
 
-void UGA_WithEffectsBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+void UGA_WithEffectsBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) 
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
@@ -92,7 +92,7 @@ void UGA_WithEffectsBase::HandleSetByCaller(TSubclassOf<UGameplayEffect> effect,
 	// We're also assuming all weapons are physical damage, which is true at least for now
 	FGameplayTagContainer WeaponAttackTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag("Weapon.AttackType"));
 	WeaponAttackTags.AddTag(FGameplayTag::RequestGameplayTag("Weapon.Attack"));
-	if (!this->AbilityTags.HasAny(WeaponAttackTags))
+	if (!this->GetAssetTags().HasAny(WeaponAttackTags))
 		return;
 
 	auto TargetAttributeSet = Cast<UBaseAttributeSet>(targetAsc->GetAttributeSet(UBaseAttributeSet::StaticClass()));
@@ -174,7 +174,7 @@ bool UGA_WithEffectsBase::WillCancelAbility(FGameplayAbilitySpec* OtherAbility)
 	if (CancelAbilitiesWithTag.Num() == 0)
 		return false;
 
-	return OtherAbility->Ability->AbilityTags.HasAny(CancelAbilitiesWithTag);
+	return OtherAbility->Ability->GetAssetTags().HasAny(CancelAbilitiesWithTag);
 }
 
 TArray<TObjectPtr<UGA_WithEffectsBase>> UGA_WithEffectsBase::GetAbilityActiveInstances(FGameplayAbilitySpec* spec)
@@ -205,7 +205,7 @@ bool UGA_WithEffectsBase::IsFirstInCombo()
 FGameplayTagContainer UGA_WithEffectsBase::GetComboTags()
 {
 	FGameplayTagContainer comboStateTags = FGameplayTagContainer(FGameplayTag::RequestGameplayTag(FName("State.Combo")));
-	auto comboTags = AbilityTags.Filter(comboStateTags);
+	auto comboTags = GetAssetTags().Filter(comboStateTags);
 
 	if (comboTags.Num() > 1)
 	{
