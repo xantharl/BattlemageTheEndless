@@ -189,18 +189,21 @@ void ABattlemageTheEndlessCharacter::AdjustAimModeFov(float DeltaTime)
 {
 	float zoomDifference = IsAiming ?  ZoomedFOV - DefaultFOV : DefaultFOV - ZoomedFOV;
 	float amountToAdjust = zoomDifference / (TimeToAim / FovUpdateInterval);
+ 	ThirdPersonCamera->SetFieldOfView(FirstPersonCamera->FieldOfView + amountToAdjust);
  	FirstPersonCamera->SetFieldOfView(FirstPersonCamera->FieldOfView + amountToAdjust);
 
 	if (IsAiming && FirstPersonCamera->FieldOfView <= ZoomedFOV)
 	{
 		// probably redundant but want to make sure we clamp to exactly the target value
 		FirstPersonCamera->SetFieldOfView(ZoomedFOV);
+		ThirdPersonCamera->SetFieldOfView(ZoomedFOV);
 		GetWorld()->GetTimerManager().ClearTimer(AimModeTimerHandle);
 	}
 	else if (!IsAiming && FirstPersonCamera->FieldOfView >= DefaultFOV)
 	{
 		// probably redundant but want to make sure we clamp to exactly the target value
 		FirstPersonCamera->SetFieldOfView(DefaultFOV);
+		ThirdPersonCamera->SetFieldOfView(DefaultFOV);
 		GetWorld()->GetTimerManager().ClearTimer(AimModeTimerHandle);
 	}
 }
@@ -275,6 +278,9 @@ void ABattlemageTheEndlessCharacter::BeginPlay()
 	Super::BeginPlay();
 	InitHealthbar();
 	SpawnTransform = GetActorTransform();
+	
+	// Default to 3p camera
+	SwitchCamera();
 	
 	FirstPersonCamera_BeginPlayTransform = FirstPersonCamera->GetRelativeTransform();	
 	// FirstPersonCamera->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
@@ -1017,7 +1023,7 @@ void ABattlemageTheEndlessCharacter::SwitchCamera()
 		FirstPersonCamera->Deactivate();
 	}
 
-	Cast<APlayerController>(GetController())->SetViewTargetWithBlend((AActor*)this);
+	//Cast<APlayerController>(GetController())->SetViewTargetWithBlend(this);
 }
 
 void ABattlemageTheEndlessCharacter::DodgeInput()

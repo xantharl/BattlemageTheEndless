@@ -74,9 +74,28 @@ void URootAnimCameraComponent::TickComponent(float DeltaTime, ELevelTick TickTyp
 		// Formula: Offset from Head attachment = FirstPersonCamera_BeginPlayPosition + HeadRadius * Look Direction Unit Vector
 		float HeadRadius = 20.f; // approximate radius of head model
 		auto HeadLocation = Owner->GetMesh()->GetBoneLocation(FName("Head"), EBoneSpaces::Type::WorldSpace);
-		auto TargetLocation = HeadLocation + (Movement->GetForwardVector() * HeadRadius);
+		auto TargetLocation = HeadLocation + (CameraComponent->GetComponentRotation().Vector() * HeadRadius);
 		CameraComponent->SetWorldLocation(TargetLocation);
 		CameraComponent->SetWorldRotation(Movement->GetLastUpdateRotation());
+		
+		// Formula: Vector of Actor X, Y, Head Bone's Z, Ray trace from Camera Projection back to this point, offset by head radius
+		/*FVector BaseVector = Owner->GetActorLocation();
+		BaseVector.Z = Owner->GetMesh()->GetBoneLocation(FName("Head"), EBoneSpaces::Type::WorldSpace).Z;
+		
+		FVector CameraWithoutZ = CameraComponent->GetComponentRotation().Vector();
+		CameraWithoutZ.Z = 0.f;
+		
+		float HeadRadius = 20.f; // approximate radius of head model
+		auto TraceStart = BaseVector + (CameraWithoutZ * HeadRadius * 5.f);
+		
+		auto Params = FCollisionQueryParams(FName(TEXT("LineTrace")), true);
+		FHitResult HitResult = Traces::LineTraceGeneric(GetWorld(), Params, TraceStart, BaseVector);
+		
+		FVector HeadOffset = CameraComponent->GetComponentRotation().Vector() * HeadRadius;		
+		FVector TargetLocation = (HitResult.IsValidBlockingHit() ? HitResult.ImpactPoint : BaseVector) + HeadOffset;
+		
+		CameraComponent->SetWorldLocation(TargetLocation);
+		CameraComponent->SetWorldRotation(Movement->GetLastUpdateRotation());*/
 	}
 }
 
