@@ -81,7 +81,10 @@ public:
 	FGameplayAbilitySpecHandle ProcessInput_Legacy(APickupActor* PickupActor, EAttackType AttackType);
 
 	FGameplayAbilitySpecHandle ProcessInput(APickupActor* PickupActor, EAttackType AttackType);
-	
+	TSubclassOf<class UGameplayAbility>* FindAbilityByOwnedAndRequiredTags(APickupActor* PickupActor,
+	                                                                       FGameplayTagContainer OwnedTags,
+	                                                                       FGameplayTagContainer RequiredTags);
+
 	FGameplayAbilitySpecHandle DelegateToWeapon(APickupActor* PickupActor, EAttackType AttackType);
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Combo, meta = (AllowPrivateAccess = "true"))

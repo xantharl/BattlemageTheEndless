@@ -216,18 +216,8 @@ FGameplayAbilitySpecHandle UComboManagerComponent::ProcessInput(APickupActor* Pi
 	// Interrogate the owner to see if we have any active abilities which will modify the outcome
 	// NOTE: We technically could just try to activate the ability and let GAS handle the failure, but this way we can avoid unnecessary network traffic
 	auto IsSprinting = AbilitySystemComponent->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("Movement.Sprint")));
-	auto IsFalling = false;
-	const auto Owner = GetOwner();
-	if (!Owner)
-	{
-		UE_LOG(LogTemp, Error, TEXT("ComboManagerComponent has no owner"));
-		return FGameplayAbilitySpecHandle();
-	}
-	
-	if (const auto Character = Cast<ACharacter>(Owner); Character->GetCharacterMovement())
-	{
-		IsFalling = Character->GetCharacterMovement()->IsFalling();
-	}
+	FGameplayTag FallingTag = FGameplayTag::RequestGameplayTag(FName("Movement.Falling"));
+	auto IsFalling = AbilitySystemComponent->HasMatchingGameplayTag(FallingTag);
 	
 	// Determine the best ability to use based on current state
 	FGameplayTagContainer RequiredTags;
@@ -236,13 +226,7 @@ FGameplayAbilitySpecHandle UComboManagerComponent::ProcessInput(APickupActor* Pi
 	else if (IsSprinting)
 		RequiredTags.AddTagFast(FGameplayTag::RequestGameplayTag(FName("Movement.Sprint")));
 	
-	auto Result = PickupActor->Weapon->GrantedAbilities
-		.FindByPredicate([OwnedTags, RequiredTags](TSubclassOf<UGameplayAbility> abilityClass)
-	    {
-			const auto AbilityDefault = abilityClass->GetDefaultObject<UGA_WithEffectsBase>();
-			return AbilityDefault->AbilityTags.HasAll(OwnedTags)
-				&& (RequiredTags.IsEmpty() || AbilityDefault->GetActivationRequiredTags().HasAll(RequiredTags));
-	    });
+	auto Result = FindAbilityByOwnedAndRequiredTags(PickupActor, OwnedTags, RequiredTags);
 	
 	// If no ability found with state tags, try again with first stage in combo
 	if (!Result)
@@ -251,10 +235,7 @@ FGameplayAbilitySpecHandle UComboManagerComponent::ProcessInput(APickupActor* Pi
 		OwnedTags.RemoveTags(OwnedTags.Filter(FGameplayTagContainer(FGameplayTag::RequestGameplayTag("State.Combo"))));
 		OwnedTags.AddTagFast(FGameplayTag::RequestGameplayTag("State.Combo.1"));
 	
-		Result = PickupActor->Weapon->GrantedAbilities.FindByPredicate([OwnedTags](TSubclassOf<UGameplayAbility> abilityClass)
-		{
-		   return abilityClass->GetDefaultObject<UGameplayAbility>()->AbilityTags.HasAll(OwnedTags);
-		});
+		Result = FindAbilityByOwnedAndRequiredTags(PickupActor, OwnedTags, RequiredTags);
 	}
 	
 	// If we still got nothing, ask the weapon to decide
@@ -281,6 +262,18 @@ FGameplayAbilitySpecHandle UComboManagerComponent::ProcessInput(APickupActor* Pi
 	// Otherwise activate immediately
 	ActivateAbilityAndResetTimer(*ToActivate);
 	return ToActivate->Handle;
+}
+
+TSubclassOf<class UGameplayAbility>* UComboManagerComponent::FindAbilityByOwnedAndRequiredTags(APickupActor* PickupActor, 
+	FGameplayTagContainer OwnedTags, FGameplayTagContainer RequiredTags)
+{	
+	return PickupActor->Weapon->GrantedAbilities
+		.FindByPredicate([OwnedTags, RequiredTags](TSubclassOf<UGameplayAbility> abilityClass)
+		{
+			const auto AbilityDefault = abilityClass->GetDefaultObject<UGA_WithEffectsBase>();
+			return AbilityDefault->AbilityTags.HasAll(OwnedTags)
+				&& (RequiredTags.IsEmpty() || AbilityDefault->GetActivationRequiredTags().HasAll(RequiredTags));
+		});
 }
 
 // TODO: Separate the logic for spell and melee

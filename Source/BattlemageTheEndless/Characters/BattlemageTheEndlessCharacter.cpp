@@ -959,14 +959,16 @@ bool ABattlemageTheEndlessCharacter::HasWeapon(EquipSlot SlotType)
 
 void ABattlemageTheEndlessCharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode)
 {
-	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling)
+	FGameplayTag FallingTag = FGameplayTag::RequestGameplayTag(FName("Movement.Falling"));
+	if ((GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Falling || !GetCharacterMovement()->IsMovingOnGround())
+		&& !AbilitySystemComponent->HasMatchingGameplayTag(FallingTag))
 	{
-		AbilitySystemComponent->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag("Movement.Falling"));
+		AbilitySystemComponent->AddLooseGameplayTag(FallingTag);
 	}
 	
-	if (PrevMovementMode == EMovementMode::MOVE_Falling)
+	if (GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Walking && AbilitySystemComponent->HasMatchingGameplayTag(FallingTag))
 	{
-		AbilitySystemComponent->RemoveLooseGameplayTag(FGameplayTag::RequestGameplayTag("Movement.Falling"));
+		AbilitySystemComponent->RemoveLooseGameplayTag(FallingTag);
 	}
 	
 	if (PrevMovementMode == EMovementMode::MOVE_Falling && GetCharacterMovement()->MovementMode == EMovementMode::MOVE_Walking)
