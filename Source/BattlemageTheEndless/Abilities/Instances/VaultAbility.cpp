@@ -82,8 +82,8 @@ void UVaultAbility::Begin(const FMovementEventData& MovementEventData)
 	//DrawDebugSphere(GetWorld(), VaultAttachPoint, 10.0f, 12, FColor::Green, false, 1.0f, 0, 1.0f);
 
 	// check which hand is higher
-	FVector socketLocationLeftHand = Mesh->GetSocketLocation(FName("GripLeft"));
-	FVector socketLocationRightHand = Mesh->GetSocketLocation(FName("GripRight"));
+	FVector socketLocationLeftHand = Mesh->GetSocketLocation(FName("Weapon_L"));
+	FVector socketLocationRightHand = Mesh->GetSocketLocation(FName("Weapon_R"));
 	FVector handToUse = socketLocationLeftHand.Z > socketLocationRightHand.Z ? socketLocationLeftHand : socketLocationRightHand;
 
 	Character->GetRootComponent()->AddRelativeLocation(FVector(0.f, 0.f, VaultAttachPoint.Z - handToUse.Z));
@@ -166,8 +166,8 @@ void UVaultAbility::Tick(float DeltaTime)
 	{
 		VaultElapsedTimeBeforeFootPlanted += DeltaTime;
 
-		FVector socketLocationLeftHand = mesh->GetSocketLocation(FName("GripLeft"));
-		FVector socketLocationRightHand = mesh->GetSocketLocation(FName("GripRight"));
+		FVector socketLocationLeftHand = mesh->GetSocketLocation(FName("Weapon_L"));
+		FVector socketLocationRightHand = mesh->GetSocketLocation(FName("Weapon_R"));
 
 		if (VaultAttachPoint.Z < socketLocationLeftHand.Z)
 		{

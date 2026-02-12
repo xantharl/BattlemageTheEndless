@@ -350,7 +350,7 @@ void ABattlemageTheEndlessCharacter::GiveStartingEquipment()
 
 		// Attach the weapon to the appropriate socket
 		bool isRightHand = pickup->Weapon->SlotType == EquipSlot::Primary != LeftHanded;
-		FName socketName = isRightHand ? FName("GripRight") : FName("GripLeft");
+		FName socketName = isRightHand ? FName("Weapon_R") : FName("Weapon_L");
 		pickup->Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), socketName);
 
 		// TODO: deprecate this -- offset the weapon from the socket if needed
@@ -1058,9 +1058,9 @@ bool ABattlemageTheEndlessCharacter::IsDodging()
 FName ABattlemageTheEndlessCharacter::GetTargetSocketName(EquipSlot SlotType)
 {
 	if (SlotType == EquipSlot::Primary)
-		return FName(LeftHanded ? "GripLeft" : "GripRight");
+		return FName(LeftHanded ? "Weapon_L" : "Weapon_R");
 	else
-		return FName(LeftHanded ? "GripRight" : "GripLeft");
+		return FName(LeftHanded ? "Weapon_R" : "Weapon_L");
 }
 
 void ABattlemageTheEndlessCharacter::OnBaseCapsuleBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

@@ -458,7 +458,7 @@ void UBMageAbilitySystemComponent::HandleProjectileSpawn(UAttackBaseGameplayAbil
 	{
 		auto controller = Cast<APlayerController>(ownerCharacter->GetController());
 		const FRotator spawnRotation = controller ? controller->PlayerCameraManager->GetCameraRotation() : ownerCharacter->GetTransform().Rotator();
-		auto socketName = IsLeftHanded ? FName("gripRight") : FName("gripLeft");
+		auto socketName = IsLeftHanded ? FName("Weapon_R") : FName("Weapon_L");
 		auto activeSpellClass = GetActivePickup(EquipSlot::Secondary);
 		if (!activeSpellClass)
 		{
