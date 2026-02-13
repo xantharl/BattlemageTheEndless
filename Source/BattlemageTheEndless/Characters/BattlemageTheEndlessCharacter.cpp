@@ -351,7 +351,7 @@ void ABattlemageTheEndlessCharacter::GiveStartingEquipment()
 		// Attach the weapon to the appropriate socket
 		bool isRightHand = pickup->Weapon->SlotType == EquipSlot::Primary != LeftHanded;
 		FName socketName = isRightHand ? FName("Weapon_R") : FName("Weapon_L");
-		pickup->Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), socketName);
+		pickup->Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules(EAttachmentRule::SnapToTarget, false), socketName);
 
 		// TODO: deprecate this -- offset the weapon from the socket if needed
 		if (pickup->Weapon->AttachmentOffset != FVector::ZeroVector && pickup->Weapon->GetRelativeLocation() == FVector::ZeroVector)
