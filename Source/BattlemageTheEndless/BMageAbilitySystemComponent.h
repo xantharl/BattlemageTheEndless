@@ -44,6 +44,8 @@ public:
 /**
  * 
  */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnWeaponHit, ACharacter*, character, const FHitResult&, Hit, FString, attackAnimationName);
+
 UCLASS()
 class BATTLEMAGETHEENDLESS_API UBMageAbilitySystemComponent : public UAbilitySystemComponent
 {
@@ -120,6 +122,9 @@ public:
 	FAbilitiesByRangeCacheEntry GetShortestRangeAbilityWithinRange(float range, UObject* sourceObject = nullptr);
 
 	EAttackType GetAbilityAttackType(UGameplayAbility* ability);
+	
+	UPROPERTY(BlueprintAssignable, Category = "Weapon Hit")
+	FOnWeaponHit OnWeaponHit;
 
 private:
 	void UnmarkOwner();

@@ -174,7 +174,10 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 		UE_LOG(LogTemp, Error, TEXT("LastActivatedAbility Not found, if you hit this ActivateAbility was probably called directly, use UFUNCTION ProcessInputAndBindAbilityCancelled"));
 		return false;
 	}
-
+	
+	// Broadcast the hit to the ASC so it can trigger any relevant gameplay cues or blueprint events
+	attackerAsc->OnWeaponHit.Broadcast(character, Hit, attackAnimationName);
+	
 	// apply any on hit effects from the weapon attack, all effects on a weapon are assumed to be on hit
 	const auto Casted = Cast<UGA_WithEffectsBase>(abilitySpec->Ability);
 	if (Casted)
