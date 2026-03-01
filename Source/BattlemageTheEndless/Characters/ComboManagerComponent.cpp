@@ -243,9 +243,7 @@ FGameplayAbilitySpecHandle UComboManagerComponent::ProcessInput(APickupActor* Pi
 		return DelegateToWeapon(PickupActor, AttackType);
 	
 	FGameplayAbilitySpec* ToActivate = AbilitySystemComponent->FindAbilitySpecFromClass(Result->Get());
-	
-	UE_LOG( LogTemp, Log, TEXT("ComboManagerComponent::ProcessInput activating ability %s"), *Result->Get()->GetName());
-	
+		
 	// If the last ability is still active, queue the next one
 	if (LastActivatedAbilityClass)
 	{
@@ -253,14 +251,25 @@ FGameplayAbilitySpecHandle UComboManagerComponent::ProcessInput(APickupActor* Pi
 		if (const auto PrimaryInstance = LastActivatedSpec->GetPrimaryInstance(); 
 			PrimaryInstance && PrimaryInstance->IsActive())
 		{			
+			UE_LOG( LogTemp, Log, TEXT("ComboManagerComponent::ProcessInput queueing ability %s"), *Result->Get()->GetName());
 			NextAbilityHandle = &ToActivate->Handle;
 			LastActivatedSpec->GetPrimaryInstance()->OnGameplayAbilityEnded.AddLambda([this, ToActivate](UGameplayAbility* _) {
 				ActivateAbilityAndResetTimer(*ToActivate);
 			});
 		}
+		// Handle race condition where we haven't cleared the ability yet but it is no longer active
+		else
+		{
+			UE_LOG( LogTemp, Log, TEXT("ComboManagerComponent::ProcessInput activating ability from queue fallback %s"), *Result->Get()->GetName());
+			ActivateAbilityAndResetTimer(*ToActivate);
+		}
 	}
-	// Otherwise activate immediately
-	ActivateAbilityAndResetTimer(*ToActivate);
+	else
+	{
+		// Otherwise activate immediately
+		UE_LOG( LogTemp, Log, TEXT("ComboManagerComponent::ProcessInput activating ability %s"), *Result->Get()->GetName());
+		ActivateAbilityAndResetTimer(*ToActivate);
+	}
 	return ToActivate->Handle;
 }
 
