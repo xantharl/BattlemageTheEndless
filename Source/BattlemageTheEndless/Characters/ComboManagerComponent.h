@@ -95,8 +95,12 @@ public:
 	UAbilitySystemComponent* AbilitySystemComponent;
 
 	UAbilityCombo* FindComboByTag(APickupActor* PickupActor, const FGameplayTag& ComboTag);
-
+	
+	// Sets _bCanContinue and checks if we need to advance combo immediately due to already queued input
+	UFUNCTION(BlueprintCallable, Category = Combo, meta = (AllowPrivateAccess = "true"))
+	void HandleCanContinue();
+	
 private:
 	FGameplayAbilityActorInfo _ownerActorInfo = FGameplayAbilityActorInfo();
-	
+	bool _bCanContinue;	
 };

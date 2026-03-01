@@ -245,7 +245,8 @@ FGameplayAbilitySpecHandle UComboManagerComponent::ProcessInput(APickupActor* Pi
 	FGameplayAbilitySpec* ToActivate = AbilitySystemComponent->FindAbilitySpecFromClass(Result->Get());
 		
 	// If the last ability is still active, queue the next one
-	if (LastActivatedAbilityClass)
+	// We also check _bCanContinue here too, which indicates we've reached a point in the animation where we can allow the next ability to activate
+	if (LastActivatedAbilityClass && !_bCanContinue)
 	{
 		const auto LastActivatedSpec = AbilitySystemComponent->FindAbilitySpecFromClass(LastActivatedAbilityClass);
 		if (const auto PrimaryInstance = LastActivatedSpec->GetPrimaryInstance(); 
@@ -325,6 +326,36 @@ UAbilityCombo* UComboManagerComponent::FindComboByTag(APickupActor* PickupActor,
 		UE_LOG(LogTemp, Warning, TEXT("More than one combo found for tag %s. This is invalid configuration."), *ComboTag.ToString());
 	}
 	return matches[0];
+}
+
+void UComboManagerComponent::HandleCanContinue()
+{
+	_bCanContinue = true;
+	if (NextAbilityHandle)
+	{
+		// activate it and return
+		if (const auto Spec = AbilitySystemComponent->FindAbilitySpecFromHandle(*NextAbilityHandle))
+		{
+			ActivateAbilityAndResetTimer(*Spec);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("No ability spec found for handle in HandleCanContinue"));
+		}
+		return;
+	}
+	
+	if (LastActivatedAbilityClass)
+	{
+		// subscribe to end event to reset _bCanContinue
+		auto LastAbility = AbilitySystemComponent->FindAbilitySpecFromClass(LastActivatedAbilityClass);
+		if (LastAbility && LastAbility->GetPrimaryInstance())
+		{
+			LastAbility->GetPrimaryInstance()->OnGameplayAbilityEnded.AddLambda([this](UGameplayAbility* _) {
+				_bCanContinue = false;
+			});
+		}
+	}
 }
 
 void UComboManagerComponent::ActivateAbilityAndResetTimer(FGameplayAbilitySpec abilitySpec)
