@@ -269,6 +269,12 @@ FGameplayAbilitySpecHandle UComboManagerComponent::ProcessInput(APickupActor* Pi
 	{
 		// Otherwise activate immediately
 		UE_LOG( LogTemp, Log, TEXT("ComboManagerComponent::ProcessInput activating ability %s"), *Result->Get()->GetName());
+		if (!ToActivate)
+		{
+			// TODO: This is to prevent null pointer crashes after restarting the player, need to figure out root cuase
+			UE_LOG(LogTemp, Error, TEXT("ComboManagerComponent::ProcessInput - No ability spec found for class %s"), *Result->Get()->GetName());
+			return FGameplayAbilitySpecHandle();
+		}
 		ActivateAbilityAndResetTimer(*ToActivate);
 	}
 	return ToActivate->Handle;
