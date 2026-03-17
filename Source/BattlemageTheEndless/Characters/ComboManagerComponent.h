@@ -100,6 +100,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Combo, meta = (AllowPrivateAccess = "true"))
 	void HandleCanContinue();
 	
+	UFUNCTION(BlueprintCallable, Category = Combo, meta = (AllowPrivateAccess = "true"))
+	bool GetCanContinue() const { return _bCanContinue; }
+	
 private:
 	FGameplayAbilityActorInfo _ownerActorInfo = FGameplayAbilityActorInfo();
 	bool _bCanContinue;	

@@ -708,6 +708,17 @@ void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)
 	if (Controller == nullptr)
 		return;
 
+	// Handle special case where input is received after a Root Motion Montage has indicated a combo can continue
+	//	by canceling the ability so the character can move
+	if (UComboManagerComponent* ComboManager = FindComponentByClass<UComboManagerComponent>())
+	{
+		if (ComboManager->LastActivatedAbilityClass && ComboManager->GetCanContinue())
+		{
+			auto Spec = AbilitySystemComponent->FindAbilitySpecFromClass(ComboManager->LastActivatedAbilityClass);
+			AbilitySystemComponent->CancelAbility(Spec->Ability);
+		}
+	}
+	
 	TObjectPtr<UBMageCharacterMovementComponent> movement = Cast<UBMageCharacterMovementComponent>(GetCharacterMovement());
 	if (!movement)
 		return;
