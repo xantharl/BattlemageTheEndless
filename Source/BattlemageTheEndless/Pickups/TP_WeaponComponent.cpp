@@ -153,7 +153,7 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 	// if either actor involved does not have an ASC, exit
 	auto attackerAsc = character->FindComponentByClass<UBMageAbilitySystemComponent>();
 	auto hitActor = Hit.GetActor();
-	auto hitActorAsc = hitActor->FindComponentByClass<UAbilitySystemComponent>();
+	auto hitActorAsc = hitActor->FindComponentByClass<UBMageAbilitySystemComponent>();
 	
 	// If this character has already been hit by this stage of the combo, don't hit them again
 	if (!attackerAsc || !hitActorAsc || LastHitCharacters.Contains(hitActor) || hitActor == character)
@@ -177,6 +177,7 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 	
 	// Broadcast the hit to the ASC so it can trigger any relevant gameplay cues or blueprint events
 	attackerAsc->OnWeaponHit.Broadcast(character, Hit, attackAnimationName);
+	hitActorAsc->OnWeaponHit.Broadcast(character, Hit, attackAnimationName);
 	
 	// apply any on hit effects from the weapon attack, all effects on a weapon are assumed to be on hit
 	const auto Casted = Cast<UGA_WithEffectsBase>(abilitySpec->Ability);
