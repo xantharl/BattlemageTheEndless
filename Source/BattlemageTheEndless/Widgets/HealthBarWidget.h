@@ -72,6 +72,7 @@ public:
 	TArray<FStatusGridItem> StatusGrid;
 
 	const FName CurrentHealthTextBlockName = FName("Current_Health");
+	const FName MaxHealthTextBlockName = FName("Max_Health");
 	const FName ProgressBarName = FName("Health_Bar");
 
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Health Bar")

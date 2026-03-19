@@ -712,10 +712,9 @@ void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)
 	//	by canceling the ability so the character can move
 	if (UComboManagerComponent* ComboManager = FindComponentByClass<UComboManagerComponent>())
 	{
-		if (ComboManager->LastActivatedAbilityClass && ComboManager->GetCanContinue())
+		if (ComboManager->GetCanContinue())
 		{
-			auto Spec = AbilitySystemComponent->FindAbilitySpecFromClass(ComboManager->LastActivatedAbilityClass);
-			AbilitySystemComponent->CancelAbility(Spec->Ability);
+			ComboManager->TryEndAbilityEarly();
 		}
 	}
 	

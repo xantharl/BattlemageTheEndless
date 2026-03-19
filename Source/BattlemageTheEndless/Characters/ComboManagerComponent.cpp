@@ -364,6 +364,18 @@ void UComboManagerComponent::HandleCanContinue()
 	}
 }
 
+bool UComboManagerComponent::TryEndAbilityEarly()
+{	
+	if (!LastActivatedAbilityClass)
+		return false;
+	
+	auto Spec = AbilitySystemComponent->FindAbilitySpecFromClass(LastActivatedAbilityClass);
+	AbilitySystemComponent->CancelAbility(Spec->Ability);
+	_bCanContinue = false;
+	
+	return true;
+}
+
 void UComboManagerComponent::ActivateAbilityAndResetTimer(FGameplayAbilitySpec abilitySpec)
 {
 	// This is for the case where we entered this function via the queued ability timer

@@ -13,17 +13,26 @@ void UHealthBarWidget::Init(UAbilitySystemComponent* abilitySystemComponent, UBa
 
 void UHealthBarWidget::SetInitialDisplayValues()
 {
-	auto tree = WidgetTree.Get();
-	auto currentHealthWidget = tree->FindWidget<UTextBlock>(CurrentHealthTextBlockName);
-	if (currentHealthWidget && _attributeSet)
-	{
-		currentHealthWidget->SetText(FText::FromString(FString::FromInt(_attributeSet->Health.GetBaseValue())));
-	}
-
+	auto tree = WidgetTree.Get();	
 	auto healthBarWidget = tree->FindWidget<UProgressBar>(ProgressBarName);
 	if (healthBarWidget)
 	{
 		healthBarWidget->SetPercent(1.0f);
+	}
+	
+	if (!_attributeSet)
+	{
+		UE_LOG(LogTemp, Error, TEXT("UHealthBarWidget::SetInitialDisplayValues: AttributeSet is null, cannot set initial health bar value"));
+		return;	
+	}
+		
+	if (const auto CurrentHealthWidget = tree->FindWidget<UTextBlock>(CurrentHealthTextBlockName))
+	{
+		CurrentHealthWidget->SetText(FText::FromString(FString::FromInt(_attributeSet->Health.GetBaseValue())));
+	}
+	if (const auto MaxHealthWidget = tree->FindWidget<UTextBlock>(MaxHealthTextBlockName))
+	{
+		MaxHealthWidget->SetText(FText::FromString(FString::FromInt(_attributeSet->MaxHealth.GetBaseValue())));
 	}
 }
 
