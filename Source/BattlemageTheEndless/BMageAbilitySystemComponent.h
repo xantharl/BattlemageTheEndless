@@ -44,7 +44,7 @@ public:
 /**
  * 
  */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnWeaponHit, ACharacter*, character, const FHitResult&, Hit, FString, attackAnimationName);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnWeaponHit, ACharacter*, character, const FHitResult&, Hit, FString, attackAnimationName, FGameplayTagContainer, attackOwnedTags);
 
 UCLASS()
 class BATTLEMAGETHEENDLESS_API UBMageAbilitySystemComponent : public UAbilitySystemComponent

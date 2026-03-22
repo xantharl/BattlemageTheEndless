@@ -176,8 +176,9 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 	}
 	
 	// Broadcast the hit to the ASC so it can trigger any relevant gameplay cues or blueprint events
-	attackerAsc->OnWeaponHit.Broadcast(character, Hit, attackAnimationName);
-	hitActorAsc->OnWeaponHit.Broadcast(character, Hit, attackAnimationName);
+	
+	attackerAsc->OnWeaponHit.Broadcast(character, Hit, attackAnimationName, abilitySpec->Ability->GetAssetTags());
+	hitActorAsc->OnWeaponHit.Broadcast(character, Hit, attackAnimationName, abilitySpec->Ability->GetAssetTags());
 	
 	// apply any on hit effects from the weapon attack, all effects on a weapon are assumed to be on hit
 	const auto Casted = Cast<UGA_WithEffectsBase>(abilitySpec->Ability);
