@@ -35,7 +35,7 @@ class BATTLEMAGETHEENDLESS_API UOnHitSoundData : public UObject
 	
 public:
 	UOnHitSoundData();
-	~UOnHitSoundData();
+	virtual ~UOnHitSoundData() override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Footsteps, meta = (AllowPrivateAccess = "true"))
 	TArray<FHitSoundMaterialProperties> HitSoundMaterialProperties;

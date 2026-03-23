@@ -127,6 +127,8 @@ protected:
 
 	FString LastAttackAnimationName;
 
+	// Should be renamed to LastHitActors
+	/** List of actors hit by the current attack, used to prevent hitting the same actor multiple times with one attack **/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TArray<AActor*> LastHitCharacters;
 };

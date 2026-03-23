@@ -155,15 +155,15 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 	auto hitActor = Hit.GetActor();
 	auto hitActorAsc = hitActor->FindComponentByClass<UBMageAbilitySystemComponent>();
 	
-	// If this character has already been hit by this stage of the combo, don't hit them again
-	if (!attackerAsc || !hitActorAsc || LastHitCharacters.Contains(hitActor) || hitActor == character)
+	// If this object has already been hit by this stage of the combo, don't hit it again
+	if (!attackerAsc || LastHitCharacters.Contains(hitActor) || hitActor == character)
 	{
 		return false;
 	}
 
 	if (hitActor != character && GEngine)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("%s Hit by Animation %s"), *character->GetName(), *LastAttackAnimationName));
+		GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Yellow, FString::Printf(TEXT("%s Hit by Animation %s"), *hitActor->GetName(), *LastAttackAnimationName));
 	}
 	
 	LastHitCharacters.Add(hitActor);
@@ -178,6 +178,17 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 	// Broadcast the hit to the ASC so it can trigger any relevant gameplay cues or blueprint events
 	
 	attackerAsc->OnWeaponHit.Broadcast(character, Hit, attackAnimationName, abilitySpec->Ability->GetAssetTags());
+	// There won't be an ASC if we hit a static object (Wall, prop, etc.)
+	// In this case, check if we hit a WorldStatic and end the ability so we can't hit things through walls
+	if (!hitActorAsc)
+	{
+		const UPrimitiveComponent* HitComp = Hit.GetComponent();
+		if (HitComp->GetCollisionObjectType() == ECC_WorldStatic)
+			attackerAsc->CancelAbility(abilitySpec->Ability);
+		return true;
+	}
+	
+	// BEGIN HitActorAsc required section
 	hitActorAsc->OnWeaponHit.Broadcast(character, Hit, attackAnimationName, abilitySpec->Ability->GetAssetTags());
 	
 	// apply any on hit effects from the weapon attack, all effects on a weapon are assumed to be on hit
