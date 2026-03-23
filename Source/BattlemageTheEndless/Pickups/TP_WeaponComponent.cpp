@@ -149,11 +149,21 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 	{
 		return false;
 	}
-
-	// if either actor involved does not have an ASC, exit
+	
+	// Get ASCs
 	auto attackerAsc = character->FindComponentByClass<UBMageAbilitySystemComponent>();
 	auto hitActor = Hit.GetActor();
 	auto hitActorAsc = hitActor->FindComponentByClass<UBMageAbilitySystemComponent>();
+	
+	// Check if characters are on the same Faction and ignore the hit if so
+	if (auto CharacterBMage = Cast<ABattlemageTheEndlessCharacter>(character))
+	{
+		auto HitActorBMage = Cast<ABattlemageTheEndlessCharacter>(hitActor);
+		if (HitActorBMage && CharacterBMage->Faction == HitActorBMage->Faction)
+		{
+			return false;
+		}		
+	}	
 	
 	// If this object has already been hit by this stage of the combo, don't hit it again
 	if (!attackerAsc || LastHitCharacters.Contains(hitActor) || hitActor == character)

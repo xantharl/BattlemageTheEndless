@@ -81,6 +81,14 @@ struct FBindingHandles
 	TArray<int32> Handles;
 };
 
+UENUM(BlueprintType)
+enum class EFaction : uint8
+{
+	Player UMETA(DisplayName = "Player"),
+	Enemy UMETA(DisplayName = "Enemy"),
+	Neutral UMETA(DisplayName = "Neutral")
+};
+
 UCLASS(config=Game)
 class ABattlemageTheEndlessCharacter : public ACharacter
 {
@@ -94,6 +102,9 @@ private:
 	bool _bHeavyInputActive;
 
 public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Alignment, meta=(AllowPrivateAccess = "true"))
+	EFaction Faction = EFaction::Player;
+	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
 	TMap<TSubclassOf<class UGameplayAbility>, UInputAction*> DefaultAbilities;
 
