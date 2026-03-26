@@ -716,10 +716,16 @@ void UAttackBaseGameplayAbility::PositionSpellActor(AHitEffectActor* hitEffectAc
 	// Use look rotation if actor isn't meant to snap to ground
 	if (!hitEffectActor->SnapToGround)
 	{
-		UCameraComponent* camera;
-		do {
-			camera = character->GetComponentByClass<UCameraComponent>();
-		} while (camera && !camera->IsActive());
+		UCameraComponent* camera = nullptr;
+		for (auto CameraComponent : character->K2_GetComponentsByClass(UCameraComponent::StaticClass()))
+		{
+			auto cam = Cast<UCameraComponent>(CameraComponent);
+			if (cam && cam->IsActive())
+			{
+				camera = cam;
+				break;
+			}
+		}
 
 		if (!camera)
 		{

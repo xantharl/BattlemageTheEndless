@@ -135,6 +135,11 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 	// 	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("%s hit character %s"),
 	// 		*(character->GetName()), *(Hit.GetActor()->GetName())));
 	
+	
+	// Ignore floor hits since lots of animations swing through
+	if (Hit.ImpactNormal.Z > 0.7f)
+		return false;
+	
 	// We only want local clients to trigger weapon hits checks
 	if (!character->IsLocallyControlled()) // TODO: Account for AI?
 		return false;
