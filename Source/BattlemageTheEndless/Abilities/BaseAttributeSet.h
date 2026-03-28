@@ -41,6 +41,15 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Health", ReplicatedUsing = OnRep_MaxHealth)
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, MaxHealth)
+	
+	UPROPERTY(BlueprintReadOnly, Category = "Mana", ReplicatedUsing = OnRep_Mana)
+	FGameplayAttributeData Mana;
+	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, Mana)
+
+	// MaxHealth is its own attribute since GameplayEffects may modify it
+	UPROPERTY(BlueprintReadOnly, Category = "Mana", ReplicatedUsing = OnRep_MaxMana)
+	FGameplayAttributeData MaxMana;
+	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, MaxMana)
 
 	// Health regen rate will passively increase Health every second
 	UPROPERTY(BlueprintReadOnly, Category = "Health", ReplicatedUsing = OnRep_HealthRegenRate)
@@ -88,6 +97,12 @@ protected:
 	UFUNCTION()
 	virtual void OnRep_MaxHealth(const FGameplayAttributeData& OldValue);
 
+	UFUNCTION()
+	virtual void OnRep_Mana(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	virtual void OnRep_MaxMana(const FGameplayAttributeData& OldValue);
+	
 	UFUNCTION()
 	virtual void OnRep_HealthRegenRate(const FGameplayAttributeData& OldValue);
 

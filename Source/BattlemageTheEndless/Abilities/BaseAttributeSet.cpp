@@ -11,6 +11,12 @@ UBaseAttributeSet::UBaseAttributeSet()
 
 	MaxHealth.SetBaseValue(100.f);
 	MaxHealth.SetCurrentValue(100.f);
+	
+	Mana.SetBaseValue(100.f);
+	Mana.SetCurrentValue(100.f);
+
+	MaxMana.SetBaseValue(100.f);
+	MaxMana.SetCurrentValue(100.f);
 
 	HealthRegenRate.SetBaseValue(0.f);
 	HealthRegenRate.SetCurrentValue(0.f);
@@ -39,6 +45,8 @@ void UBaseAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 
 	DOREPLIFETIME_CONDITION_NOTIFY(UBaseAttributeSet, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBaseAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UBaseAttributeSet, Mana, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UBaseAttributeSet, MaxMana, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBaseAttributeSet, HealthRegenRate, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBaseAttributeSet, MovementSpeed, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBaseAttributeSet, CrouchedSpeed, COND_None, REPNOTIFY_Always);
@@ -64,6 +72,16 @@ void UBaseAttributeSet::OnRep_Health(const FGameplayAttributeData& OldValue)
 void UBaseAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldValue)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, MaxHealth, OldValue);
+}
+
+void UBaseAttributeSet::OnRep_Mana(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, Mana, OldValue);
+}
+
+void UBaseAttributeSet::OnRep_MaxMana(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, MaxMana, OldValue);
 }
 
 void UBaseAttributeSet::OnRep_HealthRegenRate(const FGameplayAttributeData& OldValue)

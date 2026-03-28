@@ -156,7 +156,9 @@ void UBMageAbilitySystemComponent::BeginPlay()
 	BuildAbilityRangeCache();
 
 	FGameplayTag CooldownTag = FGameplayTag::RequestGameplayTag(FName("Spell.Cooldown"));
+	FGameplayTag SpellsTag = FGameplayTag::RequestGameplayTag(FName("Spells.Fire.FireBolt"));
 	RegisterGameplayTagEvent(CooldownTag, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBMageAbilitySystemComponent::OnTagChanged);
+	RegisterGameplayTagEvent(SpellsTag, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBMageAbilitySystemComponent::OnTagChanged);
 	OnAnyGameplayEffectRemovedDelegate().AddUObject(this, &UBMageAbilitySystemComponent::OnRemoveGameplayEffectCallback);
 }
 
