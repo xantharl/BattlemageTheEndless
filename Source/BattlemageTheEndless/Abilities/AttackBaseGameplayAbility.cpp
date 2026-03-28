@@ -128,8 +128,9 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 		}
 	}
 
-	// Calls ApplyCooldown
-	CommitAbility(Handle, ActorInfo, ActivationInfo);
+	// Cooldown isn't committed till the ability is over, non-instanced by execution abilities
+	//    will have activation blocked before we ever get here
+	CommitAbilityCost(Handle, ActorInfo, ActivationInfo);
 
 	// If we've got a charge time, simply exit and let handler worry about ending the ability
 	if (ChargeDuration >= 0.001f)
