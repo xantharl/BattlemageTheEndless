@@ -45,6 +45,7 @@ public:
  * 
  */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnWeaponHit, ACharacter*, character, const FHitResult&, Hit, FString, attackAnimationName, FGameplayTagContainer, attackOwnedTags);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCooldownTagChanged, const FGameplayTag, CooldownTag, int32, NewCount);
 
 UCLASS()
 class BATTLEMAGETHEENDLESS_API UBMageAbilitySystemComponent : public UAbilitySystemComponent
@@ -125,7 +126,10 @@ public:
 	
 	UPROPERTY(BlueprintAssignable, Category = "Weapon Hit")
 	FOnWeaponHit OnWeaponHit;
-
+	
+	UPROPERTY(BlueprintAssignable, Category = "Resources")
+	FOnCooldownTagChanged OnCooldownTagChanged;
+	
 private:
 	void UnmarkOwner();
 
@@ -148,6 +152,7 @@ private:
 	UMaterialInstance* _markedMaterialOutOfRange;
 
 	virtual void BeginPlay() override;
+	virtual void CooldownTagChanged(const FGameplayTag CooldownTag, int32 NewCount);
 
 	void BuildAbilityRangeCache();
 

@@ -481,5 +481,6 @@ bool UComboManagerComponent::CheckCooldownAndTryActivate(FGameplayAbilitySpec ab
 	if (abilitySpec.Ability->CheckCooldown(abilitySpec.Handle, &actorInfo))
 		return AbilitySystemComponent->TryActivateAbility(abilitySpec.Handle, true);
 
+	UE_LOG(LogTemp, Warning, TEXT("Ability %s is on cooldown, cannot activate"), *abilitySpec.Ability->GetName());
 	return false;
 }

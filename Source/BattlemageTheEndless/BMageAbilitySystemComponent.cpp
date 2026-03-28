@@ -155,7 +155,14 @@ void UBMageAbilitySystemComponent::BeginPlay()
 	EnsureInitSubObjects();
 	BuildAbilityRangeCache();
 
+	FGameplayTag CooldownTag = FGameplayTag::RequestGameplayTag(FName("Spell.Cooldown"));
+	RegisterGameplayTagEvent(CooldownTag, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBMageAbilitySystemComponent::CooldownTagChanged);
 	OnAnyGameplayEffectRemovedDelegate().AddUObject(this, &UBMageAbilitySystemComponent::OnRemoveGameplayEffectCallback);
+}
+
+void UBMageAbilitySystemComponent::CooldownTagChanged(const FGameplayTag CooldownTag, int32 NewCount)
+{
+	OnCooldownTagChanged.Broadcast(CooldownTag, NewCount);
 }
 
 void UBMageAbilitySystemComponent::BuildAbilityRangeCache()
