@@ -562,14 +562,15 @@ void UBMageAbilitySystemComponent::HandleHitScan(UAttackBaseGameplayAbility* abi
 		return;
 
 	// Handle chain delay if needed
-	// floating point precision, woo
-	if (FMath::Abs(ability->ChainDelay) < 0.00001f)
+	if (FMath::Abs(ability->ChainDelay) < KINDA_SMALL_NUMBER)
 	{
-		for (auto applyTo : hitCharacters.FilterByPredicate([](const ACharacter* Character) { return Character != nullptr; }))
-		{
-			
-			if (auto asc = applyTo->FindComponentByClass<UBMageAbilitySystemComponent>())
-				ability->ApplyEffects(applyTo, asc, ownerCharacter);
+		const auto ValidCharacters = hitCharacters.FilterByPredicate(
+			[](const ACharacter* Character) { return Character != nullptr; });
+		
+		for (int i = 0; i < ValidCharacters.Num(); ++i)
+		{			
+			if (auto asc = ValidCharacters[i]->FindComponentByClass<UBMageAbilitySystemComponent>())
+				ability->ApplyEffects_ForChain(ValidCharacters[i], asc, ownerCharacter, ownerCharacter, i);
 		}
 	}
 	else
@@ -584,7 +585,7 @@ void UBMageAbilitySystemComponent::HandleHitScan(UAttackBaseGameplayAbility* abi
 			// No delay for the first target
 			if (i == 0)
 			{
-				ability->ApplyEffects(hitCharacters[i], asc, ownerCharacter);
+				ability->ApplyChainEffects(hitCharacters[i], asc, ownerCharacter, ownerCharacter, hitCharacters.Num() == 1, i);
 				continue;
 			}
 
@@ -596,7 +597,8 @@ void UBMageAbilitySystemComponent::HandleHitScan(UAttackBaseGameplayAbility* abi
 				static_cast<UAbilitySystemComponent*>(asc),
 				static_cast<AActor*>(hitCharacters[i - 1]),
 				static_cast<AActor*>(hitCharacters[i - 1]),
-				i == ability->NumberOfChains
+				i == ability->NumberOfChains,
+				i
 			);
 
 			GetWorld()->GetTimerManager().SetTimer(ability->GetChainTimerHandles()[i - 1], TimerDelegate, ability->ChainDelay * i, false);

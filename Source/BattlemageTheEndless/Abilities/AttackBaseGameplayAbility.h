@@ -216,7 +216,8 @@ public:
 	/// <param name="instigator"></param>
 	/// <param name="effectCauser"></param>
 	/// <param name="isLastTarget">Controls whether to call endSelf</param>
-	void ApplyChainEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser, bool isLastTarget);
+	/// <param name="ChainLinkNumber"></param>
+	void ApplyChainEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser, bool isLastTarget, int ChainLinkNumber);
 
 	/// <summary>
 	/// Helper to apply any effects owned by this ability to the target, which can be the same as the character if applying to self
@@ -225,6 +226,8 @@ public:
 	/// <param name="target">Target of the effect(s)</param>
 	/// <param name="effectCauser">EffectCauser is the actor that is the physical source of the effect</param>
 	virtual TArray<FActiveGameplayEffectHandle> ApplyEffects(const AActor* Target, UAbilitySystemComponent* TargetAsc, AActor* Instigator = nullptr, AActor* EffectCauser = nullptr) const override;
+	
+	virtual TArray<FActiveGameplayEffectHandle> ApplyEffects_ForChain(const AActor* Target, UAbilitySystemComponent* TargetAsc, AActor* Instigator = nullptr, AActor* EffectCauser = nullptr, int ChainLinkNumber = 0) const;
 
 	/// <summary>
 	/// Handles any SetByCaller values needed for the effect being applied

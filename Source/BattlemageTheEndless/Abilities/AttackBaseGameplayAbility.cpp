@@ -2,6 +2,7 @@
 
 #include "AttackBaseGameplayAbility.h"
 
+#include "BattlemageTheEndless/Pickups/PickupActor.h"
 #include "Net/RepLayout.h"
 
 #if WITH_EDITOR
@@ -219,9 +220,9 @@ void UAttackBaseGameplayAbility::CreateAndDispatchMontageTask()
 	task->ReadyForActivation();
 }
 
-void UAttackBaseGameplayAbility::ApplyChainEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser, bool isLastTarget)
+void UAttackBaseGameplayAbility::ApplyChainEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser, bool isLastTarget, int ChainLinkNumber)
 {
-	ActiveEffectHandles = ApplyEffects(target, targetAsc, instigator, effectCauser);
+	ActiveEffectHandles = ApplyEffects_ForChain(target, targetAsc, instigator, effectCauser, ChainLinkNumber);
 	if (isLastTarget)
 	{
 		EndSelf();
@@ -236,14 +237,42 @@ void UAttackBaseGameplayAbility::AddActiveEffectHandles(const TArray<FActiveGame
 
 TArray<FActiveGameplayEffectHandle> UAttackBaseGameplayAbility::ApplyEffects(const AActor* Target, UAbilitySystemComponent* TargetAsc, AActor* Instigator, AActor* EffectCauser) const
 {
+	return Super::ApplyEffects(Target, TargetAsc, Instigator, EffectCauser);
+}
+
+TArray<FActiveGameplayEffectHandle> UAttackBaseGameplayAbility::ApplyEffects_ForChain(const AActor* Target,
+	UAbilitySystemComponent* TargetAsc, AActor* Instigator, AActor* EffectCauser, int ChainLinkNumber) const
+{
 	if (ChainSystem && Instigator)
 	{
+		AActor* OriginActor = Instigator;
+		TArray<AActor*> AttachedActors;
+		Instigator->GetAttachedActors(AttachedActors, false, true); 
+		TArray<AActor*> PickupActors = AttachedActors.FilterByPredicate([](const AActor* Actor)
+		{
+			return Actor && !Actor->IsHidden() && Actor->IsA<APickupActor>();
+		});
+		
+		if (ChainLinkNumber == 0 && PickupActors.Num() > 0)
+		{
+			for (auto Actor : PickupActors)
+			{
+				auto Pickup = Cast<APickupActor>(Actor);
+				if (Pickup && Pickup->PickupType == EPickupType::SpellClass)
+				{
+					OriginActor = Pickup;
+					break;
+				}
+			}
+		}
+			
+		
 		// We don't need to keep the reference, UE will handle disposing when it is destroyed
 		auto chainEffectActor = Instigator->GetWorld()->SpawnActor<AHitScanChainEffect>(AHitScanChainEffect::StaticClass(), Instigator->GetActorLocation(), FRotator::ZeroRotator);
-		chainEffectActor->Init(Instigator, Target->GetActorLocation(), ChainSystem);
+		chainEffectActor->Init(OriginActor, Target->GetActorLocation(), ChainSystem);
 	}
-
-	return Super::ApplyEffects(Target, TargetAsc, Instigator, EffectCauser);
+	
+	return ApplyEffects(Target, TargetAsc, Instigator, EffectCauser);
 }
 
 void UAttackBaseGameplayAbility::HandleSetByCaller(TSubclassOf<UGameplayEffect> effect, FGameplayEffectSpecHandle specHandle, AActor* effectCauser, UAbilitySystemComponent* targetAsc) const

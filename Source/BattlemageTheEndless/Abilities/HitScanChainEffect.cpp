@@ -41,8 +41,9 @@ void AHitScanChainEffect::OnSystemFinished(UNiagaraComponent* finishedComponent)
 // Called every frame
 void AHitScanChainEffect::Tick(float DeltaTime)
 {
-	HitScanChainEffectInstance->SetWorldLocation(OriginatingActor->GetActorLocation());
-	HitScanChainEffectInstance->SetVariablePosition(FName("BeamStart"), OriginatingActor->GetActorLocation());
+	auto Location = OriginatingActor->GetActorLocation();
+	HitScanChainEffectInstance->SetWorldLocation(Location);
+	HitScanChainEffectInstance->SetVariablePosition(FName("BeamStart"), Location);
 	Super::Tick(DeltaTime);
 }
 

@@ -130,6 +130,12 @@ void UProjectileManagerComponent::HandleSpawn_Implementation(
 		auto newActor = world->SpawnActor<ABattlemageTheEndlessProjectile>(
 			configuration.ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
 
+		if (!newActor)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to spawn projectile actor for ability %s"), *SpawningAbility->GetName());
+			continue;
+		}
+		
 		// This sets the damage manually for a charge spell
 		if (SpawningAbility->ChargeDuration > 0.0f)
 		{
@@ -142,7 +148,7 @@ void UProjectileManagerComponent::HandleSpawn_Implementation(
 			// 			*spawningAbility->GetName(), spawningAbility->CurrentChargeDamage, 
 			// 			newActor->ProjectileMovement->InitialSpeed, newActor->ProjectileMovement->ProjectileGravityScale));
 		}
-
+		
 		newActor->SpawningAbility = SpawningAbility;
 		newActor->OwnerActor = OwnerCharacter;
 
