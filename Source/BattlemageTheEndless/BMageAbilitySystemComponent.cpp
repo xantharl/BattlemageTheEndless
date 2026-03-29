@@ -415,6 +415,7 @@ void UBMageAbilitySystemComponent::PostAbilityActivation(UAttackBaseGameplayAbil
 	if (ability->HitType == HitType::Projectile && ability->ProjectileConfiguration.ProjectileClass)
 	{
 		HandleProjectileSpawn(ability);
+		ability->CommitAbilityCooldown_Checked(ECooldownCommitTiming::OnProjectileSpawn);
 
 		// for charge spells we need to end the ability after the hit check
 		if (ability->ChargeDuration > 0.001f)
@@ -441,7 +442,6 @@ void UBMageAbilitySystemComponent::PostAbilityActivation(UAttackBaseGameplayAbil
 	OnAbilityEnded.AddUObject(this, &UBMageAbilitySystemComponent::OnAbilityCancelled);
 }
 
-// TODO: Why is this in character instead of the ability?
 void UBMageAbilitySystemComponent::HandleProjectileSpawn(UAttackBaseGameplayAbility* ability)
 {
 	auto ownerCharacter = Cast<ACharacter>(GetOwnerActor());
@@ -821,4 +821,36 @@ void UBMageAbilitySystemComponent::CompleteChargeAbility()
 	// TODO: Is this needed? PostAbilityActivation handles it already
 	// This is a hack to call EndAbility without needing to spoof up all the params
 	_chargingAbility->OnMontageCompleted();
+}
+
+bool UBMageAbilitySystemComponent::GetCooldownRemainingForTag(FGameplayTagContainer CooldownTags, float & TimeRemaining, float & CooldownDuration)
+{
+	if (CooldownTags.Num() > 0)
+	{
+		TimeRemaining = 0.f;
+		CooldownDuration = 0.f;
+
+		FGameplayEffectQuery const Query = FGameplayEffectQuery::MakeQuery_MatchAnyOwningTags(CooldownTags);
+		TArray< TPair<float, float> > DurationAndTimeRemaining = GetActiveEffectsTimeRemainingAndDuration(Query);
+		if (DurationAndTimeRemaining.Num() > 0)
+		{
+			int32 BestIdx = 0;
+			float LongestTime = DurationAndTimeRemaining[0].Key;
+			for (int32 Idx = 1; Idx < DurationAndTimeRemaining.Num(); ++Idx)
+			{
+				if (DurationAndTimeRemaining[Idx].Key > LongestTime)
+				{
+					LongestTime = DurationAndTimeRemaining[Idx].Key;
+					BestIdx = Idx;
+				}
+			}
+
+			TimeRemaining = DurationAndTimeRemaining[BestIdx].Key;
+			CooldownDuration = DurationAndTimeRemaining[BestIdx].Value;
+
+			return true;
+		}
+	}
+
+	return false;
 }

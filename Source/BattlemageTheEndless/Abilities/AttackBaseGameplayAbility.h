@@ -52,6 +52,26 @@ enum class HitType : uint8
 	Actor UMETA(DisplayName = "Actor")
 };
 
+/// <summary>
+/// Enum of Cooldown Commit Timing, only relevant if a cooldown GameplayEffect is set
+/// </summary>
+UENUM(BlueprintType)
+enum class ECooldownCommitTiming : uint8
+{
+	/** Commit as soon as the ability begins **/
+	Immediate UMETA(DisplayName = "Immediate"),
+	/** Commit once the FiringMontage is completed or otherwise ended **/
+	OnMontageEnded UMETA(DisplayName = "OnMontageEnded"),
+	/** Don't commit until all GameplayEffects are concluded, currently only supports self abilities **/
+	OnEffectsCompleted UMETA(DisplayName = "OnEffectsCompleted"),
+	/** Commit after spawning the ability's projectiles **/
+	OnProjectileSpawn UMETA(DisplayName = "OnProjectileSpawn"),
+	/** Commit after spawning the ability's projectiles **/
+	OnActorsDestroyed UMETA(DisplayName = "OnActorsDestroyed"),
+	/** Commit will be handled manually elsewhere **/
+	Custom UMETA(DisplayName = "Custom")
+};
+
 /**
  * 
  */
@@ -77,6 +97,9 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = HitBehavior)
 	HitType HitType = HitType::None;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Cooldown)
+	ECooldownCommitTiming CooldownCommitTiming = ECooldownCommitTiming::Immediate;
 
 	/** Projectile class to spawn */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectiles)
@@ -260,6 +283,9 @@ public:
 
 	UFUNCTION()
 	void OnPlacementGhostDestroyed(AActor* PlacementGhost);
+	
+	UFUNCTION()
+	void OnSpellActorDestroyed(AActor* Destroyed);
 
 	/** Spawns spell actors, optionally as ghosts, will attach to character provided **/
 	void SpawnSpellActors(bool isGhost, ACharacter* Character);
@@ -268,7 +294,11 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Projectile Physics")
 	FRotator CalculateAttackAngle(FVector StartLocation, AActor* TargetActor, bool bAssumeFullCharge = true);
-
+	
+	// Override which supports checking configured CooldownCommitTiming before committing cooldown
+	virtual bool CommitAbilityCooldown_Checked(ECooldownCommitTiming EntryPoint);
+	
+	virtual void EndSelf();
 private:
 	/** Timer handles for chained abilities, do not reference directly without ensuring it is initialized
 		See GetChainTimerHandles **/
@@ -289,4 +319,8 @@ private:
 
 	float GetEffectiveProjectileGravity(ABattlemageTheEndlessProjectile* defaultProjectile, bool bAssumeFullCharge);
 	float GetEffectiveProjectileSpeed(ABattlemageTheEndlessProjectile* defaultProjectile, bool bAssumeFullCharge);
+	
+	// Stored at activation time to use for any cooldown commits that need to be deferred until later
+	FGameplayAbilitySpecHandle LatestHandle;
+	FGameplayAbilityActivationInfo LatestActivationInfo;
 };

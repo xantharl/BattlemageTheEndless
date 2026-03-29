@@ -46,7 +46,7 @@ public:
  */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnWeaponHit, ACharacter*, character, const FHitResult&, Hit, FString, attackAnimationName, FGameplayTagContainer, attackOwnedTags);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCooldownTagChanged, const FGameplayTag, CooldownTag, int32, NewCount);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSpellsTagChanged, const FGameplayTag, CooldownTag, int32, NewCount);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSpellsTagChanged, const FGameplayTag, SpellsTag, int32, NewCount);
 
 UCLASS()
 class BATTLEMAGETHEENDLESS_API UBMageAbilitySystemComponent : public UAbilitySystemComponent
@@ -108,6 +108,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
 	void CompleteChargeAbility();
+	
+	UFUNCTION(BlueprintCallable, Category = "Abilities")
+	bool GetCooldownRemainingForTag(FGameplayTagContainer CooldownTags, float& TimeRemaining, float& CooldownDuration);
 
 	void ChargeSpell();
 

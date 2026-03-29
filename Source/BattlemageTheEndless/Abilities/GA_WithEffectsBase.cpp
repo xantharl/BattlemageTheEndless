@@ -143,9 +143,9 @@ void UGA_WithEffectsBase::ResetTimerAndClearEffects(const FGameplayAbilityActorI
 		ActiveEffectHandles.Empty();
 	}
 }
+
 void UGA_WithEffectsBase::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	// Cost is committed at activation, CD waits till end
 	if (CooldownGameplayEffectClass)
 		CommitAbilityCooldown(Handle, ActorInfo, ActivationInfo, false);
 

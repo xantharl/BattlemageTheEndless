@@ -2,6 +2,8 @@
 
 #include "AttackBaseGameplayAbility.h"
 
+#include "Net/RepLayout.h"
+
 #if WITH_EDITOR
 bool UAttackBaseGameplayAbility::CanEditChange(const FProperty* InProperty) const
 {
@@ -76,6 +78,9 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 	
+	LatestActivationInfo = ActivationInfo;
+	LatestHandle = Handle;
+	
 	_bIsChargeComplete = false;
 
 	// Activation time is only used to determine if the ability is charged, so if this isn't a charge ability we don't need to set it
@@ -131,6 +136,7 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	// Cooldown isn't committed till the ability is over, non-instanced by execution abilities
 	//    will have activation blocked before we ever get here
 	CommitAbilityCost(Handle, ActorInfo, ActivationInfo);
+	CommitAbilityCooldown_Checked(ECooldownCommitTiming::Immediate);
 
 	// If we've got a charge time, simply exit and let handler worry about ending the ability
 	if (ChargeDuration >= 0.001f)
@@ -303,6 +309,9 @@ void UAttackBaseGameplayAbility::OnMontageCancelled()
 	auto Character = Cast<ACharacter>(CurrentActorInfo->OwnerActor);
 	if (Character && FireAnimation->HasRootMotion())
 		Character->bUseControllerRotationYaw = true;
+	
+	CommitAbilityCooldown_Checked(ECooldownCommitTiming::OnMontageEnded);
+	
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 }
 
@@ -311,7 +320,9 @@ void UAttackBaseGameplayAbility::OnMontageCompleted()
 	// we should hit blend out before this check, but return for safety
 	if (FireAnimation->bLoop)
 		return;
-
+	
+	CommitAbilityCooldown_Checked(ECooldownCommitTiming::OnMontageEnded);
+	
 	// check if effects are still active, if so keep the ability alive
 	if (ActiveEffectHandles.Num() > 0)
 		return;
@@ -584,6 +595,23 @@ FRotator UAttackBaseGameplayAbility::CalculateAttackAngle(FVector StartLocation,
 	return FRotator(FMath::Min(FMath::RadiansToDegrees(angle1), FMath::RadiansToDegrees(angle2)), lookAtRotation.Yaw, 0.f);
 }
 
+bool UAttackBaseGameplayAbility::CommitAbilityCooldown_Checked(ECooldownCommitTiming EntryPoint)
+{
+	if (EntryPoint != CooldownCommitTiming)
+	{
+		return false;
+	}	
+	
+	const auto ActorInfo = GetActorInfo();
+	return CommitAbilityCooldown(LatestHandle, &ActorInfo, LatestActivationInfo, false, new FGameplayTagContainer());
+}
+
+void UAttackBaseGameplayAbility::EndSelf()
+{
+	CommitAbilityCooldown_Checked(ECooldownCommitTiming::OnEffectsCompleted);	
+	Super::EndSelf();
+}
+
 float UAttackBaseGameplayAbility::GetEffectiveProjectileGravity(ABattlemageTheEndlessProjectile* defaultProjectile, bool bAssumeFullCharge)
 {
 	if (ProjectileConfiguration.GravityScaleOverride > 0.f)
@@ -630,6 +658,11 @@ void UAttackBaseGameplayAbility::OnPlacementGhostDestroyed(AActor* PlacementGhos
 	PlacementGhost->OnDestroyed.RemoveDynamic(this, &UAttackBaseGameplayAbility::OnPlacementGhostDestroyed);
 }
 
+void UAttackBaseGameplayAbility::OnSpellActorDestroyed(AActor* Destroyed)
+{
+	CommitAbilityCooldown_Checked(ECooldownCommitTiming::OnActorsDestroyed);
+}
+
 void UAttackBaseGameplayAbility::SpawnSpellActors(bool IsGhost, ACharacter* Character)
 {
 	auto defaultLocation = FVector(0, 0, -9999);
@@ -637,6 +670,9 @@ void UAttackBaseGameplayAbility::SpawnSpellActors(bool IsGhost, ACharacter* Char
 	// A Placed spell will produce one or more hit effect actors at the target location, so we need to ghost all of them
 	// to do that, we need to create actor(s) at the target location and store them 
 	UWorld* world = Character->GetWorld();
+	
+	AActor* LongestLivedActor = nullptr;
+	
 	for (auto hitEffectActor : HitEffectActors)
 	{
 		auto defaultObject = hitEffectActor->GetDefaultObject<AHitEffectActor>();
@@ -678,8 +714,13 @@ void UAttackBaseGameplayAbility::SpawnSpellActors(bool IsGhost, ACharacter* Char
 
 			if (IsGhost)
 				RegisterPlacementGhost(spellActor);
+			else if (!LongestLivedActor || spellActor->GetLifeSpan() > LongestLivedActor->GetLifeSpan())
+				LongestLivedActor = spellActor;
 		}
 	}
+	
+	if (LongestLivedActor)
+		LongestLivedActor->OnDestroyed.AddDynamic(this, &UAttackBaseGameplayAbility::OnSpellActorDestroyed);
 }
 
 void UAttackBaseGameplayAbility::PositionSpellActor(AHitEffectActor* hitEffectActor, ACharacter* character)
