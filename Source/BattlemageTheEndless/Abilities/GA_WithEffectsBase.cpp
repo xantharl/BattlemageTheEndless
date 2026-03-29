@@ -146,7 +146,7 @@ void UGA_WithEffectsBase::ResetTimerAndClearEffects(const FGameplayAbilityActorI
 
 void UGA_WithEffectsBase::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	if (CooldownGameplayEffectClass)
+	if (bShouldCommitCooldownOnEnd && CooldownGameplayEffectClass)
 		CommitAbilityCooldown(Handle, ActorInfo, ActivationInfo, false);
 
 	OnAbilityEnded.Broadcast(false);

@@ -218,6 +218,7 @@ public:
 	UMenuContainerActivatableWidget* ContainerWidget;
 
 	/** Map of last activated abilities. This is NOT automatically cleared out on ability end, and will be validated on next attempt to process input **/
+	// TODO: Is this needed?
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
 	TMap<APickupActor*, FGameplayAbilitySpecHandle> LastActivatedAbilities;
 	

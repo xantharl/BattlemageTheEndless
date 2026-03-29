@@ -28,6 +28,12 @@ UAttackBaseGameplayAbility::UAttackBaseGameplayAbility()
 {
 	// Kind of hacky but this allows us to call the super ActivateAbility without having to worry about double applying effects
 	bApplyEffectsOnActivate = false;
+	
+	if (ProjectileConfiguration.ProjectileClass)
+		CooldownCommitTiming = ECooldownCommitTiming::OnProjectileSpawn;
+	
+	if (CooldownCommitTiming != ECooldownCommitTiming::Custom)
+		bShouldCommitCooldownOnEnd = false;
 }
 
 void UAttackBaseGameplayAbility::ActivateSelfAbility(const FGameplayAbilityActorInfo* ActorInfo, const UWorld* const world, TCopyQualifiersFromTo_T<AActor, ACharacter>* Character)

@@ -302,6 +302,13 @@ FAbilitiesByRangeCacheEntry UBMageAbilitySystemComponent::GetShortestRangeAbilit
 	return bestAttack == nullptr ? FAbilitiesByRangeCacheEntry() : *bestAttack;
 }
 
+UAttackBaseGameplayAbility* UBMageAbilitySystemComponent::GetPrimaryInstanceForAbilityClass(
+	TSubclassOf<UAttackBaseGameplayAbility> AbilityClass)
+{
+	const auto Spec = FindAbilitySpecFromClass(AbilityClass);
+	return Spec ? Cast<UAttackBaseGameplayAbility>(Spec->GetPrimaryInstance()) : nullptr; 
+}
+
 void UBMageAbilitySystemComponent::UnmarkOwner()
 {
 	// Remove overlay material from owner
@@ -414,7 +421,10 @@ void UBMageAbilitySystemComponent::PostAbilityActivation(UAttackBaseGameplayAbil
 	//	Currently an ability can apply effects either on hit or to self, but not both
 	if (ability->HitType == HitType::Projectile && ability->ProjectileConfiguration.ProjectileClass)
 	{
-		HandleProjectileSpawn(ability);
+		// If true, spawn now, otherwise do not spawn and let other logic handle it at the appropriate time
+		if (ability->ProjectileConfiguration.ShouldSpawnImmediately)
+			HandleProjectileSpawn(ability);
+		
 		ability->CommitAbilityCooldown_Checked(ECooldownCommitTiming::OnProjectileSpawn);
 
 		// for charge spells we need to end the ability after the hit check
@@ -463,6 +473,7 @@ void UBMageAbilitySystemComponent::HandleProjectileSpawn(UAttackBaseGameplayAbil
 	// if the projectiles are spawned from an actor, use that entry point
 	if (ability->ProjectileConfiguration.SpawnLocation == FSpawnLocation::Player)
 	{
+		if (ability->ProjectileConfiguration.ShouldSpawnImmediately)
 		ProjectileManager->SpawnProjectiles_Actor(ability, ability->ProjectileConfiguration, nullptr);
 	}
 	// We can only spawn at last ability location if we have a niagara instance
@@ -554,13 +565,11 @@ void UBMageAbilitySystemComponent::HandleHitScan(UAttackBaseGameplayAbility* abi
 	// floating point precision, woo
 	if (FMath::Abs(ability->ChainDelay) < 0.00001f)
 	{
-		if (hitCharacters.Num() != 0)
+		for (auto applyTo : hitCharacters.FilterByPredicate([](const ACharacter* Character) { return Character != nullptr; }))
 		{
-			for (auto applyTo : hitCharacters)
-			{
-				if (auto asc = applyTo->FindComponentByClass<UBMageAbilitySystemComponent>())
-					ability->ApplyEffects(applyTo, asc, ownerCharacter);
-			}
+			
+			if (auto asc = applyTo->FindComponentByClass<UBMageAbilitySystemComponent>())
+				ability->ApplyEffects(applyTo, asc, ownerCharacter);
 		}
 	}
 	else

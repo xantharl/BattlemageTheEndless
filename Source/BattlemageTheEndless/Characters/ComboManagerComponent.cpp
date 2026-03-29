@@ -311,7 +311,10 @@ FGameplayAbilitySpecHandle UComboManagerComponent::DelegateToWeapon(APickupActor
 
 	auto spec = AbilitySystemComponent->FindAbilitySpecFromClass(abilityClass);
 	if (spec && CheckCooldownAndTryActivate(*spec))
+	{
+		LastActivatedAbilityClass = spec->Ability->GetClass();
 		return spec->Handle;
+	}
 
 	return FGameplayAbilitySpecHandle();
 }

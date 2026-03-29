@@ -113,4 +113,6 @@ protected:
 	TArray<FActiveGameplayEffectHandle> ActiveEffectHandles;
 	
 	bool bApplyEffectsOnActivate = true;
+	
+	bool bShouldCommitCooldownOnEnd = true;
 };

@@ -112,6 +112,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
 	TSubclassOf<class APersistentAreaEffect> PersistentAreaEffect = nullptr;
 
+	/** If true, the projectile will spawn as soon as the ability is activated, it is expected that custom logic (Anim Notify) 
+	 * will be used to spawn the projectile at the correct time **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Projectile, meta = (AllowPrivateAccess = "true"))
+	bool ShouldSpawnImmediately = false;
 };
 
 UCLASS(config=Game)

@@ -85,12 +85,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
 	float SuspendRegenOnHitDuration = 2.0f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess))
 	TArray<APickupActor*> ActivePickups;
+	
 	UFUNCTION(BlueprintCallable, Category = "Pickup")
 	APickupActor* GetActivePickup(EquipSlot Slot);
 
 	void PostAbilityActivation(UAttackBaseGameplayAbility* ability);
+	
+	UFUNCTION(BlueprintCallable, Category = "Projectiles")
 	void HandleProjectileSpawn(UAttackBaseGameplayAbility* ability);
+	
 	void HandleHitScan(UAttackBaseGameplayAbility* ability);
 	TArray<ACharacter*> GetChainTargets(int NumberOfChains, float ChainDistance, ACharacter* HitActor);
 	ACharacter* GetNextChainTarget(float ChainDistance, AActor* ChainActor, TArray<AActor*> Candidates);
@@ -136,6 +141,9 @@ public:
 	
 	UPROPERTY(BlueprintAssignable, Category = "Resources")
 	FOnSpellsTagChanged OnSpellsTagChanged;
+	
+	UFUNCTION(BlueprintCallable, Category = Abilities)
+	UAttackBaseGameplayAbility* GetPrimaryInstanceForAbilityClass(TSubclassOf<UAttackBaseGameplayAbility> AbilityClass);
 	
 private:
 	void UnmarkOwner();
