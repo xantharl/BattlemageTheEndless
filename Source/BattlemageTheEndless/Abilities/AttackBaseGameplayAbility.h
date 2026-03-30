@@ -295,8 +295,13 @@ public:
 
 	void PositionSpellActor(AHitEffectActor* hitEffectActor, ACharacter* character);
 
+	/** Calculates attack angle based on target's current velocity for Projectile Attacks **/
 	UFUNCTION(BlueprintCallable, Category = "Projectile Physics")
 	FRotator CalculateAttackAngle(FVector StartLocation, AActor* TargetActor, bool bAssumeFullCharge = true);
+	
+	/** Calculates attack direction based on target's current velocity for Melee Attacks **/
+	UFUNCTION(BlueprintCallable, Category = "Projectile Physics")
+	FRotator CalculateAttackDirection(FVector StartLocation, AActor* TargetActor);
 	
 	// Override which supports checking configured CooldownCommitTiming before committing cooldown
 	virtual bool CommitAbilityCooldown_Checked(ECooldownCommitTiming EntryPoint);

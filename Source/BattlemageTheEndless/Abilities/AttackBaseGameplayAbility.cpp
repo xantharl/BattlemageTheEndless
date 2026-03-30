@@ -621,13 +621,23 @@ FRotator UAttackBaseGameplayAbility::CalculateAttackAngle(FVector StartLocation,
 	float angle1 = FMath::Atan((v2 + sqrtVal) / (GravityZ * d));
 	float angle2 = FMath::Atan((v2 - sqrtVal) / (GravityZ * d));
 
-	// angle1 and angle2 are in radians; pick the lower for a direct shot
-	float chosenAngle = FMath::Min(FMath::RadiansToDegrees(angle1), FMath::RadiansToDegrees(angle2));
-	/*if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow,
-			FString::Printf(TEXT("Calculated angles: %f and %f, chosen angle: %f"), FMath::RadiansToDegrees(angle1), FMath::RadiansToDegrees(angle2), chosenAngle));*/
 	FRotator lookAtRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, targetLocation);
 	return FRotator(FMath::Min(FMath::RadiansToDegrees(angle1), FMath::RadiansToDegrees(angle2)), lookAtRotation.Yaw, 0.f);
+}
+
+FRotator UAttackBaseGameplayAbility::CalculateAttackDirection(FVector StartLocation, AActor* TargetActor)
+{
+	FVector targetLocation = TargetActor->GetActorLocation();
+	auto PersuerVelocity = MaxRange / FireAnimation->CalculateSequenceLength();
+	if (!FMath::IsNearlyZero(TargetActor->GetVelocity().Size()))
+	{
+		targetLocation = InterceptPoint(StartLocation, PersuerVelocity,
+			TargetActor->GetActorLocation(), TargetActor->GetVelocity());
+	}
+
+	FRotator lookAtRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, targetLocation);
+	return FRotator(0.f, lookAtRotation.Yaw, 0.f);
+
 }
 
 bool UAttackBaseGameplayAbility::CommitAbilityCooldown_Checked(ECooldownCommitTiming EntryPoint)
