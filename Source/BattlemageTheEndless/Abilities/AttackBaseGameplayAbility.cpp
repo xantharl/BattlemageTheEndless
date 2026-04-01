@@ -628,21 +628,8 @@ FRotator UAttackBaseGameplayAbility::CalculateAttackAngle(FVector StartLocation,
 
 FRotator UAttackBaseGameplayAbility::CalculateAttackDirection(FVector StartLocation, AActor* TargetActor)
 {
-	FVector targetLocation = TargetActor->GetActorLocation();
-	auto PersuerVelocity = MaxRange / FireAnimation->CalculateSequenceLength();
-	if (!FMath::IsNearlyZero(TargetActor->GetVelocity().Size()))
-	{
-		targetLocation = InterceptPoint(StartLocation, PersuerVelocity,
-			TargetActor->GetActorLocation(), TargetActor->GetVelocity());
-	}
-
-	FRotator lookAtRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, targetLocation);
-	return FRotator(0.f, lookAtRotation.Yaw, 0.f);
-
-}
-
-FVector UAttackBaseGameplayAbility::CalculateAttackPoint(AActor* TargetActor)
-{
+	FVector TargetLocation = TargetActor->GetActorLocation();
+	
 	auto AnimNotify = FireAnimation->Notifies.FindByPredicate(
 		[](const FAnimNotifyEvent& NotifyEvent)
 		{
@@ -650,8 +637,45 @@ FVector UAttackBaseGameplayAbility::CalculateAttackPoint(AActor* TargetActor)
 		});
 	
 	float TimeToHit = AnimNotify ? AnimNotify->GetTriggerTime() : FireAnimation->CalculateSequenceLength();
-	return TargetActor->GetActorLocation() + TargetActor->GetVelocity() * TimeToHit;
+	
+	auto PersuerVelocity = MaxRange / TimeToHit;
+	if (!FMath::IsNearlyZero(TargetActor->GetVelocity().Size()))
+	{
+		TargetLocation = InterceptPoint(StartLocation, PersuerVelocity,
+			TargetActor->GetActorLocation(), TargetActor->GetVelocity());
+	}
 
+	FRotator lookAtRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, TargetLocation);
+	return FRotator(0.f, lookAtRotation.Yaw, 0.f);
+
+}
+
+FVector UAttackBaseGameplayAbility::CalculateAttackPoint(AActor* TargetActor)
+{
+	FVector TargetLocation = TargetActor->GetActorLocation();
+	
+	auto AnimNotify = FireAnimation->Notifies.FindByPredicate(
+		[](const FAnimNotifyEvent& NotifyEvent)
+		{
+			return NotifyEvent.NotifyStateClass && NotifyEvent.NotifyStateClass->GetName() == FName("AnimNotify_Collision_C_0");
+		});
+	
+	float TimeToHit = AnimNotify ? AnimNotify->GetTriggerTime() : FireAnimation->CalculateSequenceLength();
+	
+	if (!CurrentActorInfo || !CurrentActorInfo->OwnerActor.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("CurrentActorInfo is null in CalculateAttackPoint, using Target's current location"));
+		return TargetLocation;
+	}
+	
+	auto PursuerVelocity = MaxRange / TimeToHit;
+	if (!FMath::IsNearlyZero(TargetActor->GetVelocity().Size()))
+	{
+		TargetLocation = InterceptPoint(CurrentActorInfo->OwnerActor->GetActorLocation(), PursuerVelocity,
+			TargetActor->GetActorLocation(), TargetActor->GetVelocity());
+	}
+	
+	return TargetLocation;
 }
 
 bool UAttackBaseGameplayAbility::CommitAbilityCooldown_Checked(ECooldownCommitTiming EntryPoint)
