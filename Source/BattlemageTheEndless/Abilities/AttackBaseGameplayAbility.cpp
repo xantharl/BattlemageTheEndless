@@ -2,6 +2,7 @@
 
 #include "AttackBaseGameplayAbility.h"
 
+#include "Animation/AnimNotifies/AnimNotifyState.h"
 #include "BattlemageTheEndless/Pickups/PickupActor.h"
 #include "Net/RepLayout.h"
 
@@ -637,6 +638,19 @@ FRotator UAttackBaseGameplayAbility::CalculateAttackDirection(FVector StartLocat
 
 	FRotator lookAtRotation = UKismetMathLibrary::FindLookAtRotation(StartLocation, targetLocation);
 	return FRotator(0.f, lookAtRotation.Yaw, 0.f);
+
+}
+
+FVector UAttackBaseGameplayAbility::CalculateAttackPoint(AActor* TargetActor)
+{
+	auto AnimNotify = FireAnimation->Notifies.FindByPredicate(
+		[](const FAnimNotifyEvent& NotifyEvent)
+		{
+			return NotifyEvent.NotifyStateClass && NotifyEvent.NotifyStateClass->GetName() == FName("AnimNotify_Collision_C_0");
+		});
+	
+	float TimeToHit = AnimNotify ? AnimNotify->GetTriggerTime() : FireAnimation->CalculateSequenceLength();
+	return TargetActor->GetActorLocation() + TargetActor->GetVelocity() * TimeToHit;
 
 }
 

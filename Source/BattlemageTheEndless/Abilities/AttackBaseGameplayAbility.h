@@ -302,7 +302,9 @@ public:
 	/** Calculates attack direction based on target's current velocity for Melee Attacks **/
 	UFUNCTION(BlueprintCallable, Category = "Projectile Physics")
 	FRotator CalculateAttackDirection(FVector StartLocation, AActor* TargetActor);
-	
+	UFUNCTION(BlueprintCallable, Category = "Projectile Physics")
+	FVector CalculateAttackPoint(AActor* TargetActor);
+
 	// Override which supports checking configured CooldownCommitTiming before committing cooldown
 	virtual bool CommitAbilityCooldown_Checked(ECooldownCommitTiming EntryPoint);
 	
