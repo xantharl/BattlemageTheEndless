@@ -126,7 +126,7 @@ public:
 	float GetAbilityRange(UGameplayAbility* ability);
 
 	UFUNCTION(BlueprintCallable, Category = Abilities)
-	FAbilitiesByRangeCacheEntry GetLongestRangeAbilityWithinRange(float range, UObject* sourceObject = nullptr);
+	FAbilitiesByRangeCacheEntry GetLongestRangeAbilityWithinRange(float range, EAttackType AttackType, UObject* sourceObject = nullptr);
 
 	UFUNCTION(BlueprintCallable, Category = Abilities)
 	FAbilitiesByRangeCacheEntry GetShortestRangeAbilityWithinRange(float range, UObject* sourceObject = nullptr);

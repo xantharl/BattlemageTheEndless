@@ -157,15 +157,20 @@ void UBMageAbilitySystemComponent::BeginPlay()
 
 	FGameplayTag CooldownTag = FGameplayTag::RequestGameplayTag(FName("Spell.Cooldown"));
 	FGameplayTag SpellsTag = FGameplayTag::RequestGameplayTag(FName("Spells.Fire.FireBolt"));
+	FGameplayTag LightMeleeTag = FGameplayTag::RequestGameplayTag(FName("Weapon.AttackType.Light.Cooldown"));
+	FGameplayTag HeavyMeleeTag = FGameplayTag::RequestGameplayTag(FName("Weapon.AttackType.Heavy.Cooldown"));
+	
 	RegisterGameplayTagEvent(CooldownTag, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBMageAbilitySystemComponent::OnTagChanged);
 	RegisterGameplayTagEvent(SpellsTag, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBMageAbilitySystemComponent::OnTagChanged);
+	RegisterGameplayTagEvent(LightMeleeTag, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBMageAbilitySystemComponent::OnTagChanged);
+	RegisterGameplayTagEvent(HeavyMeleeTag, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBMageAbilitySystemComponent::OnTagChanged);
 	OnAnyGameplayEffectRemovedDelegate().AddUObject(this, &UBMageAbilitySystemComponent::OnRemoveGameplayEffectCallback);
 }
 
 void UBMageAbilitySystemComponent::OnTagChanged(const FGameplayTag Tag, int32 NewCount)
 {
 	// TODO: Make this a static tag and cache it instead of requesting it every time
-	if (Tag == FGameplayTag::RequestGameplayTag(FName("Spell.Cooldown")))
+	if (Tag.ToString().Contains("Cooldown"))
 		OnCooldownTagChanged.Broadcast(Tag, NewCount);
 	else
 		OnSpellsTagChanged.Broadcast(Tag, NewCount);
@@ -282,12 +287,14 @@ float UBMageAbilitySystemComponent::GetAbilityRange(UGameplayAbility* ability)
 	return 9999999999.f;
 }
 
-FAbilitiesByRangeCacheEntry UBMageAbilitySystemComponent::GetLongestRangeAbilityWithinRange(float range, UObject* sourceObject)
+FAbilitiesByRangeCacheEntry UBMageAbilitySystemComponent::GetLongestRangeAbilityWithinRange(float range, EAttackType AttackType, UObject* sourceObject)
 {
 	// The cache is sorted when built, so we can just do a linear search from the start
 	int bestAttackIndex = _abilitiesByRangeCache.FindLastByPredicate([&](const FAbilitiesByRangeCacheEntry& entry)
 		{
-			return entry.Range <= range && (sourceObject == nullptr || (entry.SourceObject && entry.SourceObject == sourceObject));
+			return entry.Range <= range 
+				&& (sourceObject == nullptr || (entry.SourceObject && entry.SourceObject == sourceObject))
+				&& entry.AttackType == AttackType;
 		});
 	return bestAttackIndex == INDEX_NONE ? FAbilitiesByRangeCacheEntry() : _abilitiesByRangeCache[bestAttackIndex];
 }
