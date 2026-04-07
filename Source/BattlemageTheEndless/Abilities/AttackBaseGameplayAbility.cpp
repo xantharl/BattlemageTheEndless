@@ -200,6 +200,9 @@ void UAttackBaseGameplayAbility::SetTimerOrEndImmediately(const UWorld* world, f
 	// otherwise set a timer to end the ability when the montage is done
 	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &UAttackBaseGameplayAbility::EndAbility, Handle, ActorInfo, ActivationInfo, true, true);
 	world->GetTimerManager().SetTimer(EndTimerHandle, TimerDelegate, montageDuration, false);
+	
+	if (GEngine)
+		UE_LOG(LogTemp, Log, TEXT("Setting timer for %f seconds to end ability %s"), montageDuration, *GetName());
 }
 
 void UAttackBaseGameplayAbility::CreateAndDispatchMontageTask()
@@ -353,6 +356,8 @@ void UAttackBaseGameplayAbility::OnMontageCancelled()
 
 void UAttackBaseGameplayAbility::OnMontageCompleted()
 {
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Starting to end ability %s due to montage finish"), *GetName()));
 	// we should hit blend out before this check, but return for safety
 	if (FireAnimation->bLoop)
 		return;
@@ -367,8 +372,8 @@ void UAttackBaseGameplayAbility::OnMontageCompleted()
 	if (Character && FireAnimation->HasRootMotion())
 		Character->bUseControllerRotationYaw = true;
 	
-	/*if (GEngine)
-		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ending ability %s due to montage finish"), *GetName()));*/
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(-1, 1.5f, FColor::Yellow, FString::Printf(TEXT("Ending ability %s due to montage finish"), *GetName()));
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 

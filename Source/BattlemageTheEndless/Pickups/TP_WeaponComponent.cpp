@@ -190,8 +190,6 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 		return false;
 	}
 	
-	// Broadcast the hit to the ASC so it can trigger any relevant gameplay cues or blueprint events
-	
 	attackerAsc->OnWeaponHit.Broadcast(character, Hit, attackAnimationName, abilitySpec->Ability->GetAssetTags());
 	// There won't be an ASC if we hit a static object (Wall, prop, etc.)
 	// In this case, check if we hit a WorldStatic and end the ability so we can't hit things through walls
