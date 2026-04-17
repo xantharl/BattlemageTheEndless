@@ -363,6 +363,10 @@ public:
 	// This method checks that all required objects are set and valid, and creates them if not
 	// NOTE: This isn't needed for the player character, but objects set in the CTOR are becoming null by BeginPlay for AI characters
 	void CheckRequiredObjects();
+	
+	/** For use by AnimNotify PauseGravity **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gravity, meta = (AllowPrivateAccess = "true"))
+	float InitialGravityScale = 0.f;
 
 protected:
 	/** Called for movement input */

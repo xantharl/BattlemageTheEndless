@@ -29,5 +29,15 @@ class BATTLEMAGETHEENDLESS_API UUExecutionCalculation_KnockBack : public UGamepl
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "KnockBack", meta = (AllowPrivateAccess = "true"))
 	UCurveFloat* GravityScaleOverTime = nullptr;
 	
+	/** If set, velocity will be zeroed after specified time, must be less than gravity curve duration **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "KnockBack", meta = (AllowPrivateAccess = "true"))
+	float CancelVelocityAfter = 0.f;
+	
 	virtual void Execute_Implementation(const FGameplayEffectCustomExecutionParameters& ExecutionParams, OUT FGameplayEffectCustomExecutionOutput& OutExecutionOutput) const override;
+	
+	UFUNCTION()
+	static FVector CancelVelocity(const ACharacter* Character);
+private:
+
+	mutable FTimerHandle CancelVelocityTimerHandle;
 };

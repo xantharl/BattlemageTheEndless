@@ -74,10 +74,33 @@ void UUExecutionCalculation_KnockBack::Execute_Implementation(const FGameplayEff
 	TargetCharacter->LaunchCharacter(transformedKnockback, true, true);
 
 	// check if target character's movement component is valid and is a BMageCharacterMovementComponent
-	if (GravityScaleOverTime)
+	UBMageCharacterMovementComponent* MovementComponent = Cast<UBMageCharacterMovementComponent>(TargetCharacter->GetCharacterMovement());
+	if (GravityScaleOverTime && MovementComponent)
 	{
-		UBMageCharacterMovementComponent* MovementComponent = Cast<UBMageCharacterMovementComponent>(TargetCharacter->GetCharacterMovement());
-		if (MovementComponent)
-			MovementComponent->BeginGravityOverTime(GravityScaleOverTime);
+		MovementComponent->BeginGravityOverTime(GravityScaleOverTime);
 	}
+	
+	if (TargetCharacter && CancelVelocityAfter > KINDA_SMALL_NUMBER)
+	{
+		TargetCharacter->GetWorld()->GetTimerManager().SetTimer(
+			CancelVelocityTimerHandle,
+			[this, TargetCharacter]() { CancelVelocity(TargetCharacter); },
+			CancelVelocityAfter,
+			false
+		);
+	}
+}
+
+FVector UUExecutionCalculation_KnockBack::CancelVelocity(const ACharacter* Character)
+{
+	if (!Character)
+		return FVector::ZeroVector;
+
+	FVector PreviousVelocity = Character->GetVelocity();
+	if (auto Movement = Character->GetCharacterMovement())
+	{
+		Movement->StopMovementImmediately();
+		Movement->SetMovementMode(MOVE_None);
+	}
+	return PreviousVelocity;
 }

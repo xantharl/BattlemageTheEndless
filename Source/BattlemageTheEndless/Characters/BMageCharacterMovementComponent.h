@@ -197,4 +197,6 @@ private:
 	milliseconds _gravityCurveElapsed = milliseconds::zero();
 	milliseconds _gravityCurveDuration = milliseconds::zero();
 	float _initialGravityScale = 1.f;
+	
+	TArray<FAnimNotifyEventReference> GetCharacterOwnerAnimNotifies() const;
 };

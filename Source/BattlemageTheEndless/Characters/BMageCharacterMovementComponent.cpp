@@ -4,6 +4,7 @@
 #include "BMageCharacterMovementComponent.h"
 
 #include "BattlemageTheEndlessPlayerController.h"
+#include "Animation/AnimNotifies/AnimNotifyState.h"
 #include "BattlemageTheEndless/Abilities/EventData/DodgeEventData.h"
 
 UBMageCharacterMovementComponent::UBMageCharacterMovementComponent()
@@ -156,6 +157,9 @@ void UBMageCharacterMovementComponent::TickGravityOverTime(float DeltaTime)
 		_activeGravityCurve = nullptr;
 		_gravityCurveElapsed = milliseconds::zero();
 		GravityScale = _initialGravityScale;
+		// Special case for KnockBack with GravityCurve
+		if (MovementMode == MOVE_None)
+			SetMovementMode(Velocity.Z < -1.f * KINDA_SMALL_NUMBER ? MOVE_Falling : MOVE_Walking);
 		return;
 	}
 
@@ -188,10 +192,22 @@ void UBMageCharacterMovementComponent::TickComponent(float DeltaTime, enum ELeve
 			MaxWalkSpeedCrouched = FMath::Min(MaxWalkSpeedCrouched + slideAbility->TransitionOutAccelertaionRate*DeltaTime, speedLimit);
 		}
 	}
-
+	
+	bool IsPauseGravityActive = false;
+	for (FAnimNotifyEventReference NotifyEvent :GetCharacterOwnerAnimNotifies())
+	{
+		auto Notify = NotifyEvent.GetNotify();
+		if (Notify && Notify->NotifyStateClass && Notify->NotifyStateClass->GetName() == TEXT("AnimNotify_PauseGravity_C_0"))
+		{
+			IsPauseGravityActive = true;
+		}
+	}
+	
 	// if we're past the apex, apply the falling gravity scale
-	// ignore this clause if we're wall running
-	if (PreviousVelocity.Z >= 0.0f && Velocity.Z < -0.00001f && (!MovementAbilities.Contains(MovementAbilityType::Slide) || !MovementAbilities[MovementAbilityType::WallRun]->ISMAActive()))
+	// ignore this clause if we're wall running	
+	if (PreviousVelocity.Z >= 0.0f && Velocity.Z < -0.00001f && 
+		(!MovementAbilities.Contains(MovementAbilityType::Slide) || !MovementAbilities[MovementAbilityType::WallRun]->ISMAActive())
+		&& !IsPauseGravityActive)
 		// this is undone in OnMovementModeChanged when the character lands
 		GravityScale = CharacterPastJumpApexGravityScale;
 
@@ -199,6 +215,20 @@ void UBMageCharacterMovementComponent::TickComponent(float DeltaTime, enum ELeve
 	PreviousVelocity = Velocity;
 
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+}
+
+TArray<FAnimNotifyEventReference> UBMageCharacterMovementComponent::GetCharacterOwnerAnimNotifies() const
+{
+	ACharacter* Char = GetCharacterOwner();
+	if (!Char) return {};
+
+	USkeletalMeshComponent* Mesh = Char->GetMesh();
+	if (!Mesh) return {};
+
+	UAnimInstance* Anim = Mesh->GetAnimInstance();
+	if (!Anim) return {};
+	
+	return Anim->NotifyQueue.AnimNotifies;
 }
 
 UMovementAbility* UBMageCharacterMovementComponent::TryStartAbility(MovementAbilityType AbilityType)
