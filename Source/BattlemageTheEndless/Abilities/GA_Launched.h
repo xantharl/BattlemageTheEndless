@@ -38,7 +38,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "KnockBack")
 	float CancelVelocityAfter = 0.f;
 
-
+	/** If true, c++ implementation will not end the ability and defer to the BP */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "KnockBack")
+	bool EndedInBlueprint = false;
+	
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 

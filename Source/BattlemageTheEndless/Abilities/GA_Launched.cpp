@@ -19,6 +19,8 @@ UGA_Launched::UGA_Launched()
 
 void UGA_Launched::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+	
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
@@ -89,14 +91,14 @@ void UGA_Launched::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 	const bool bHasCurve = GravityScaleOverTime != nullptr && MovementComponent != nullptr;
 	const bool bHasCancelVelocity = CancelVelocityAfter > KINDA_SMALL_NUMBER;
 
-	if (!bHasCurve && !bHasCancelVelocity)
+	if (!bHasCurve && !bHasCancelVelocity && !EndedInBlueprint)
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 		return;
 	}
 
 	// End on whichever duration is longer; if only one is set, that one wins
-	const bool bEndOnCurve = bHasCurve && GravityDuration >= CancelVelocityAfter;
+	const bool bEndOnCurve = !EndedInBlueprint && bHasCurve && GravityDuration >= CancelVelocityAfter;
 
 	if (bEndOnCurve)
 		MovementComponent->OnGravityOverTimeEnded.AddDynamic(this, &UGA_Launched::OnGravityCurveEnded);
