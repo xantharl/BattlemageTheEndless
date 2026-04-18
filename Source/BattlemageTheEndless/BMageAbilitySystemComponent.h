@@ -169,6 +169,9 @@ private:
 	virtual void BeginPlay() override;
 	virtual void OnTagChanged(const FGameplayTag Tag, int32 NewCount);
 
+	UFUNCTION()
+	void OnWeaponHitReceived(ACharacter* Attacker, const FHitResult& Hit, FString AttackAnimationName, FGameplayTagContainer AttackOwnedTags);
+
 	void BuildAbilityRangeCache();
 
 	// Internal function to begin charging an ability by class, public functions end up calling this

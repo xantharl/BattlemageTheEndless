@@ -155,6 +155,8 @@ void UBMageAbilitySystemComponent::BeginPlay()
 	EnsureInitSubObjects();
 	BuildAbilityRangeCache();
 
+	OnWeaponHit.AddDynamic(this, &UBMageAbilitySystemComponent::OnWeaponHitReceived);
+
 	FGameplayTag CooldownTag = FGameplayTag::RequestGameplayTag(FName("Spell.Cooldown"));
 	FGameplayTag SpellsTag = FGameplayTag::RequestGameplayTag(FName("Spells.Fire.FireBolt"));
 	FGameplayTag LightMeleeTag = FGameplayTag::RequestGameplayTag(FName("Weapon.AttackType.Light.Cooldown"));
@@ -839,6 +841,23 @@ void UBMageAbilitySystemComponent::CompleteChargeAbility()
 	// TODO: Is this needed? PostAbilityActivation handles it already
 	// This is a hack to call EndAbility without needing to spoof up all the params
 	_chargingAbility->OnMontageCompleted();
+}
+
+void UBMageAbilitySystemComponent::OnWeaponHitReceived(ACharacter* Attacker, const FHitResult& Hit, FString AttackAnimationName, FGameplayTagContainer AttackOwnedTags)
+{
+	// Don't hit yourself
+	if (Attacker == GetOwner())
+		return;
+	
+	static const FGameplayTag KnockBackTag = FGameplayTag::RequestGameplayTag(FName("Ability.Effect.KnockBack"));
+	if (!AttackOwnedTags.HasTag(KnockBackTag))
+		return;
+
+	FGameplayEventData EventData;
+	EventData.Instigator = Attacker;
+
+	static const FGameplayTag LaunchedTag = FGameplayTag::RequestGameplayTag(FName("Ability.React.Launched"));
+	HandleGameplayEvent(LaunchedTag, &EventData);
 }
 
 bool UBMageAbilitySystemComponent::GetCooldownRemainingForTag(FGameplayTagContainer CooldownTags, float & TimeRemaining, float & CooldownDuration)

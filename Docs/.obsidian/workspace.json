@@ -34,9 +34,21 @@
               "icon": "lucide-file",
               "title": "Combo Steps"
             }
+          },
+          {
+            "id": "91c1e46c7dc1bdaf",
+            "type": "leaf",
+            "state": {
+              "type": "release-notes",
+              "state": {
+                "currentVersion": "1.12.4"
+              },
+              "icon": "lucide-book-up",
+              "title": "Release Notes 1.12.4"
+            }
           }
         ],
-        "currentTab": 1
+        "currentTab": 2
       }
     ],
     "direction": "vertical"
@@ -184,7 +196,7 @@
       "bases:Create new base": false
     }
   },
-  "active": "4cbb5777cb401c98",
+  "active": "91c1e46c7dc1bdaf",
   "lastOpenFiles": [
     "Dev Notes/Designs/Combo System Redesign.md",
     "Dev Notes/Designs/Combos/Combo Steps.md",
