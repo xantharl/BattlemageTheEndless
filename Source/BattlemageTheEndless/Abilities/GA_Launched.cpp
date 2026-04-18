@@ -12,6 +12,9 @@ UGA_Launched::UGA_Launched()
 	TriggerData.TriggerTag = FGameplayTag::RequestGameplayTag(FName("Ability.React.Launched"));
 	TriggerData.TriggerSource = EGameplayAbilityTriggerSource::GameplayEvent;
 	AbilityTriggers.Add(TriggerData);
+
+	// Broadcast this tag on the ASC for the duration of the ability so BT tasks can gate on it
+	ActivationOwnedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Ability.React.Launched")));
 }
 
 void UGA_Launched::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -72,32 +75,46 @@ void UGA_Launched::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 		MovementComponent->MaxDepenetrationWithPawn = 0.f;
 	}
 
-	_launchedCharacter = TargetCharacter;
-	TargetCharacter->LandedDelegate.AddDynamic(this, &UGA_Launched::OnTargetLanded);
-
 	TargetCharacter->LaunchCharacter(TransformedKnockback, true, true);
 
+	float GravityDuration = 0.f;
 	if (GravityScaleOverTime && MovementComponent)
 	{
+		float MinTime = 0.f;
+		GravityScaleOverTime->GetTimeRange(MinTime, GravityDuration);
+		GravityDuration /= 1000.f; // curve X axis is in MS, convert to seconds for comparison
 		MovementComponent->BeginGravityOverTime(GravityScaleOverTime);
-		MovementComponent->OnGravityOverTimeEnded.AddDynamic(this, &UGA_Launched::OnGravityCurveEnded);
 	}
 
-	if (CancelVelocityAfter > KINDA_SMALL_NUMBER)
+	const bool bHasCurve = GravityScaleOverTime != nullptr && MovementComponent != nullptr;
+	const bool bHasCancelVelocity = CancelVelocityAfter > KINDA_SMALL_NUMBER;
+
+	if (!bHasCurve && !bHasCancelVelocity)
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+		return;
+	}
+
+	// End on whichever duration is longer; if only one is set, that one wins
+	const bool bEndOnCurve = bHasCurve && GravityDuration >= CancelVelocityAfter;
+
+	if (bEndOnCurve)
+		MovementComponent->OnGravityOverTimeEnded.AddDynamic(this, &UGA_Launched::OnGravityCurveEnded);
+
+	if (bHasCancelVelocity)
 	{
 		TargetCharacter->GetWorld()->GetTimerManager().SetTimer(
 			CancelVelocityTimerHandle,
-			[this, TargetCharacter]() { CancelVelocity(TargetCharacter); },
+			[this, TargetCharacter, bEndOnCurve]()
+			{
+				CancelVelocity(TargetCharacter);
+				if (!bEndOnCurve)
+					EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+			},
 			CancelVelocityAfter,
 			false
 		);
 	}
-}
-
-void UGA_Launched::OnTargetLanded(const FHitResult& Hit)
-{
-	if (IsActive())
-		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 
 void UGA_Launched::OnGravityCurveEnded()
@@ -108,9 +125,6 @@ void UGA_Launched::OnGravityCurveEnded()
 
 void UGA_Launched::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	if (_launchedCharacter.IsValid())
-		_launchedCharacter->LandedDelegate.RemoveDynamic(this, &UGA_Launched::OnTargetLanded);
-
 	if (ACharacter* TargetCharacter = Cast<ACharacter>(ActorInfo->AvatarActor.Get()))
 	{
 		if (UBMageCharacterMovementComponent* MC = Cast<UBMageCharacterMovementComponent>(TargetCharacter->GetCharacterMovement()))

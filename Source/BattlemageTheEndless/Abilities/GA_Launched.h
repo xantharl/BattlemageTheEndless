@@ -43,15 +43,11 @@ public:
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
 	UFUNCTION()
-	void OnTargetLanded(const FHitResult& Hit);
-
-	UFUNCTION()
 	void OnGravityCurveEnded();
 
 private:
 	mutable FTimerHandle CancelVelocityTimerHandle;
 	float _savedMaxDepenetration = 0.f;
-	TWeakObjectPtr<ACharacter> _launchedCharacter;
 
 	static void CancelVelocity(ACharacter* Character);
 };
