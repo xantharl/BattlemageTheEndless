@@ -73,6 +73,11 @@ void UGA_Launched::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 		// Zero it out for the duration of the ability so depenetration can't impart force mid-launch.
 		_savedMaxDepenetration = MovementComponent->MaxDepenetrationWithPawn;
 		MovementComponent->MaxDepenetrationWithPawn = 0.f;
+
+		// HandlePendingLaunch is only called from walking/falling physics ticks.
+		// If a prior launch left the character in MOVE_None, LaunchCharacter would silently drop the velocity.
+		if (MovementComponent->MovementMode == MOVE_None)
+			MovementComponent->SetMovementMode(MOVE_Walking);
 	}
 
 	TargetCharacter->LaunchCharacter(TransformedKnockback, true, true);
@@ -131,6 +136,9 @@ void UGA_Launched::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGa
 		{
 			MC->MaxDepenetrationWithPawn = _savedMaxDepenetration;
 			MC->OnGravityOverTimeEnded.RemoveDynamic(this, &UGA_Launched::OnGravityCurveEnded);
+
+			if (MC->MovementMode == MOVE_None)
+				MC->SetMovementMode(MOVE_Walking);
 		}
 	}
 
