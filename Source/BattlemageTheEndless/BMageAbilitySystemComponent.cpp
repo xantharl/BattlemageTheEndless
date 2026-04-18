@@ -850,14 +850,16 @@ void UBMageAbilitySystemComponent::OnWeaponHitReceived(ACharacter* Attacker, con
 		return;
 	
 	static const FGameplayTag KnockBackTag = FGameplayTag::RequestGameplayTag(FName("Ability.Effect.KnockBack"));
-	if (!AttackOwnedTags.HasTag(KnockBackTag))
-		return;
-
+	
 	FGameplayEventData EventData;
 	EventData.Instigator = Attacker;
+	
+	if (AttackOwnedTags.HasTag(KnockBackTag))
+		HandleGameplayEvent(FGameplayTag::RequestGameplayTag(FName("Ability.React.Launched")), &EventData);
 
-	static const FGameplayTag LaunchedTag = FGameplayTag::RequestGameplayTag(FName("Ability.React.Launched"));
-	HandleGameplayEvent(LaunchedTag, &EventData);
+	static const FGameplayTag SlammedTag = FGameplayTag::RequestGameplayTag(FName("Ability.Effect.Slam"));
+	if (AttackOwnedTags.HasTag(SlammedTag))
+		HandleGameplayEvent(FGameplayTag::RequestGameplayTag(FName("Ability.React.Slammed")), &EventData);
 }
 
 bool UBMageAbilitySystemComponent::GetCooldownRemainingForTag(FGameplayTagContainer CooldownTags, float & TimeRemaining, float & CooldownDuration)
