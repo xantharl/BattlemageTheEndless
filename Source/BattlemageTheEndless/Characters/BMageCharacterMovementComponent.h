@@ -30,6 +30,8 @@ using namespace std::chrono;
 /**
  * 
  */
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnGravityOverTimeEnded);
+
 UCLASS()
 class BATTLEMAGETHEENDLESS_API UBMageCharacterMovementComponent : public UCharacterMovementComponent
 {
@@ -177,6 +179,9 @@ public:
 	/** Apply gravity modification over time, duration is determined by the curve in MS **/
 	UFUNCTION(BlueprintCallable, Category = Abilities)
 	void BeginGravityOverTime(UCurveFloat* gravityCurve);
+
+	UPROPERTY(BlueprintAssignable, Category = Abilities)
+	FOnGravityOverTimeEnded OnGravityOverTimeEnded;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
 	bool ApplyMovementInputToJump = true;
