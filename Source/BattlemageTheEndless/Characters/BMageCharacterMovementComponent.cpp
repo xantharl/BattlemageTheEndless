@@ -157,9 +157,6 @@ void UBMageCharacterMovementComponent::TickGravityOverTime(float DeltaTime)
 		_activeGravityCurve = nullptr;
 		_gravityCurveElapsed = milliseconds::zero();
 		GravityScale = _initialGravityScale;
-		// Special case for KnockBack with GravityCurve
-		if (MovementMode == MOVE_None)
-			SetMovementMode(Velocity.Z < -1.f * KINDA_SMALL_NUMBER ? MOVE_Falling : MOVE_Walking);
 		OnGravityOverTimeEnded.Broadcast();
 		return;
 	}

@@ -848,18 +848,21 @@ void UBMageAbilitySystemComponent::OnWeaponHitReceived(ACharacter* Attacker, con
 	// Don't hit yourself
 	if (Attacker == GetOwner())
 		return;
-	
-	static const FGameplayTag KnockBackTag = FGameplayTag::RequestGameplayTag(FName("Ability.Effect.KnockBack"));
-	
+		
 	FGameplayEventData EventData;
 	EventData.Instigator = Attacker;
 	
-	if (AttackOwnedTags.HasTag(KnockBackTag))
-		HandleGameplayEvent(FGameplayTag::RequestGameplayTag(FName("Ability.React.Launched")), &EventData);
-
-	static const FGameplayTag SlammedTag = FGameplayTag::RequestGameplayTag(FName("Ability.Effect.Slam"));
-	if (AttackOwnedTags.HasTag(SlammedTag))
-		HandleGameplayEvent(FGameplayTag::RequestGameplayTag(FName("Ability.React.Slammed")), &EventData);
+	for (auto Tag : AttackOwnedTags)
+	{		
+		FGameplayTag ReactTag = FGameplayTag();
+		if (Tag == FGameplayTag::RequestGameplayTag(FName("Ability.Effect.KnockBack")))
+			ReactTag = FGameplayTag::RequestGameplayTag(FName("Ability.React.Launched"));
+		else if (Tag == FGameplayTag::RequestGameplayTag(FName("Ability.Effect.Slam")))
+			ReactTag = FGameplayTag::RequestGameplayTag(FName("Ability.React.Slammed"));
+		
+		if (ReactTag != FGameplayTag())
+			HandleGameplayEvent(ReactTag, &EventData);
+	}
 }
 
 bool UBMageAbilitySystemComponent::GetCooldownRemainingForTag(FGameplayTagContainer CooldownTags, float & TimeRemaining, float & CooldownDuration)
