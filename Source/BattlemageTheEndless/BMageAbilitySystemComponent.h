@@ -185,6 +185,12 @@ private:
 
 	virtual void OnRemoveGameplayEffectCallback(const FActiveGameplayEffect& EffectRemoved);
 
+	UFUNCTION(BlueprintCallable, Category = "Active Ability")
+	UGameplayAbility* GetAnimatingAbility_ForBp() const
+	{
+		return GetAnimatingAbility();
+	}
+	
 	// return the first ability found with the specified owned tag
 	TObjectPtr<UGameplayAbility> GetActivatableAbilityByOwnedTag(FName abilityTag);
 };
