@@ -41,10 +41,6 @@ ABattlemageTheEndlessCharacter::ABattlemageTheEndlessCharacter(const FObjectInit
 		// Defaulting to minimal, updates to Mixed on possession (which indicates this is a player character)
 		AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 
-		// Create the attribute set, this replicates by default
-		// Adding it as a subobject of the owning actor of an AbilitySystemComponent
-		// automatically registers the AttributeSet with the AbilitySystemComponent
-		AttributeSet = CreateDefaultSubobject<UBaseAttributeSet>(TEXT("AttributeSet"));
 	}
 	else if (!AbilitySystemComponent)
 		AbilitySystemComponent = AscComp;
@@ -540,7 +536,6 @@ void ABattlemageTheEndlessCharacter::EndSlide(UCharacterMovementComponent* movem
 
 void ABattlemageTheEndlessCharacter::AbilityInputPressed(TSubclassOf<class UGameplayAbility> ability)
 {
-	auto attributeSet = Cast<UBaseAttributeSet>(AbilitySystemComponent->GetAttributeSet(UBaseAttributeSet::StaticClass()));
 	auto spec = AbilitySystemComponent->FindAbilitySpecFromClass(ability);
 	if (spec->IsActive())
 		return;
@@ -683,21 +678,10 @@ void ABattlemageTheEndlessCharacter::PawnClientRestart()
 
 void ABattlemageTheEndlessCharacter::CheckRequiredObjects()
 {
-	// This is kind of a hack, for AI the attributes are getting set in the CTOR but somehow becoming null by BeginPlay
-	if (!AttributeSet)
-		AttributeSet = NewObject<UBaseAttributeSet>(this, TEXT("AttributeSet"));
 	if (!CharacterCreationData)
 		CharacterCreationData = NewObject<UCharacterCreationData>(this, TEXT("CharacterCreationData"));
-	
-	AttributeSet->InitHealth(MaxHealth);
-	AttributeSet->InitMaxHealth(MaxHealth);
-	AttributeSet->InitHealthRegenRate(HealthRegenRate);
-	TArray<FGameplayAttribute> attrSets;
 
-	// The attributes are failing to init for AI, so we'll do it manually if needed
-	AbilitySystemComponent->GetAllAttributes(attrSets);
-	if (attrSets.Num() == 0)
-		AbilitySystemComponent->AddAttributeSetSubobject(AttributeSet);
+	AttributeSet = const_cast<UBaseAttributeSet*>(Cast<UBaseAttributeSet>(AbilitySystemComponent->GetAttributeSet(UBaseAttributeSet::StaticClass())));
 }
 
 void ABattlemageTheEndlessCharacter::Move(const FInputActionValue& Value)

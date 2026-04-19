@@ -25,6 +25,18 @@ enum class EGASAbilityInputId : uint8
 };
 
 USTRUCT(BlueprintType)
+struct FAttributeInitializer
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayAttribute Attribute;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Value = 0.f;
+};
+
+USTRUCT(BlueprintType)
 struct FAbilitiesByRangeCacheEntry
 {
 	GENERATED_BODY()
@@ -85,6 +97,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
 	float SuspendRegenOnHitDuration = 2.0f;
 
+	/** Attribute set class to instantiate — set to UEnemyAttributeSet for enemies **/
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Attributes)
+	TSubclassOf<UBaseAttributeSet> AttributeSetClass;
+
+	/** Attribute values to apply on BeginPlay, overriding attribute set defaults **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
+	TArray<FAttributeInitializer> DefaultAttributeValues;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess))
 	TArray<APickupActor*> ActivePickups;
 	
@@ -103,6 +123,9 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
 	void SuspendHealthRegen(float SuspendDurationOverride = 0.f);
+
+	UFUNCTION(BlueprintCallable, Category = "Abilities")
+	bool TryActivateAbilityByClassWrapper(TSubclassOf<UGameplayAbility> AbilityClass, UGameplayAbility*& OutAbility, bool AllowRemoteActivation = true);
 
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
 	TArray<UGA_WithEffectsBase*> TryActivateAbilitiesByTagWrapper(FGameplayTagContainer GameplayTagContainer, bool AllowRemoteActivation = true);

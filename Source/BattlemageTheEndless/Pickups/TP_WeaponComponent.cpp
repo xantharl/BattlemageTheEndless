@@ -190,7 +190,6 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 		return false;
 	}
 	
-	attackerAsc->OnWeaponHit.Broadcast(character, Hit, attackAnimationName, abilitySpec->Ability->GetAssetTags());
 	// There won't be an ASC if we hit a static object (Wall, prop, etc.)
 	// In this case, check if we hit a WorldStatic and end the ability so we can't hit things through walls
 	if (!hitActorAsc)
@@ -202,7 +201,6 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 	}
 	
 	// BEGIN HitActorAsc required section
-	hitActorAsc->OnWeaponHit.Broadcast(character, Hit, attackAnimationName, abilitySpec->Ability->GetAssetTags());
 	
 	// apply any on hit effects from the weapon attack, all effects on a weapon are assumed to be on hit
 	const auto Casted = Cast<UGA_WithEffectsBase>(abilitySpec->Ability);
@@ -214,6 +212,10 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 	{
 		CastedController->Server_ApplyEffects(Casted->GetClass(), Hit);
 	}
+	
+	// Explicitly needs to be after applyEffects to evaluate post damage/poise modified state
+	attackerAsc->OnWeaponHit.Broadcast(character, Hit, attackAnimationName, abilitySpec->Ability->GetAssetTags());
+	hitActorAsc->OnWeaponHit.Broadcast(character, Hit, attackAnimationName, abilitySpec->Ability->GetAssetTags());
 	
 	return true;
 }

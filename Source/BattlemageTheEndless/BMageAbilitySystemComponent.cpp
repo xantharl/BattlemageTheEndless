@@ -17,8 +17,8 @@ UBMageAbilitySystemComponent::UBMageAbilitySystemComponent()
 
 void UBMageAbilitySystemComponent::InitializeComponent()
 {
-	Super::InitializeComponent(); 
-	
+	Super::InitializeComponent();
+
 	// create/register the combo manager on the runtime instance if missing
 	if (!ComboManager)
 	{
@@ -36,6 +36,13 @@ void UBMageAbilitySystemComponent::InitializeComponent()
 	{
 		ComboManager->AbilitySystemComponent = this;
 		AbilityFailedCallbacks.AddUObject(ComboManager, &UComboManagerComponent::OnAbilityFailed);
+	}
+
+	if (GetOwner() && GetSpawnedAttributes().IsEmpty())
+	{
+		TSubclassOf<UBaseAttributeSet> ClassToUse = AttributeSetClass ? AttributeSetClass : TSubclassOf<UBaseAttributeSet>(UBaseAttributeSet::StaticClass());
+		UBaseAttributeSet* NewAttributeSet = NewObject<UBaseAttributeSet>(GetOwner(), ClassToUse);
+		AddAttributeSetSubobject(NewAttributeSet);
 	}
 }
 
@@ -153,6 +160,47 @@ void UBMageAbilitySystemComponent::BeginPlay()
 	}
 
 	EnsureInitSubObjects();
+
+	TSet<FGameplayAttribute> ExplicitlySet;
+	for (const FAttributeInitializer& Init : DefaultAttributeValues)
+	{
+		if (Init.Attribute.IsValid())
+		{
+			SetNumericAttributeBase(Init.Attribute, Init.Value);
+			ExplicitlySet.Add(Init.Attribute);
+		}
+	}
+
+	for (const UAttributeSet* AttrSet : GetSpawnedAttributes())
+	{
+		if (!AttrSet)
+			continue;
+
+		for (TFieldIterator<FStructProperty> It(AttrSet->GetClass()); It; ++It)
+		{
+			if (It->Struct != FGameplayAttributeData::StaticStruct())
+				continue;
+
+			FGameplayAttribute Attr(*It);
+			if (ExplicitlySet.Contains(Attr))
+				continue;
+
+			const FString AttrName = It->GetName();
+			if (AttrName.StartsWith(TEXT("Max")))
+				continue;
+
+			FStructProperty* MaxProp = FindFProperty<FStructProperty>(AttrSet->GetClass(), FName("Max" + AttrName));
+			if (!MaxProp)
+				continue;
+
+			FGameplayAttribute MaxAttr(MaxProp);
+			if (MaxAttr.IsValid())
+			{
+				SetNumericAttributeBase(Attr, GetNumericAttribute(MaxAttr));
+			}
+		}
+	}
+
 	BuildAbilityRangeCache();
 
 	OnWeaponHit.AddDynamic(this, &UBMageAbilitySystemComponent::OnWeaponHitReceived);
@@ -719,6 +767,19 @@ void UBMageAbilitySystemComponent::SuspendHealthRegen(float SuspendDurationOverr
 		SuspendDurationOverride == 0.f ? SuspendRegenOnHitDuration : SuspendDurationOverride);
 
 	ApplyGameplayEffectSpecToSelf(*specHandle.Data.Get());
+}
+
+bool UBMageAbilitySystemComponent::TryActivateAbilityByClassWrapper(TSubclassOf<UGameplayAbility> AbilityClass, UGameplayAbility*& OutAbility, bool AllowRemoteActivation)
+{
+	OutAbility = nullptr;
+	if (!TryActivateAbilityByClass(AbilityClass, AllowRemoteActivation))
+		return false;
+
+	const FGameplayAbilitySpec* Spec = FindAbilitySpecFromClass(AbilityClass);
+	if (Spec)
+		OutAbility = Spec->GetPrimaryInstance();
+
+	return true;
 }
 
 TArray<UGA_WithEffectsBase*> UBMageAbilitySystemComponent::TryActivateAbilitiesByTagWrapper(

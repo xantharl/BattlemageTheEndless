@@ -239,7 +239,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"), Instanced)
 	class UBMageAbilitySystemComponent* AbilitySystemComponent;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"), Instanced)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"))
 	UBaseAttributeSet* AttributeSet;
 
 	virtual void PossessedBy(AController* NewController) override;
@@ -295,15 +295,6 @@ protected:
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0);
 
 	void SetupCameras();
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Attributes)
-	float Health = 100;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
-	float MaxHealth = 100;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Attributes)
-	float HealthRegenRate = 0.f;
 
 	ACheckPoint* LastCheckPoint;
 
