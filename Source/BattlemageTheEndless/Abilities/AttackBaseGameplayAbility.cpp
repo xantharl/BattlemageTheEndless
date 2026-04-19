@@ -665,12 +665,22 @@ FVector UAttackBaseGameplayAbility::CalculateAttackPoint(AActor* TargetActor)
 			return NotifyEvent.NotifyStateClass && NotifyEvent.NotifyStateClass->GetName() == FName("AnimNotify_Collision_C_0");
 		});
 	
-	float TimeToHit = AnimNotify ? AnimNotify->GetTriggerTime() : FireAnimation->CalculateSequenceLength();
 	
 	if (!CurrentActorInfo || !CurrentActorInfo->OwnerActor.IsValid())
 	{
 		UE_LOG(LogTemp, Error, TEXT("CurrentActorInfo is null in CalculateAttackPoint, using Target's current location"));
 		return TargetLocation;
+	}
+	
+	float TimeToHit = AnimNotify ? AnimNotify->GetTriggerTime() : FireAnimation->CalculateSequenceLength();
+	// Account for elapsed time in montage
+	if (auto Character = Cast<ACharacter>(CurrentActorInfo->OwnerActor))
+	{
+		auto Mesh = Character->GetMesh();
+		if (Mesh && Mesh->GetAnimInstance())
+		{
+			TimeToHit -= Mesh->GetAnimInstance()->Montage_GetPosition(FireAnimation);
+		}
 	}
 	
 	auto PursuerVelocity = MaxRange / TimeToHit;
