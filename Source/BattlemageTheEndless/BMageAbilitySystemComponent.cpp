@@ -703,7 +703,7 @@ void UBMageAbilitySystemComponent::OnAbilityCancelled(const FAbilityEndedData& e
 
 	for (TSubclassOf<UGameplayEffect> effect : ability->EffectsToApply)
 	{
-		if (effect->GetDefaultObject<UGameplayEffect>()->DurationPolicy != EGameplayEffectDurationType::HasDuration)
+		if (!effect || effect->GetDefaultObject<UGameplayEffect>()->DurationPolicy != EGameplayEffectDurationType::HasDuration)
 			continue;
 
 		RemoveActiveGameplayEffectBySourceEffect(effect, this, 1);
@@ -856,12 +856,18 @@ void UBMageAbilitySystemComponent::OnWeaponHitReceived(ACharacter* Attacker, con
 	{		
 		FGameplayTag ReactTag = FGameplayTag();
 		if (Tag == FGameplayTag::RequestGameplayTag(FName("Ability.Effect.KnockBack")))
+			ReactTag = FGameplayTag::RequestGameplayTag(FName("Ability.React.KnockedBack"));
+		else if (Tag == FGameplayTag::RequestGameplayTag(FName("Ability.Effect.KnockUp")))
 			ReactTag = FGameplayTag::RequestGameplayTag(FName("Ability.React.Launched"));
 		else if (Tag == FGameplayTag::RequestGameplayTag(FName("Ability.Effect.Slam")))
 			ReactTag = FGameplayTag::RequestGameplayTag(FName("Ability.React.Slammed"));
 		
 		if (ReactTag != FGameplayTag())
-			HandleGameplayEvent(ReactTag, &EventData);
+		{
+			int Activated = HandleGameplayEvent(ReactTag, &EventData);
+			if (GEngine)
+				UE_LOG(LogTemp, Warning, TEXT("Activated %d for tag %s"), Activated, *ReactTag.ToString());
+		}
 	}
 }
 
