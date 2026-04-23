@@ -215,13 +215,13 @@ void UAttackBaseGameplayAbility::CreateAndDispatchMontageTask()
 
 	// trigger the fire animation
 	// TODO: Add a montage rate parameter to the ability
-	auto task = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, FireAnimation,
+	ActiveMontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(this, NAME_None, FireAnimation,
 		1.0f, NAME_None, true, 1.0f, 0.f, false);
-	task->OnCompleted.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCompleted);
-	task->OnBlendOut.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageBlendOut);
-	task->OnInterrupted.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCancelled);
-	task->OnCancelled.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCancelled);
-	task->ReadyForActivation();
+	ActiveMontageTask->OnCompleted.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCompleted);
+	ActiveMontageTask->OnBlendOut.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageBlendOut);
+	ActiveMontageTask->OnInterrupted.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCancelled);
+	ActiveMontageTask->OnCancelled.AddDynamic(this, &UAttackBaseGameplayAbility::OnMontageCancelled);
+	ActiveMontageTask->ReadyForActivation();
 }
 
 void UAttackBaseGameplayAbility::ApplyChainEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser, bool isLastTarget, int ChainLinkNumber)
@@ -296,6 +296,12 @@ void UAttackBaseGameplayAbility::HandleSetByCaller(TSubclassOf<UGameplayEffect> 
 
 void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
+	if (bWasCancelled && ActiveMontageTask && ActiveMontageTask->IsActive())
+	{
+		ActiveMontageTask->EndTask();
+	}
+	ActiveMontageTask = nullptr;
+
 	// If this is a charge attack, play the attack animation now
 	if (ChargeDuration > 0.0001f)
 	{
@@ -303,17 +309,16 @@ void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Han
 		_bIsChargeComplete = false;
 		CurrentChargeDuration = 0ms;
 		CurrentChargeDamage = 1.f;
-		if (ShouldCastOnPartialCharge)
+
+		if (IsValid(ChargeSoundComponent) && ChargeSoundComponent->GetPlayState() == EAudioComponentPlayState::Playing)
+		{
+			ChargeSoundComponent->Stop();
+		}
+
+		if (!bWasCancelled && ShouldCastOnPartialCharge)
 		{
 			auto owner = Cast<ACharacter>(ActorInfo->OwnerActor);
 			auto animInstance = owner->GetMesh()->GetAnimInstance();
-
-			// if the charge was interrupted, play the fire animation after cancelling the charge sound
-			if (IsValid(ChargeSoundComponent) && ChargeSoundComponent->GetPlayState() == EAudioComponentPlayState::Playing)
-			{
-				ChargeSoundComponent->Stop();
-			}
-
 			if (animInstance && FireAnimation)
 			{
 				animInstance->Montage_Play(FireAnimation);
@@ -323,7 +328,8 @@ void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Han
 		}
 	}
 
-	TryPlayComboPause(ActorInfo);
+	if (!bWasCancelled)
+		TryPlayComboPause(ActorInfo);
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

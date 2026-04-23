@@ -208,6 +208,8 @@ public:
 
 	void CreateAndDispatchMontageTask();
 
+	TObjectPtr<UAbilityTask_PlayMontageAndWait> ActiveMontageTask;
+
 	/// <summary>
 	/// Chain specific helper to apply effects and spawn projectiles
 	/// </summary>
