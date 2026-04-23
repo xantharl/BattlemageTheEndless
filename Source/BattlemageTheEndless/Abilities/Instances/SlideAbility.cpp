@@ -45,7 +45,7 @@ void USlideAbility::End(bool bForce)
 
 	// reset to full rotation	
 	const APlayerController* PC = Cast<APlayerController>(Character->GetController());
-	if (PC->PlayerCameraManager)
+	if (PC && PC->PlayerCameraManager)
 	{
 		PC->PlayerCameraManager->ViewYawMax = 359.998993f;
 		PC->PlayerCameraManager->ViewYawMin = 0.f;
