@@ -246,27 +246,29 @@ FGameplayAbilitySpecHandle UComboManagerComponent::ProcessInput(APickupActor* Pi
 		
 	// If the last ability is still active, queue the next one
 	// We also check _bCanContinue here too, which indicates we've reached a point in the animation where we can allow the next ability to activate
-	if (LastActivatedAbilityClass && !_bCanContinue)
+	bool ShouldQueue = LastActivatedAbilityClass && !_bCanContinue;
+	const FGameplayAbilitySpec* AbilitySpec = nullptr;
+	if (ShouldQueue)
+		AbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(LastActivatedAbilityClass);
+	const UGameplayAbility* PrimaryInstance = nullptr;
+	if (AbilitySpec)
+		PrimaryInstance = AbilitySpec->GetPrimaryInstance();
+	
+	if (ShouldQueue && PrimaryInstance && PrimaryInstance->IsActive())
 	{
-		const auto LastActivatedSpec = AbilitySystemComponent->FindAbilitySpecFromClass(LastActivatedAbilityClass);
-		if (const auto PrimaryInstance = LastActivatedSpec->GetPrimaryInstance(); 
-			PrimaryInstance && PrimaryInstance->IsActive())
-		{			
-			UE_LOG( LogTemp, Log, TEXT("ComboManagerComponent::ProcessInput queueing ability %s"), *Result->Get()->GetName());
-			NextAbilityHandle = &ToActivate->Handle;
-			LastActivatedSpec->GetPrimaryInstance()->OnGameplayAbilityEnded.AddLambda([this, ToActivate](UGameplayAbility* _) {
-				ActivateAbilityAndResetTimer(*ToActivate);
-			});
-		}
-		// Handle race condition where we haven't cleared the ability yet but it is no longer active
-		else
-		{
-			UE_LOG( LogTemp, Log, TEXT("ComboManagerComponent::ProcessInput activating ability from queue fallback %s"), *Result->Get()->GetName());
+		UE_LOG( LogTemp, Log, TEXT("ComboManagerComponent::ProcessInput queueing ability %s"), *Result->Get()->GetName());
+		NextAbilityHandle = &ToActivate->Handle;
+		AbilitySpec->GetPrimaryInstance()->OnGameplayAbilityEnded.AddLambda([this, ToActivate](UGameplayAbility* _) {
 			ActivateAbilityAndResetTimer(*ToActivate);
-		}
+		});
 	}
-	else
+	// Handle race condition where we haven't cleared the ability yet but it is no longer active
+	else if (ShouldQueue)
 	{
+		UE_LOG( LogTemp, Log, TEXT("ComboManagerComponent::ProcessInput activating ability from queue fallback %s"), *Result->Get()->GetName());
+		ActivateAbilityAndResetTimer(*ToActivate);
+	}
+	else {
 		// Otherwise activate immediately
 		UE_LOG( LogTemp, Log, TEXT("ComboManagerComponent::ProcessInput activating ability %s"), *Result->Get()->GetName());
 		if (!ToActivate)
