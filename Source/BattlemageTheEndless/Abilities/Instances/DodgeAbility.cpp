@@ -27,28 +27,31 @@ void UDodgeAbility::Begin(const FMovementEventData& MovementEventData)
 		// account for camera rotation
 		InputVector = InputVector.RotateAngleAxis(Movement->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector);
 	}
+	
+	FVector DodgeVector = FVector::ZeroVector;
+	// Forward / back contribution
+	if (InputVector.X >= 0.f) {
+		DodgeVector += DodgeImpulseForward * InputVector.X;
+	} else {
+		DodgeVector += DodgeImpulseBackward * -InputVector.X;
+	}
 
-	// use the strongest input direction to decide which way to dodge
-	bool isLateral = FMath::Abs(InputVector.X) < FMath::Abs(InputVector.Y);
+	// Lateral contribution (right is positive, left is negative)
+	DodgeVector.Y += DodgeImpulseLateral.Y * -InputVector.Y;             // signed
+	DodgeVector.X += DodgeImpulseLateral.X * FMath::Abs(InputVector.Y); // unsigned
+	DodgeVector.Z += DodgeImpulseLateral.Z * FMath::Abs(InputVector.Y); // unsigned
 
-	FVector ImpulseToUse;
-	// if the movement is not lateral, dodge forward or backward
-	if (!isLateral)
-		ImpulseToUse = InputVector.X > 0.0f ? DodgeImpulseForward : DodgeImpulseBackward;
-	// if the movement is lateral, dodge left or right
-	else
-		ImpulseToUse = DodgeImpulseLateral * ((InputVector.Y < 0.0f) ? 1.f : -1.f);
+	// Launch the character
+	Movement->GroundFriction = 0.0f;
+	FVector WorldImpulse = Character->GetActorTransform().TransformVectorNoScale(DodgeVector);
 	
 	// modify impulse if in air
 	if (Movement->MovementMode == EMovementMode::MOVE_Falling)
 	{
-		ImpulseToUse *= ImpulseMultiplierAir;
+		WorldImpulse *= ImpulseMultiplierAir;
 	}
-
-	// Launch the character
-	Movement->GroundFriction = 0.0f;
-	FVector dodgeVector = FVector(ImpulseToUse.RotateAngleAxis(Movement->GetLastUpdateRotation().Yaw, FVector::ZAxisVector));
-	Character->LaunchCharacter(dodgeVector, true, true);
+	
+	Character->LaunchCharacter(WorldImpulse, true, true);
 	Character->GetWorldTimerManager().SetTimer(DodgeEndTimer, this, &UDodgeAbility::OnEndTimer, DodgeDurationSeconds, false);
 
 	Super::Begin(MovementEventData);

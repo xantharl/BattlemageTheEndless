@@ -95,8 +95,6 @@ public:
 
 	bool WillCancelAbility(FGameplayAbilitySpec* OtherAbility);
 
-	TArray<TObjectPtr<UGA_WithEffectsBase>> GetAbilityActiveInstances(FGameplayAbilitySpec* spec);
-
 	bool HasComboTag();
 
 	bool IsFirstInCombo();

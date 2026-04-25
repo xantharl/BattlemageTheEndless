@@ -178,20 +178,6 @@ bool UGA_WithEffectsBase::WillCancelAbility(FGameplayAbilitySpec* OtherAbility)
 	return OtherAbility->Ability->GetAssetTags().HasAny(CancelAbilitiesWithTag);
 }
 
-TArray<TObjectPtr<UGA_WithEffectsBase>> UGA_WithEffectsBase::GetAbilityActiveInstances(FGameplayAbilitySpec* spec)
-{
-	TArray<TObjectPtr<UGA_WithEffectsBase>> returnVal;
-	auto instances = GetReplicationPolicy() == EGameplayAbilityReplicationPolicy::ReplicateNo
-		? spec->NonReplicatedInstances : spec->ReplicatedInstances;
-
-	for (auto instance : instances)
-	{
-		returnVal.Add(Cast<UGA_WithEffectsBase>(instance));
-	}
-
-	return returnVal;
-}
-
 bool UGA_WithEffectsBase::HasComboTag()
 {
 	return GetComboTags().Num() > 0;

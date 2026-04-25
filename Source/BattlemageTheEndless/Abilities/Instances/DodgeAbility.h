@@ -20,24 +20,25 @@ public:
 
 	UDodgeAbility(const FObjectInitializer& X);
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Dodge, meta = (AllowPrivateAccess = "true"))
 	float DodgeDurationSeconds = 0.35f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Dodge, meta = (AllowPrivateAccess = "true"))
 	FVector DodgeImpulseLateral = FVector(0.f, -1500.f, 0.f);
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Dodge, meta = (AllowPrivateAccess = "true"))
 	FVector DodgeImpulseForward = FVector(1500.f, 0, 0);
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Dodge, meta = (AllowPrivateAccess = "true"))
 	FVector DodgeImpulseBackward = FVector(-1000.f, 0, 500.f);
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterMovement, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Dodge, meta = (AllowPrivateAccess = "true"))
 	float ImpulseMultiplierAir = 0.5f;
 
 	virtual void Begin(const FMovementEventData& MovementEventData) override;
 	virtual void End(bool bForce = false) override;
 	virtual FMovementEventData BuildMovementEventData() const override;
 	
+	UPROPERTY(BlueprintReadOnly, Category = Dodge)
 	FVector LastInputVector = FVector::ZeroVector;
 };

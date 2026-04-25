@@ -599,18 +599,22 @@ void ABattlemageTheEndlessCharacter::AbilityInputPressed(TSubclassOf<class UGame
 void ABattlemageTheEndlessCharacter::AbilityInputReleased(TSubclassOf<class UGameplayAbility> ability)
 {
 	// Nothing to do if it's not active
-	if (!AbilitySystemComponent->FindAbilitySpecFromClass(ability)->IsActive())
+	auto Spec = AbilitySystemComponent->FindAbilitySpecFromClass(ability);
+	if (!Spec->IsActive())
 		return;
 	// Do not end the ability if it has duration effects, that's up to the ability to end itself
 	if (auto abilityWithEffects = Cast<UGA_WithEffectsBase>(ability->GetDefaultObject()))
 	{
 		auto hasDurationEffects = abilityWithEffects->EffectsToApply.FilterByPredicate([](TSubclassOf<UGameplayEffect> effect) {
-			return effect.GetDefaultObject()->DurationPolicy == EGameplayEffectDurationType::HasDuration;
+			return IsValid(effect) && effect.GetDefaultObject()->DurationPolicy == EGameplayEffectDurationType::HasDuration;
 		}).Num() > 0;
 		if (hasDurationEffects)
 			return;
 	}
-
+	// Dodge is kept alive and ends itself after DodgeEndTimer
+	if (Spec->Ability->AbilityTags.HasTag(FGameplayTag::RequestGameplayTag("Movement.Dodge")))
+		return;
+	
 	AbilitySystemComponent->CancelAbility(ability->GetDefaultObject<UGameplayAbility>());
 	// if (GEngine)
 	// {
