@@ -45,9 +45,17 @@ void UWallRunAbility::Init(UCharacterMovementComponent* movement, ACharacter* ch
 
 bool UWallRunAbility::ShouldBegin()
 {
-	if (!WallRunCapsule)
+	if (!WallRunCapsule || !Character)
 		return false;
 
+	// Only wall run if we're going forward
+	FRotator ControlRot(0, Character->GetControlRotation().Yaw, 0);
+	FVector ControlForward = ControlRot.Vector();
+	float Dot = FVector::DotProduct(Character->GetVelocity().GetSafeNormal2D(), ControlForward);
+	bool bMovingForward = Dot > 0.1f;  // small deadzone
+	if (!bMovingForward)
+		return false;
+	
 	// WallRunHit is set in ObjectIsWallRunnable
 
 	// This is used by the anim graph to determine which way to mirror the wallrun animation
