@@ -19,8 +19,23 @@ void UComboManagerComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ...
+	auto Owner = GetOwner();
+	if (!Owner)
+		return;
 	
+	auto Asc = Owner->GetComponentByClass<UAbilitySystemComponent>();
+	if (!Asc)
+		return;
+	
+	Asc->OnAbilityEnded.AddUObject(this, &UComboManagerComponent::OnAbilityEnded);
+}
+
+void UComboManagerComponent::OnAbilityEnded(const FAbilityEndedData& EndData)
+{
+	if (TimeToEndAfterCancel > 0.0001f && EndData.bWasCancelled && GetWorld()->GetTimerManager().IsTimerActive(ComboTimerHandle))
+	{
+		GetWorld()->GetTimerManager().SetTimer(ComboTimerHandle, [&] {EndComboHandler(); }, TimeToEndAfterCancel, false);
+	}
 }
 
 

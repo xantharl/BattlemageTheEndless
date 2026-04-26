@@ -2,6 +2,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
 #include "AIController.h"
+#include "VectorTypes.h"
 
 UBTDecorator_TooCloseToActor::UBTDecorator_TooCloseToActor()
 {
@@ -29,9 +30,8 @@ bool UBTDecorator_TooCloseToActor::CalculateRawConditionValue(UBehaviorTreeCompo
 	{
 		return false;
 	}
-
-	const float DistanceSq = FVector::DistSquared(Pawn->GetActorLocation(), TargetActor->GetActorLocation());
-	return DistanceSq < FMath::Square(MinDistance);
+	
+	return FMath::Abs(UE::Geometry::Distance(TargetActor->GetActorLocation(), Pawn->GetActorLocation())) < MinDistance;
 }
 
 FString UBTDecorator_TooCloseToActor::GetStaticDescription() const

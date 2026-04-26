@@ -7,6 +7,7 @@ void UHealthBarWidget::Init(UAbilitySystemComponent* abilitySystemComponent, UBa
 {
 	_abilitySystemComponent = abilitySystemComponent;
 	_attributeSet = attributeSet;
+	_enemyAttributeSet = Cast<UEnemyAttributeSet>(attributeSet);
 	SetInitialDisplayValues();
 	SubscribeToEffectChanges();
 }
@@ -34,6 +35,31 @@ void UHealthBarWidget::SetInitialDisplayValues()
 	{
 		MaxHealthWidget->SetText(FText::FromString(FString::FromInt(_attributeSet->MaxHealth.GetBaseValue())));
 	}
+
+	if (_enemyAttributeSet)
+	{
+		if (const auto PoiseBar = tree->FindWidget<UProgressBar>(PoiseBarName))
+		{
+			PoiseBar->SetPercent(1.0f);
+		}
+		if (const auto CurrentPoiseWidget = tree->FindWidget<UTextBlock>(CurrentPoiseTextBlockName))
+		{
+			CurrentPoiseWidget->SetText(FText::FromString(FString::FromInt(_enemyAttributeSet->Poise.GetBaseValue())));
+		}
+		if (const auto MaxPoiseWidget = tree->FindWidget<UTextBlock>(MaxPoiseTextBlockName))
+		{
+			MaxPoiseWidget->SetText(FText::FromString(FString::FromInt(_enemyAttributeSet->MaxPoise.GetBaseValue())));
+		}
+	}
+	else
+	{
+		if (const auto PoiseBar = tree->FindWidget<UProgressBar>(PoiseBarName))
+			PoiseBar->SetVisibility(ESlateVisibility::Collapsed);
+		if (const auto CurrentPoiseWidget = tree->FindWidget<UTextBlock>(CurrentPoiseTextBlockName))
+			CurrentPoiseWidget->SetVisibility(ESlateVisibility::Collapsed);
+		if (const auto MaxPoiseWidget = tree->FindWidget<UTextBlock>(MaxPoiseTextBlockName))
+			MaxPoiseWidget->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 void UHealthBarWidget::SubscribeToEffectChanges()
@@ -41,6 +67,11 @@ void UHealthBarWidget::SubscribeToEffectChanges()
 	_abilitySystemComponent->OnActiveGameplayEffectAddedDelegateToSelf.AddUObject(this, &UHealthBarWidget::OnActiveGameplayEffectAddedCallback);
 	_abilitySystemComponent->OnAnyGameplayEffectRemovedDelegate().AddUObject(this, &UHealthBarWidget::OnRemoveGameplayEffectCallback);
 	_abilitySystemComponent->GetGameplayAttributeValueChangeDelegate(_attributeSet->GetHealthAttribute()).AddUObject(this, &UHealthBarWidget::HealthChanged);
+
+	if (_enemyAttributeSet)
+	{
+		_abilitySystemComponent->GetGameplayAttributeValueChangeDelegate(_enemyAttributeSet->GetPoiseAttribute()).AddUObject(this, &UHealthBarWidget::PoiseChanged);
+	}
 }
 
 void UHealthBarWidget::Reset()
@@ -342,6 +373,19 @@ void UHealthBarWidget::HealthChanged(const FOnAttributeChangeData& Data)
 FGameplayTagContainer UHealthBarWidget::OwnedStatusTags(const FGameplayEffectSpec& specApplied)
 {
 	return OwnedStatusTags(*specApplied.Def);
+}
+
+void UHealthBarWidget::PoiseChanged(const FOnAttributeChangeData& Data)
+{
+	auto tree = WidgetTree.Get();
+	if (const auto CurrentPoiseWidget = tree->FindWidget<UTextBlock>(CurrentPoiseTextBlockName))
+	{
+		CurrentPoiseWidget->SetText(FText::FromString(FString::FromInt(Data.NewValue)));
+	}
+	if (const auto PoiseBar = tree->FindWidget<UProgressBar>(PoiseBarName))
+	{
+		PoiseBar->SetPercent(Data.NewValue / _enemyAttributeSet->MaxPoise.GetCurrentValue());
+	}
 }
 
 FGameplayTagContainer UHealthBarWidget::OwnedStatusTags(const UGameplayEffect& effect)

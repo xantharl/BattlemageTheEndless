@@ -38,6 +38,7 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+	void OnAbilityEnded(const FAbilityEndedData& EndData);
 	FTimerHandle ComboTimerHandle;
 
 	int CurrentComboNumber = 0;
@@ -51,6 +52,11 @@ protected:
 
 	bool CheckCooldownAndTryActivate(FGameplayAbilitySpec abilitySpec);
 
+	/** If non zero, combo extension duration will be set to this value on ability cancel. 
+	 * This acts as an override to the montage duration based default. **/
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combo, meta = (AllowPrivateAccess = "true"))
+	float TimeToEndAfterCancel = 0.5f;
+	
 	/// <summary>
 	/// The combo manager allows for an action queue of 1, this is used in the event that input
 	///  is received for an ability while one is ongoing

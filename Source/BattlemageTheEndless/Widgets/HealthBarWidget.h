@@ -8,6 +8,7 @@
 #include "AbilitySystemGlobals.h"
 #include "GameplayEffectTypes.h"
 #include "../Abilities/BaseAttributeSet.h"
+#include "../Abilities/EnemyAttributeSet.h"
 #include "Components/RichTextBlockImageDecorator.h"
 #include "Components/TextBlock.h"
 #include "Components/Image.h"
@@ -75,6 +76,10 @@ public:
 	const FName MaxHealthTextBlockName = FName("Max_Health");
 	const FName ProgressBarName = FName("Health_Bar");
 
+	const FName PoiseBarName = FName("Poise_bar");
+	const FName CurrentPoiseTextBlockName = FName("Current_Poise");
+	const FName MaxPoiseTextBlockName = FName("Max_Poise");
+
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Health Bar")
 	int32 MAX_STATUS_EFFECTS = 6;
 
@@ -83,6 +88,7 @@ public:
 private:
 	UAbilitySystemComponent* _abilitySystemComponent;
 	UBaseAttributeSet* _attributeSet;
+	UEnemyAttributeSet* _enemyAttributeSet = nullptr;
 
 	FRichImageRow* FindImageRow(FName TagOrId, bool bWarnIfMissing);
 
@@ -109,6 +115,7 @@ protected:
 	UFUNCTION()
 	virtual void OnRemoveGameplayEffectCallback(const FActiveGameplayEffect& EffectRemoved);
 	virtual void HealthChanged(const FOnAttributeChangeData& Data);
+	virtual void PoiseChanged(const FOnAttributeChangeData& Data);
 
 	virtual void SetInitialDisplayValues();
 	virtual void SubscribeToEffectChanges();
