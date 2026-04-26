@@ -44,10 +44,12 @@ void UDodgeAbility::Begin(const FMovementEventData& MovementEventData)
 	// Launch the character
 	Movement->GroundFriction = 0.0f;
 	FVector WorldImpulse = Character->GetActorTransform().TransformVectorNoScale(DodgeVector);
-	
+
 	// modify impulse if in air
 	if (Movement->MovementMode == EMovementMode::MOVE_Falling)
 	{
+		float LookPitch = FRotator::NormalizeAxis(Character->GetControlRotation().Pitch);
+		WorldImpulse = WorldImpulse.RotateAngleAxis(-LookPitch, Character->GetActorRightVector());
 		WorldImpulse *= ImpulseMultiplierAir;
 	}
 	

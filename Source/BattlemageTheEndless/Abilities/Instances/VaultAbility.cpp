@@ -118,7 +118,7 @@ bool UVaultAbility::ShouldBegin()
 	if (VaultTarget->IsA(APawn::StaticClass()) || Movement->MovementMode != EMovementMode::MOVE_Falling)
 		return false;
 
-	bool drawTrace = true;
+	bool drawTrace = false;
 
 	// Raycast from cameraSocket straight forward to see if Object is in the way	
 	VaultHit = Traces::LineTraceMovementVector(Character, Movement, Mesh, FName("cameraSocket"), 50, drawTrace, FColor::Green, 0.f);
