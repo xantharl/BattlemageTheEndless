@@ -24,7 +24,7 @@ public:
 	TObjectPtr<UAbilityCombo> ActiveCombo;
 };
 
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent), Blueprintable )
 class BATTLEMAGETHEENDLESS_API UComboManagerComponent : public UActorComponent
 {
 	GENERATED_BODY()

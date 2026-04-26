@@ -208,6 +208,7 @@ public:
 
 	void CreateAndDispatchMontageTask();
 
+	UPROPERTY(BlueprintReadOnly, Category = Animations, meta = (BlueprintProtected), Instanced)
 	TObjectPtr<UAbilityTask_PlayMontageAndWait> ActiveMontageTask;
 
 	/// <summary>

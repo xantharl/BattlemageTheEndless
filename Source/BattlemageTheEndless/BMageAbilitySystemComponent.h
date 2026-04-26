@@ -136,7 +136,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
 	void CompleteChargeAbility();
-	
+	bool IsParry();
+
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
 	bool GetCooldownRemainingForTag(FGameplayTagContainer CooldownTags, float& TimeRemaining, float& CooldownDuration);
 
@@ -168,6 +169,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = Abilities)
 	UAttackBaseGameplayAbility* GetPrimaryInstanceForAbilityClass(TSubclassOf<UAttackBaseGameplayAbility> AbilityClass);
 	
+	/** If a hit is received within ParryWindow seconds of starting to block, a parry is triggered **/
+	UPROPERTY(BlueprintReadWrite, EditAnywhere, meta = (AllowPrivateAccess = "true"), Category = "Abilities")
+	float ParryWindow = 0.1f;
+	
 private:
 	void UnmarkOwner();
 
@@ -194,6 +199,7 @@ private:
 
 	UFUNCTION()
 	void OnWeaponHitReceived(ACharacter* Attacker, const FHitResult& Hit, FString AttackAnimationName, FGameplayTagContainer AttackOwnedTags);
+	FActiveGameplayEffectHandle FindHandleByClass(TSubclassOf<UGameplayEffect> EffectClass);
 
 	void BuildAbilityRangeCache();
 
@@ -216,4 +222,6 @@ private:
 	
 	// return the first ability found with the specified owned tag
 	TObjectPtr<UGameplayAbility> GetActivatableAbilityByOwnedTag(FName abilityTag);
+	
+	
 };

@@ -123,7 +123,7 @@ protected:
 
 	/** Handle anim trace hit, return value indicates whether hit was processed or ignored **/
 	UFUNCTION(BlueprintCallable, Category = "Combat")
-	bool OnAnimTraceHit(ACharacter* character, const FHitResult& Hit, FString attackAnimationName);
+	bool OnAnimTraceHit(ACharacter* character, const FHitResult& Hit, FString attackAnimationName, UGameplayAbility* AnimatingAbility);
 
 	FString LastAttackAnimationName;
 

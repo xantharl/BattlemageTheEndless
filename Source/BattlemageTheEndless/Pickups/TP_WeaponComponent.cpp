@@ -129,7 +129,7 @@ void UTP_WeaponComponent::RemoveContext(ACharacter* character)
 }
 
 // This is called by the AnimNotify_Collision Blueprint
-bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult& Hit, FString attackAnimationName)
+bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult& Hit, FString attackAnimationName, UGameplayAbility* AnimatingAbility)
 {		
 	// if (GEngine)
 	// 	GEngine->AddOnScreenDebugMessage(-1, 1.50f, FColor::Blue, FString::Printf(TEXT("%s hit character %s"),
@@ -183,10 +183,16 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 	
 	LastHitCharacters.Add(hitActor);
 
-	auto abilitySpec = attackerAsc->FindAbilitySpecFromClass(attackerAsc->ComboManager->LastActivatedAbilityClass);
+	// Resolve ability used by referencing Combo Manager
+	if (!IsValid(AnimatingAbility))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid AnimatingAbility Passed to OnAnimTraceHit"));
+		return false;		
+	}
+	auto abilitySpec = AnimatingAbility->GetCurrentAbilitySpec();
 	if (!abilitySpec)
 	{
-		UE_LOG(LogTemp, Error, TEXT("LastActivatedAbility Not found, if you hit this ActivateAbility was probably called directly, use UFUNCTION ProcessInputAndBindAbilityCancelled"));
+		UE_LOG(LogTemp, Error, TEXT("Could not determine ability spec from passed in AnimatingAbility"));
 		return false;
 	}
 	

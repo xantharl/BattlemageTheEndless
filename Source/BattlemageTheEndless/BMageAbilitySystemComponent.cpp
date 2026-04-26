@@ -904,14 +904,56 @@ void UBMageAbilitySystemComponent::CompleteChargeAbility()
 	_chargingAbility->OnMontageCompleted();
 }
 
+bool UBMageAbilitySystemComponent::IsParry()
+{
+	const TObjectPtr<UGameplayAbility> Ability = GetActivatableAbilityByOwnedTag(FName("Weapon.Blocking"));
+	if (!Ability)
+		return false;
+
+	if (!Ability->IsActive())
+		return false;
+	
+	const auto AsAttackBase = Cast<UAttackBaseGameplayAbility>(Ability);
+	if (!AsAttackBase)
+		return false;
+	
+	// Baking in an assumption here that we're only applying the block effect
+	auto BlockEffectClass = AsAttackBase->EffectsToApply[0];
+	if (!IsValid(BlockEffectClass))
+		return false;
+	
+	const auto Handle = FindHandleByClass(BlockEffectClass);
+	if (Handle == FActiveGameplayEffectHandle())
+		return false;
+	
+	const FActiveGameplayEffect* Age = GetActiveGameplayEffect(Handle);
+	if (!Age)
+		return false;
+	
+	float Elapsed = GetWorld()->GetTimeSeconds() - Age->StartWorldTime;
+	return Elapsed <= ParryWindow;
+}
+
 void UBMageAbilitySystemComponent::OnWeaponHitReceived(ACharacter* Attacker, const FHitResult& Hit, FString AttackAnimationName, FGameplayTagContainer AttackOwnedTags)
 {
 	// Don't hit yourself
 	if (Attacker == GetOwner())
 		return;
-		
+	
+	// Determine if this attack was parried
+	
 	FGameplayEventData EventData;
 	EventData.Instigator = Attacker;
+	
+	if (IsParry())
+	{
+		const FGameplayTag ReactTag = FGameplayTag::RequestGameplayTag(FName("Ability.React.Parried"));
+		int Activated = HandleGameplayEvent(ReactTag, &EventData);
+		if (GEngine)
+			UE_LOG(LogTemp, Warning, TEXT("Activated %d for tag %s"), Activated, *ReactTag.ToString());		
+		
+		return;
+	}
 	
 	for (auto Tag : AttackOwnedTags)
 	{		
@@ -930,6 +972,18 @@ void UBMageAbilitySystemComponent::OnWeaponHitReceived(ACharacter* Attacker, con
 				UE_LOG(LogTemp, Warning, TEXT("Activated %d for tag %s"), Activated, *ReactTag.ToString());
 		}
 	}
+}
+
+FActiveGameplayEffectHandle UBMageAbilitySystemComponent::FindHandleByClass(
+	TSubclassOf<UGameplayEffect> EffectClass)
+{
+	if (!EffectClass) return FActiveGameplayEffectHandle();
+
+	FGameplayEffectQuery Query;
+	Query.EffectDefinition = EffectClass;
+
+	TArray<FActiveGameplayEffectHandle> Handles = GetActiveEffects(Query);
+	return Handles.Num() > 0 ? Handles[0] : FActiveGameplayEffectHandle();
 }
 
 bool UBMageAbilitySystemComponent::GetCooldownRemainingForTag(FGameplayTagContainer CooldownTags, float & TimeRemaining, float & CooldownDuration)

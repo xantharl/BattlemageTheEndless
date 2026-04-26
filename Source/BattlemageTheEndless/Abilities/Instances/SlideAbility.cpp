@@ -60,8 +60,16 @@ void USlideAbility::Tick(float DeltaTime)
 	
 	if (!IsGAActive())
 		return;
-	
+		
 	FVector currentLocation = Movement->GetActorLocation();
+	
+	// If we've stopped moving, exit slide (hitting an object case)
+	if (Character && Character->GetVelocity().Length() < 25.f)
+	{		
+		_previousLocation = currentLocation;
+		End();
+		return;
+	}
 
 	// Don't count time till we're done transitioning in
 	if (isTransitioningIn)
