@@ -979,12 +979,16 @@ void UBMageAbilitySystemComponent::OnWeaponHitReceived(ACharacter* Attacker, con
 		return;
 	}
 
-	AttackingAbility->ApplyEffects(Hit.GetActor(), HitActorBMageAsc, Attacker, Owner);
-
+	// Apply effects exactly once. Players go through the server RPC (authoritative on server,
+	// replicates back). AI runs on the server already, so apply directly.
 	if (Attacker->IsPlayerControlled())
 	{
 		if (auto BMageController = Cast<ABattlemageTheEndlessPlayerController>(Attacker->GetController()))
 			BMageController->Server_ApplyEffects(AttackingAbility->GetClass(), Hit);
+	}
+	else
+	{
+		AttackingAbility->ApplyEffects(Hit.GetActor(), HitActorBMageAsc, Attacker, Owner);
 	}
 
 	for (auto Tag : AttackOwnedTags)
