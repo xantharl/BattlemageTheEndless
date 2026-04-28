@@ -140,9 +140,10 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 	if (Hit.ImpactNormal.Z > 0.7f)
 		return false;
 	
-	// We only want local clients to trigger weapon hits checks
-	// if (!character->IsLocallyControlled()) // TODO: Account for AI?
-	// 	return false;
+	// We only want local clients to trigger weapon hit checks. AI on the server is locally
+	// controlled (no NetConnection), so the gate passes for AI as well.
+	if (!character->IsLocallyControlled())
+		return false;
 	
 	if (attackAnimationName != LastAttackAnimationName)
 	{
