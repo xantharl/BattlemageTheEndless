@@ -56,7 +56,7 @@ public:
 /**
  * 
  */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnWeaponHit, ACharacter*, character, const FHitResult&, Hit, FString, attackAnimationName, FGameplayTagContainer, attackOwnedTags);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FourParams(FOnWeaponHit, ACharacter*, character, const FHitResult&, Hit, UGA_WithEffectsBase*, attackingAbility, FGameplayTagContainer, attackOwnedTags);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnCooldownTagChanged, const FGameplayTag, CooldownTag, int32, NewCount);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnSpellsTagChanged, const FGameplayTag, SpellsTag, int32, NewCount);
 
@@ -187,6 +187,7 @@ private:
 	void _removePickupFromAbilityByRangeCache(UObject* pickup);
 
 	UAttackBaseGameplayAbility* _chargingAbility = nullptr;
+	UGA_WithEffectsBase* _blockingAbility = nullptr;
 
 	USphereComponent* _markSphere;
 
@@ -198,7 +199,7 @@ private:
 	virtual void OnTagChanged(const FGameplayTag Tag, int32 NewCount);
 
 	UFUNCTION()
-	void OnWeaponHitReceived(ACharacter* Attacker, const FHitResult& Hit, FString AttackAnimationName, FGameplayTagContainer AttackOwnedTags);
+	void OnWeaponHitReceived(ACharacter* Attacker, const FHitResult& Hit, UGA_WithEffectsBase* AttackingAbility, FGameplayTagContainer AttackOwnedTags);
 	FActiveGameplayEffectHandle FindHandleByClass(TSubclassOf<UGameplayEffect> EffectClass);
 
 	void BuildAbilityRangeCache();

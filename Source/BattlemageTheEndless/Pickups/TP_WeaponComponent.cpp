@@ -141,8 +141,8 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 		return false;
 	
 	// We only want local clients to trigger weapon hits checks
-	if (!character->IsLocallyControlled()) // TODO: Account for AI?
-		return false;
+	// if (!character->IsLocallyControlled()) // TODO: Account for AI?
+	// 	return false;
 	
 	if (attackAnimationName != LastAttackAnimationName)
 	{
@@ -210,18 +210,15 @@ bool UTP_WeaponComponent::OnAnimTraceHit(ACharacter* character, const FHitResult
 	
 	// apply any on hit effects from the weapon attack, all effects on a weapon are assumed to be on hit
 	const auto Casted = Cast<UGA_WithEffectsBase>(abilitySpec->Ability);
-	if (Casted)
-		Casted->ApplyEffects(hitActor, hitActorAsc, character, GetOwner());
-	
-	// We've applied locally, now inform the server (as long as we aren't the listen server host, which would double apply)
-	if (const auto CastedController = Cast<ABattlemageTheEndlessPlayerController>(character->GetController()); !character->HasAuthority())
+	if (!Casted)
 	{
-		CastedController->Server_ApplyEffects(Casted->GetClass(), Hit);
+		UE_LOG(LogTemp, Error, TEXT( "OnAnimTraceHit requires an Ability derived from UGA_WithEffectsBase, given %s" ), *abilitySpec->Ability->GetName() );
+		return false;
 	}
 	
 	// Explicitly needs to be after applyEffects to evaluate post damage/poise modified state
-	attackerAsc->OnWeaponHit.Broadcast(character, Hit, attackAnimationName, abilitySpec->Ability->GetAssetTags());
-	hitActorAsc->OnWeaponHit.Broadcast(character, Hit, attackAnimationName, abilitySpec->Ability->GetAssetTags());
+	attackerAsc->OnWeaponHit.Broadcast(character, Hit, Casted, abilitySpec->Ability->GetAssetTags());
+	hitActorAsc->OnWeaponHit.Broadcast(character, Hit, Casted, abilitySpec->Ability->GetAssetTags());
 	
 	return true;
 }

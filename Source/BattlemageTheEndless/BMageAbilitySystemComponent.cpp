@@ -2,6 +2,8 @@
 
 
 #include "BMageAbilitySystemComponent.h"
+
+#include "Characters/BattlemageTheEndlessPlayerController.h"
 using namespace std::chrono;
 
 UBMageAbilitySystemComponent::UBMageAbilitySystemComponent()
@@ -215,6 +217,9 @@ void UBMageAbilitySystemComponent::BeginPlay()
 	RegisterGameplayTagEvent(LightMeleeTag, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBMageAbilitySystemComponent::OnTagChanged);
 	RegisterGameplayTagEvent(HeavyMeleeTag, EGameplayTagEventType::NewOrRemoved).AddUObject(this, &UBMageAbilitySystemComponent::OnTagChanged);
 	OnAnyGameplayEffectRemovedDelegate().AddUObject(this, &UBMageAbilitySystemComponent::OnRemoveGameplayEffectCallback);
+
+	if (const TObjectPtr<UGameplayAbility> BlockAbility = GetActivatableAbilityByOwnedTag(FName("Weapon.Blocking")))
+		_blockingAbility = Cast<UGA_WithEffectsBase>(BlockAbility);
 }
 
 void UBMageAbilitySystemComponent::OnTagChanged(const FGameplayTag Tag, int32 NewCount)
@@ -906,57 +911,84 @@ void UBMageAbilitySystemComponent::CompleteChargeAbility()
 
 bool UBMageAbilitySystemComponent::IsParry()
 {
-	const TObjectPtr<UGameplayAbility> Ability = GetActivatableAbilityByOwnedTag(FName("Weapon.Blocking"));
-	if (!Ability)
+	if (!IsValid(_blockingAbility))
+	{
+		UE_LOG(LogTemp, VeryVerbose, TEXT("IsParry: Character has no parry ability"));
 		return false;
+	}
 
-	if (!Ability->IsActive())
+	if (!_blockingAbility->IsActive())
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("IsParry: blocking ability '%s' is not active"), *_blockingAbility->GetName());
 		return false;
-	
-	const auto AsAttackBase = Cast<UAttackBaseGameplayAbility>(Ability);
-	if (!AsAttackBase)
-		return false;
-	
+	}
+
 	// Baking in an assumption here that we're only applying the block effect
-	auto BlockEffectClass = AsAttackBase->EffectsToApply[0];
+	auto BlockEffectClass = _blockingAbility->EffectsToApply[0];
 	if (!IsValid(BlockEffectClass))
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("IsParry: EffectsToApply[0] on '%s' is not valid"), *_blockingAbility->GetName());
 		return false;
-	
+	}
+
 	const auto Handle = FindHandleByClass(BlockEffectClass);
 	if (Handle == FActiveGameplayEffectHandle())
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("IsParry: no active gameplay effect found for block effect class '%s'"), *BlockEffectClass->GetName());
 		return false;
-	
+	}
+
 	const FActiveGameplayEffect* Age = GetActiveGameplayEffect(Handle);
 	if (!Age)
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("IsParry: active gameplay effect handle resolved to null"));
 		return false;
-	
+	}
+
 	float Elapsed = GetWorld()->GetTimeSeconds() - Age->StartWorldTime;
-	return Elapsed <= ParryWindow;
+	if (Elapsed > ParryWindow)
+	{
+		UE_LOG(LogTemp, Verbose, TEXT("IsParry: parry window expired (elapsed=%.3fs, window=%.3fs)"), Elapsed, ParryWindow);
+		return false;
+	}
+	return true;
 }
 
-void UBMageAbilitySystemComponent::OnWeaponHitReceived(ACharacter* Attacker, const FHitResult& Hit, FString AttackAnimationName, FGameplayTagContainer AttackOwnedTags)
+void UBMageAbilitySystemComponent::OnWeaponHitReceived(ACharacter* Attacker, const FHitResult& Hit, UGA_WithEffectsBase* AttackingAbility, FGameplayTagContainer AttackOwnedTags)
 {
-	// Don't hit yourself
-	if (Attacker == GetOwner())
-		return;
-	
-	// Determine if this attack was parried
-	
+	auto Owner = GetOwner();
+	if (!Owner) return;
+
 	FGameplayEventData EventData;
 	EventData.Instigator = Attacker;
-	
-	if (IsParry())
+
+	// Only the attacker's ASC drives hit resolution — effects, parry, and reactions are
+	// all decided here so parry can gate everything before effects are applied.
+	if (Owner != Attacker)
+		return;
+
+	auto HitActorBMageAsc = Cast<UBMageAbilitySystemComponent>(Hit.GetActor()->FindComponentByClass<UAbilitySystemComponent>());
+	auto HitCharacter = Cast<ACharacter>(Hit.GetActor());
+
+	if (IsValid(HitActorBMageAsc) && IsValid(HitCharacter) && HitCharacter->IsPlayerControlled() && HitActorBMageAsc->IsParry())
 	{
 		const FGameplayTag ReactTag = FGameplayTag::RequestGameplayTag(FName("Ability.React.Parried"));
-		int Activated = HandleGameplayEvent(ReactTag, &EventData);
+		int Activated = HitActorBMageAsc->HandleGameplayEvent(ReactTag, &EventData);
 		if (GEngine)
-			UE_LOG(LogTemp, Warning, TEXT("Activated %d for tag %s"), Activated, *ReactTag.ToString());		
-		
+			UE_LOG(LogTemp, Warning, TEXT("Activated %d for tag %s"), Activated, *ReactTag.ToString());
 		return;
 	}
-	
+
+	AttackingAbility->ApplyEffects(Hit.GetActor(), HitActorBMageAsc, Attacker, Owner);
+
+	if (Attacker->IsPlayerControlled())
+	{
+		if (auto BMageController = Cast<ABattlemageTheEndlessPlayerController>(Attacker->GetController()))
+			BMageController->Server_ApplyEffects(AttackingAbility->GetClass(), Hit);
+	}
+
 	for (auto Tag : AttackOwnedTags)
-	{		
+	{
 		FGameplayTag ReactTag = FGameplayTag();
 		if (Tag == FGameplayTag::RequestGameplayTag(FName("Ability.Effect.KnockBack")))
 			ReactTag = FGameplayTag::RequestGameplayTag(FName("Ability.React.KnockedBack"));
@@ -964,10 +996,10 @@ void UBMageAbilitySystemComponent::OnWeaponHitReceived(ACharacter* Attacker, con
 			ReactTag = FGameplayTag::RequestGameplayTag(FName("Ability.React.Launched"));
 		else if (Tag == FGameplayTag::RequestGameplayTag(FName("Ability.Effect.Slam")))
 			ReactTag = FGameplayTag::RequestGameplayTag(FName("Ability.React.Slammed"));
-		
-		if (ReactTag != FGameplayTag())
+
+		if (ReactTag != FGameplayTag() && IsValid(HitActorBMageAsc))
 		{
-			int Activated = HandleGameplayEvent(ReactTag, &EventData);
+			int Activated = HitActorBMageAsc->HandleGameplayEvent(ReactTag, &EventData);
 			if (GEngine)
 				UE_LOG(LogTemp, Warning, TEXT("Activated %d for tag %s"), Activated, *ReactTag.ToString());
 		}

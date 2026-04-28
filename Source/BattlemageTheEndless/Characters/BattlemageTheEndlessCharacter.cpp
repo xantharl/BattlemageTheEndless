@@ -612,7 +612,7 @@ void ABattlemageTheEndlessCharacter::AbilityInputReleased(TSubclassOf<class UGam
 			return;
 	}
 	// Dodge is kept alive and ends itself after DodgeEndTimer
-	if (Spec->Ability->AbilityTags.HasTag(FGameplayTag::RequestGameplayTag("Movement.Dodge")))
+	if (Spec->Ability->GetAssetTags().HasTag(FGameplayTag::RequestGameplayTag("Movement.Dodge")))
 		return;
 	
 	AbilitySystemComponent->CancelAbility(ability->GetDefaultObject<UGameplayAbility>());
