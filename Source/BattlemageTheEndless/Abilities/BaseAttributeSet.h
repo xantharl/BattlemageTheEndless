@@ -79,14 +79,17 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Damage", ReplicatedUsing = OnRep_DamageModifierFire_Inbound)
 	FGameplayAttributeData DamageModifierFire_Inbound;
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, DamageModifierFire_Inbound)
-	
-	// TODO: Support all elements
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
+	
+	// This only runs on the server, so we also use Pre/Post Net Receive for client side notification   
 	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
 
+	virtual void PreNetReceive() override;
+	virtual void PostNetReceive() override;
+
 protected:
+	TMap<FName, float> _preNetAttributeValues;
 	/**
 	* These OnRep functions exist to make sure that the ability system internal representations are synchronized properly during replication
 	**/

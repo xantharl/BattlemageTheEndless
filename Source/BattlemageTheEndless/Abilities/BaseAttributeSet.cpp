@@ -52,6 +52,30 @@ void UBaseAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME_CONDITION_NOTIFY(UBaseAttributeSet, CrouchedSpeed, COND_None, REPNOTIFY_Always);
 }
 
+void UBaseAttributeSet::PreNetReceive()
+{
+	Super::PreNetReceive();
+	for (TFieldIterator<FStructProperty> It(GetClass()); It; ++It)
+	{
+		if (It->Struct != FGameplayAttributeData::StaticStruct()) continue;
+		const FGameplayAttributeData* Data = It->ContainerPtrToValuePtr<FGameplayAttributeData>(this);
+		_preNetAttributeValues.Add(It->GetFName(), Data->GetCurrentValue());
+	}
+}
+
+void UBaseAttributeSet::PostNetReceive()
+{
+	Super::PostNetReceive();
+	for (TFieldIterator<FStructProperty> It(GetClass()); It; ++It)
+	{
+		if (It->Struct != FGameplayAttributeData::StaticStruct()) continue;
+		const FGameplayAttributeData* Data = It->ContainerPtrToValuePtr<FGameplayAttributeData>(this);
+		const float* OldValue = _preNetAttributeValues.Find(It->GetFName());
+		if (OldValue && !FMath::IsNearlyEqual(*OldValue, Data->GetCurrentValue()))
+			OnAttributeChanged.Broadcast(FGameplayAttribute(*It), *OldValue, Data->GetCurrentValue());
+	}
+}
+
 void UBaseAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
 {
 	Super::PostAttributeChange(Attribute, OldValue, NewValue);

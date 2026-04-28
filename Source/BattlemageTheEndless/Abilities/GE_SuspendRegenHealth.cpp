@@ -21,3 +21,4 @@ UGE_SuspendRegenHealth::UGE_SuspendRegenHealth()
 	StackLimitCount = 1;
 	StackDurationRefreshPolicy = EGameplayEffectStackingDurationPolicy::RefreshOnSuccessfulApplication;
 }
+
