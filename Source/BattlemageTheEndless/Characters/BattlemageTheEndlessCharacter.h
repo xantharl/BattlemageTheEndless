@@ -222,8 +222,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Abilities, meta = (AllowPrivateAccess = "true"))
 	TMap<APickupActor*, FGameplayAbilitySpecHandle> LastActivatedAbilities;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterState, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterState, meta = (AllowPrivateAccess = "true"), ReplicatedUsing = OnRep_IsDead)
 	bool IsDead = false;
+
+	UFUNCTION()
+	void OnRep_IsDead();
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CharacterState, meta = (AllowPrivateAccess = "true"))
 	float TimeToPersistAfterDeath = 10.f;
@@ -285,6 +288,7 @@ protected:
 	void OnMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 	
 	virtual void BeginPlay();
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	void InitHealthbar();
 
 	// currently only enemies inheriting from this class have a health bar, so this can return nullptr

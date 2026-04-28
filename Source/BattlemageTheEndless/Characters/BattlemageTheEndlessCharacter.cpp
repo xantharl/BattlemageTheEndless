@@ -13,6 +13,7 @@
 #include <Kismet/GameplayStatics.h>
 #include "AbilitySystemBlueprintLibrary.h"
 #include "RootAnimCameraComponent.h"
+#include "Net/UnrealNetwork.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -1151,6 +1152,17 @@ void ABattlemageTheEndlessCharacter::OnHealthRegenRateChanged(const FOnAttribute
 {
 	// When we change health regen rate, we may need to start or stop ticking
 	AbilitySystemComponent->UpdateShouldTick();
+}
+
+void ABattlemageTheEndlessCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ABattlemageTheEndlessCharacter, IsDead);
+}
+
+void ABattlemageTheEndlessCharacter::OnRep_IsDead()
+{
+	OnIsDeadChanged.Broadcast(IsDead);
 }
 
 void ABattlemageTheEndlessCharacter::OnMovementSpeedChanged(const FOnAttributeChangeData& Data)
