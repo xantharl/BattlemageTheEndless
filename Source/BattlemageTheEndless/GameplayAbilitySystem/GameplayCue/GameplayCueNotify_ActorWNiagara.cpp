@@ -19,12 +19,6 @@ AGameplayCueNotify_ActorWNiagara::AGameplayCueNotify_ActorWNiagara()
 
 	// makes the particle system follow the owner (target) of the gameplay cue
 	bAutoAttachToOwner = true;
-
-	if (AttackEffect.AttachSocket.IsNone())
-	{
-		UE_LOG(LogTemp, Warning, TEXT("AttachSocket is not set for GameplayCue %s, system will not be spawned"), *GetName());
-		return;
-	}
 }
 
 void AGameplayCueNotify_ActorWNiagara::HandleGameplayCue(AActor* MyTarget, EGameplayCueEvent::Type EventType, const FGameplayCueParameters& Parameters)
