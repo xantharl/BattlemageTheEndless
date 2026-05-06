@@ -84,6 +84,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
 	bool CancelAbilityByOwnedTag(FGameplayTag abilityTag);
 
+	UFUNCTION(BlueprintCallable, Category = "Abilities")
+	void CancelAllAbilitiesBP() { CancelAbilities(); }
+
+	UFUNCTION(BlueprintCallable, Category = "Abilities")
+	void CancelAbilitiesByTagsBP(FGameplayTagContainer WithTags, FGameplayTagContainer WithoutTags)
+	{
+		CancelAbilities(WithTags.IsEmpty() ? nullptr : &WithTags, WithoutTags.IsEmpty() ? nullptr : &WithoutTags);
+	}
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Abilities, meta = (AllowPrivateAccess = "true"), Instanced)
 	UComboManagerComponent* ComboManager;
 

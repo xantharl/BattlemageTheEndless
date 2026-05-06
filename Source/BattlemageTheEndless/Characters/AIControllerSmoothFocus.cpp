@@ -1,12 +1,19 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "AIControllerSmoothFocus.h"
+#include "BattlemageTheEndlessCharacter.h"
 
 void AAIControllerSmoothFocus::UpdateControlRotation(float DeltaTime, bool bUpdatePawn)
 {
+	if (auto* Char = Cast<ABattlemageTheEndlessCharacter>(GetPawn());
+		Char && Char->IsDead)
+	{
+		return;
+	}
+
 	//Call the original method without updating the pawn
 	Super::UpdateControlRotation(DeltaTime, false);
-	 
+
 	//Smooth and change the pawn rotation
 	if (bUpdatePawn)
 	{
