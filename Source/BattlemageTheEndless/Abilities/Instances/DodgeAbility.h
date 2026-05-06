@@ -38,7 +38,12 @@ public:
 	virtual void Begin(const FMovementEventData& MovementEventData) override;
 	virtual void End(bool bForce = false) override;
 	virtual FMovementEventData BuildMovementEventData() const override;
-	
+
 	UPROPERTY(BlueprintReadOnly, Category = Dodge)
 	FVector LastInputVector = FVector::ZeroVector;
+
+protected:
+	// Returns the dodge impulse in pawn-local space (X=forward, Y=right) by angularly
+	// interpolating between the two cardinal impulses adjacent to the input direction.
+	FVector ComputeDodgeImpulse(const FVector& LocalInput) const;
 };

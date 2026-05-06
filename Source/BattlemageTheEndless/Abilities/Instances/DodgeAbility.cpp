@@ -18,28 +18,15 @@ void UDodgeAbility::Begin(const FMovementEventData& MovementEventData)
 	if (LastInputVector != FVector::ZeroVector)
 	{
 		InputVector = LastInputVector;
-		// account for camera rotation
-		InputVector = InputVector.RotateAngleAxis(Movement->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector);
 	}
 	else
 	{
 		InputVector = Character->GetLastMovementInputVector();
-		// account for camera rotation
-		InputVector = InputVector.RotateAngleAxis(Movement->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector);
 	}
-	
-	FVector DodgeVector = FVector::ZeroVector;
-	// Forward / back contribution
-	if (InputVector.X >= 0.f) {
-		DodgeVector += DodgeImpulseForward * InputVector.X;
-	} else {
-		DodgeVector += DodgeImpulseBackward * -InputVector.X;
-	}
+	// account for camera rotation: rotate world input into pawn-local space (X=forward, Y=right)
+	InputVector = InputVector.RotateAngleAxis(Movement->GetLastUpdateRotation().GetInverse().Yaw, FVector::ZAxisVector);
 
-	// Lateral contribution (right is positive, left is negative)
-	DodgeVector.Y += DodgeImpulseLateral.Y * -InputVector.Y;             // signed
-	DodgeVector.X += DodgeImpulseLateral.X * FMath::Abs(InputVector.Y); // unsigned
-	DodgeVector.Z += DodgeImpulseLateral.Z * FMath::Abs(InputVector.Y); // unsigned
+	FVector DodgeVector = ComputeDodgeImpulse(InputVector);
 
 	// Launch the character
 	Movement->GroundFriction = 0.0f;
@@ -63,6 +50,44 @@ void UDodgeAbility::End(bool bForce)
 {
 	Super::End(bForce);
 	Movement->GroundFriction = PreviousFriction;
+}
+
+FVector UDodgeAbility::ComputeDodgeImpulse(const FVector& LocalInput) const
+{
+	FVector2D Dir(LocalInput.X, LocalInput.Y);
+	if (Dir.IsNearlyZero())
+	{
+		return DodgeImpulseForward;
+	}
+	Dir.Normalize();
+
+	// DodgeImpulseLateral is configured for the "left" side (negative Y). Mirror Y for the right-side cardinal.
+	const FVector LeftImpulse = DodgeImpulseLateral;
+	const FVector RightImpulse(DodgeImpulseLateral.X, -DodgeImpulseLateral.Y, DodgeImpulseLateral.Z);
+
+	// Angle: 0 = forward, +pi/2 = right, +/-pi = back, -pi/2 = left
+	const float Angle = FMath::Atan2(Dir.Y, Dir.X);
+
+	FVector A, B;
+	float Alpha;
+	if (Angle >= 0.f && Angle <= HALF_PI)            // forward -> right
+	{
+		A = DodgeImpulseForward;  B = RightImpulse;        Alpha = Angle / HALF_PI;
+	}
+	else if (Angle > HALF_PI)                         // right -> back
+	{
+		A = RightImpulse;         B = DodgeImpulseBackward; Alpha = (Angle - HALF_PI) / HALF_PI;
+	}
+	else if (Angle >= -HALF_PI)                       // forward -> left
+	{
+		A = DodgeImpulseForward;  B = LeftImpulse;         Alpha = -Angle / HALF_PI;
+	}
+	else                                              // left -> back
+	{
+		A = LeftImpulse;          B = DodgeImpulseBackward; Alpha = (-Angle - HALF_PI) / HALF_PI;
+	}
+
+	return FMath::Lerp(A, B, Alpha);
 }
 
 FMovementEventData UDodgeAbility::BuildMovementEventData() const
