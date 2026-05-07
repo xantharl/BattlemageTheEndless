@@ -22,4 +22,7 @@ protected:
 	 
 public:
 	virtual void UpdateControlRotation(float DeltaTime, bool bUpdatePawn) override;
+
+	virtual void OnPossess(APawn* InPawn) override;
+	virtual void OnUnPossess() override;
 };

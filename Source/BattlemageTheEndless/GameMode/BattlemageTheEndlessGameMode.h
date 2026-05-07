@@ -9,6 +9,8 @@
 #include "UObject/ConstructorHelpers.h"
 #include "BattlemageTheEndlessGameMode.generated.h"
 
+class USwarmManagerComponent;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPlayerDiedSignature, ACharacter*, Character);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnGameSaved, const FString&, SlotName, const int32, UserIndex, bool, bSuccess);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnGameLoaded, const FString&, SlotName, const int32, UserIndex, USaveGame*, LoadedGameData);
@@ -20,6 +22,9 @@ class ABattlemageTheEndlessGameMode : public AGameModeBase
 
 public:
 	ABattlemageTheEndlessGameMode();
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Swarm")
+	TObjectPtr<USwarmManagerComponent> SwarmManager;
 
 	UPROPERTY(BlueprintAssignable, Category = "GameMode|Delegates", meta = (AllowPrivateAccess = "true"))
 	FOnPlayerDiedSignature OnPlayerDied;

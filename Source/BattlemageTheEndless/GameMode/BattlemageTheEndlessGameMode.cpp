@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "BattlemageTheEndlessGameMode.h"
+#include "../Characters/SwarmManagerComponent.h"
 
 ABattlemageTheEndlessGameMode::ABattlemageTheEndlessGameMode()
 	: Super()
@@ -9,6 +10,7 @@ ABattlemageTheEndlessGameMode::ABattlemageTheEndlessGameMode()
 	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnClassFinder(TEXT("/Game/ThirdPerson/Blueprints/BP_ThirdPersonCharacter"));
 	DefaultPawnClass = PlayerPawnClassFinder.Class;
 
+	SwarmManager = CreateDefaultSubobject<USwarmManagerComponent>(TEXT("SwarmManager"));
 }
 
 void ABattlemageTheEndlessGameMode::BeginPlay()

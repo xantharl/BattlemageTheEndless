@@ -2,6 +2,37 @@
 
 #include "AIControllerSmoothFocus.h"
 #include "BattlemageTheEndlessCharacter.h"
+#include "SwarmManagerComponent.h"
+
+void AAIControllerSmoothFocus::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
+	if (!InPawn) return;
+
+	USwarmManagerComponent* Swarm = USwarmManagerComponent::Get(this);
+	if (!Swarm) return;
+
+	Swarm->RegisterEnemy(InPawn);
+}
+
+void AAIControllerSmoothFocus::OnUnPossess()
+{
+	APawn* CurrentPawn = GetPawn();
+	if (!CurrentPawn)
+	{
+		Super::OnUnPossess();
+		return;
+	}
+
+	USwarmManagerComponent* Swarm = USwarmManagerComponent::Get(this);
+	if (Swarm)
+	{
+		Swarm->UnregisterEnemy(CurrentPawn);
+	}
+
+	Super::OnUnPossess();
+}
 
 void AAIControllerSmoothFocus::UpdateControlRotation(float DeltaTime, bool bUpdatePawn)
 {
