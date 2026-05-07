@@ -1,6 +1,7 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "BattlemageTheEndlessCharacter.h"
+#include "SwarmManagerComponent.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -1128,6 +1129,10 @@ void ABattlemageTheEndlessCharacter::OnHealthChanged(const FOnAttributeChangeDat
 	{
 		IsDead = true;
 		OnIsDeadChanged.Broadcast(true);
+		if (USwarmManagerComponent* Swarm = USwarmManagerComponent::Get(this))
+		{
+			Swarm->RemoveAggroFromAllTables(this);
+		}
 		
 		auto controller = GetController();
 		if (controller && controller->IsPlayerController())

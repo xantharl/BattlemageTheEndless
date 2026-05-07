@@ -82,8 +82,10 @@ public:
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	
-	// This only runs on the server, so we also use Pre/Post Net Receive for client side notification   
+	// This only runs on the server, so we also use Pre/Post Net Receive for client side notification
 	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
+
+	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 
 	virtual void PreNetReceive() override;
 	virtual void PostNetReceive() override;

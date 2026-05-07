@@ -25,4 +25,7 @@ public:
 
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
+
+	UFUNCTION()
+	void OnHighestAggroChanged(AActor* Enemy, AActor* NewHighestThreat);
 };

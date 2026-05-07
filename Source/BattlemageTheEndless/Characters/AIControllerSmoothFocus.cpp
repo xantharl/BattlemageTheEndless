@@ -3,6 +3,7 @@
 #include "AIControllerSmoothFocus.h"
 #include "BattlemageTheEndlessCharacter.h"
 #include "SwarmManagerComponent.h"
+#include "BehaviorTree/BlackboardComponent.h"
 
 void AAIControllerSmoothFocus::OnPossess(APawn* InPawn)
 {
@@ -14,6 +15,7 @@ void AAIControllerSmoothFocus::OnPossess(APawn* InPawn)
 	if (!Swarm) return;
 
 	Swarm->RegisterEnemy(InPawn);
+	Swarm->HighestAggroChanged.AddDynamic(this, &AAIControllerSmoothFocus::OnHighestAggroChanged);
 }
 
 void AAIControllerSmoothFocus::OnUnPossess()
@@ -28,10 +30,33 @@ void AAIControllerSmoothFocus::OnUnPossess()
 	USwarmManagerComponent* Swarm = USwarmManagerComponent::Get(this);
 	if (Swarm)
 	{
+		Swarm->HighestAggroChanged.RemoveDynamic(this, &AAIControllerSmoothFocus::OnHighestAggroChanged);
 		Swarm->UnregisterEnemy(CurrentPawn);
 	}
 
 	Super::OnUnPossess();
+}
+
+void AAIControllerSmoothFocus::OnHighestAggroChanged(AActor* Enemy, AActor* NewHighestThreat)
+{
+	if (Enemy != GetPawn()) return;
+
+	USwarmManagerComponent* Swarm = USwarmManagerComponent::Get(this);
+	if (!Swarm) return;
+
+	if (NewHighestThreat)
+	{
+		Swarm->SwitchTargets(NewHighestThreat, GetPawn());
+		return;
+	}
+
+	// No threat — clear the blackboard target and free our slot.
+	if (UBlackboardComponent* BB = GetBlackboardComponent())
+	{
+		static const FName TargetActorKey(TEXT("TargetActor"));
+		BB->ClearValue(TargetActorKey);
+	}
+	Swarm->FreeClaimedPosition(GetPawn());
 }
 
 void AAIControllerSmoothFocus::UpdateControlRotation(float DeltaTime, bool bUpdatePawn)

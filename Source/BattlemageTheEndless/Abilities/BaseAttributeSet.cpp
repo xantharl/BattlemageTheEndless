@@ -2,6 +2,8 @@
 
 
 #include "BaseAttributeSet.h"
+#include "../Characters/SwarmManagerComponent.h"
+#include "GameplayEffectExtension.h"
 #include "Net/UnrealNetwork.h"
 
 UBaseAttributeSet::UBaseAttributeSet()
@@ -86,6 +88,27 @@ void UBaseAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute,
 	// }
 
 	OnAttributeChanged.Broadcast(Attribute, OldValue, NewValue);
+}
+
+void UBaseAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
+{
+	Super::PostGameplayEffectExecute(Data);
+
+	if (Data.EvaluatedData.Attribute != GetHealthAttribute()) return;
+
+	const float Magnitude = Data.EvaluatedData.Magnitude;
+	if (Magnitude >= 0.f) return; // damage is negative; ignore heals/regen
+
+	AActor* Victim = GetOwningActor();
+	if (!Victim) return;
+
+	AActor* Attacker = Data.EffectSpec.GetContext().GetInstigator();
+	if (!Attacker) return;
+
+	USwarmManagerComponent* Swarm = USwarmManagerComponent::Get(Victim);
+	if (!Swarm) return;
+
+	Swarm->AddAggro(Victim, Attacker, -Magnitude);
 }
 
 void UBaseAttributeSet::OnRep_Health(const FGameplayAttributeData& OldValue)
