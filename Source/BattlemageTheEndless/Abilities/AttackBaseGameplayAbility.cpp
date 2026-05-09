@@ -3,7 +3,9 @@
 #include "AttackBaseGameplayAbility.h"
 
 #include "Animation/AnimNotifies/AnimNotifyState.h"
+#include "BattlemageTheEndless/Characters/BattlemageTheEndlessCharacter.h"
 #include "BattlemageTheEndless/Pickups/PickupActor.h"
+#include "MotionWarpingComponent.h"
 #include "Net/RepLayout.h"
 
 #if WITH_EDITOR
@@ -112,6 +114,8 @@ void UAttackBaseGameplayAbility::ActivateAbility(const FGameplayAbilitySpecHandl
 	{
 		if (FireAnimation->HasRootMotion())
 			Character->bUseControllerRotationYaw = false;
+		// Push the crosshair warp target before the montage starts so the first warp window has a valid target
+		UpdateCrosshairWarpTarget();
 		// if it's not a charge ability, play the fire animation and possibly end the ability on callback (it will check for active effects)
 		CreateAndDispatchMontageTask();
 
@@ -224,6 +228,73 @@ void UAttackBaseGameplayAbility::CreateAndDispatchMontageTask()
 	ActiveMontageTask->ReadyForActivation();
 }
 
+void UAttackBaseGameplayAbility::UpdateCrosshairWarpTarget()
+{
+	if (!bUseCrosshairWarpTarget) return;
+	if (!CurrentActorInfo)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UpdateCrosshairWarpTarget [%s]: CurrentActorInfo is null"), *GetName());
+		return;
+	}
+
+	auto* Character = Cast<ABattlemageTheEndlessCharacter>(CurrentActorInfo->OwnerActor);
+	if (!Character)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UpdateCrosshairWarpTarget [%s]: OwnerActor is not an ABattlemageTheEndlessCharacter"), *GetName());
+		return;
+	}
+
+	auto* WarpComp = Character->FindComponentByClass<UMotionWarpingComponent>();
+	if (!WarpComp)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UpdateCrosshairWarpTarget [%s]: character %s has no UMotionWarpingComponent"), *GetName(), *Character->GetName());
+		return;
+	}
+
+	auto* Camera = Character->GetActiveCamera();
+	if (!Camera)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UpdateCrosshairWarpTarget [%s]: no active camera on character %s"), *GetName(), *Character->GetName());
+		return;
+	}
+
+	const FVector CameraLoc = Camera->GetComponentLocation();
+	const FVector CameraFwd = Camera->GetForwardVector();
+	// Trace far enough to find what the crosshair is pointing at regardless of MaxRange
+	const float TraceDistance = FMath::Max(MaxRange * 4.f, 50000.f);
+	const FVector TraceEnd = CameraLoc + CameraFwd * TraceDistance;
+
+	FCollisionQueryParams Params(FName(TEXT("CrosshairWarpTrace")), true, Character);
+	FHitResult Hit;
+	FCollisionObjectQueryParams ObjectParams;
+	Character->GetWorld()->LineTraceSingleByObjectType(Hit, CameraLoc, TraceEnd, ObjectParams, Params);
+	const FVector CrosshairPoint = Hit.bBlockingHit ? Hit.ImpactPoint : TraceEnd;
+
+	const FVector CharLoc = Character->GetActorLocation();
+	FVector ToCrosshair = CrosshairPoint - CharLoc;
+	ToCrosshair.Z = 0.f; // yaw-only facing so we don't tilt the character
+	if (ToCrosshair.IsNearlyZero())
+	{
+		ToCrosshair = Character->GetActorForwardVector();
+	}
+	const FVector Dir = ToCrosshair.GetSafeNormal();
+	const FRotator TargetRot(0.f, Dir.Rotation().Yaw, 0.f);
+
+	FVector TargetLoc = CharLoc;
+	if (bWarpTranslation)
+	{
+		const float DistToCrosshair = ToCrosshair.Size();
+		const float LungeDist = (MaxRange > 0.f) ? FMath::Min(MaxRange, DistToCrosshair) : DistToCrosshair;
+		TargetLoc = CharLoc + Dir * LungeDist;
+	}
+
+	FMotionWarpingTarget WarpTarget;
+	WarpTarget.Name = WarpTargetName;
+	WarpTarget.Location = TargetLoc;
+	WarpTarget.Rotation = TargetRot;
+	WarpComp->AddOrUpdateWarpTarget(WarpTarget);
+}
+
 void UAttackBaseGameplayAbility::ApplyChainEffects(AActor* target, UAbilitySystemComponent* targetAsc, AActor* instigator, AActor* effectCauser, bool isLastTarget, int ChainLinkNumber)
 {
 	ActiveEffectHandles = ApplyEffects_ForChain(target, targetAsc, instigator, effectCauser, ChainLinkNumber);
@@ -321,6 +392,7 @@ void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Han
 			auto animInstance = owner->GetMesh()->GetAnimInstance();
 			if (animInstance && FireAnimation)
 			{
+				UpdateCrosshairWarpTarget();
 				animInstance->Montage_Play(FireAnimation);
 				if (FireAnimation->HasRootMotion())
 					owner->bUseControllerRotationYaw = false;

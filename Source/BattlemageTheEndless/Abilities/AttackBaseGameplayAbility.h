@@ -28,6 +28,7 @@
 #include "AttackBaseGameplayAbility.generated.h"
 
 class UNiagaraSystem;
+class UMotionWarpingComponent;
 using namespace std::chrono;
 
 /// <summary>
@@ -191,6 +192,26 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	UAnimMontage* FireAnimation;
 
+	/** If true, push a motion-warp target at the crosshair when the fire montage starts.
+	 *  The FireAnimation montage must contain a MotionWarping notify referencing WarpTargetName. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MotionWarping)
+	bool bUseCrosshairWarpTarget = false;
+
+	/** If true, the warp target will translate the character toward the crosshair (clamped to MaxRange).
+	 *  If false, only rotation is warped (character pivots in place to face the crosshair).
+	 *
+	 *  IMPORTANT: this flag MUST match the RootMotionModifier on the montage's MotionWarping notify.
+	 *  - bWarpTranslation = false  ->  modifier config must have bWarpTranslation = false (rotation only).
+	 *  - bWarpTranslation = true   ->  modifier config must have bWarpTranslation = true.
+	 *  If the modifier warps translation but this flag is false, the warp target is the character's
+	 *  current location and the animation's forward root motion will collapse to zero. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MotionWarping, meta = (EditCondition = "bUseCrosshairWarpTarget"))
+	bool bWarpTranslation = false;
+
+	/** Name of the warp target. Must match the Sync Point Name on the MotionWarping notify in the montage. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MotionWarping, meta = (EditCondition = "bUseCrosshairWarpTarget"))
+	FName WarpTargetName = FName("AttackTarget");
+
 	/** Plays between combo stages if needed (next attack not requested yet) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	UAnimMontage* ComboPauseAnimation;
@@ -207,6 +228,12 @@ public:
 	void SetTimerOrEndImmediately(const UWorld* world, float montageDuration, FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo& ActivationInfo);
 
 	void CreateAndDispatchMontageTask();
+
+	/** Traces from the active camera through screen center and pushes a warp target on the
+	 *  owner's UMotionWarpingComponent. No-op if bUseCrosshairWarpTarget is false or the
+	 *  character has no MotionWarpingComponent. */
+	UFUNCTION(BlueprintCallable, Category = MotionWarping)
+	virtual void UpdateCrosshairWarpTarget();
 
 	UPROPERTY(BlueprintReadOnly, Category = Animations, meta = (BlueprintProtected), Instanced)
 	TObjectPtr<UAbilityTask_PlayMontageAndWait> ActiveMontageTask;

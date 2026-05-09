@@ -8,9 +8,9 @@ public class BattlemageTheEndless : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { 
-			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "CommonUI", "GameplayTags", 
-			"GameplayAbilities", "GameplayTasks", "Niagara", "AIModule", "PhysicsCore"
+		PublicDependencyModuleNames.AddRange(new string[] {
+			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "UMG", "CommonUI", "GameplayTags",
+			"GameplayAbilities", "GameplayTasks", "Niagara", "AIModule", "PhysicsCore", "MotionWarping"
         });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
