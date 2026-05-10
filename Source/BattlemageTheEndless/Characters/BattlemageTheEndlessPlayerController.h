@@ -24,7 +24,7 @@ public:
 	void Server_HandleMovementEvent(const FGameplayTag EventTag, const FMovementEventData& MovementEventData);
 	
 	UFUNCTION(Server, Reliable)
-	void Server_ApplyEffects(TSubclassOf<UGA_WithEffectsBase> EffectClass, const FHitResult& Hit);
+	void Server_ResolveHit(TSubclassOf<UGA_WithEffectsBase> AbilityClass, const FHitResult& Hit);
 	
 protected:
 

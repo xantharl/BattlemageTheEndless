@@ -6,6 +6,7 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "BattlemageTheEndlessCharacter.h"
 #include "EnhancedInputSubsystems.h"
+#include "BattlemageTheEndless/BMageAbilitySystemComponent.h"
 
 void ABattlemageTheEndlessPlayerController::Server_HandleMovementEvent_Implementation(const FGameplayTag EventTag, const FMovementEventData& MovementEventData)
 {
@@ -32,40 +33,29 @@ void ABattlemageTheEndlessPlayerController::Server_HandleMovementEvent_Implement
 		(*Ability)->Begin(MovementEventData);
 }
 
-void ABattlemageTheEndlessPlayerController::Server_ApplyEffects_Implementation(TSubclassOf<UGA_WithEffectsBase> EffectClass, const FHitResult& Hit)
+void ABattlemageTheEndlessPlayerController::Server_ResolveHit_Implementation(TSubclassOf<UGA_WithEffectsBase> AbilityClass, const FHitResult& Hit)
 {
 	if (!AcknowledgedPawn)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Server_ApplyEffects_Implementation called but AcknowledgedPawn is null"));
+		UE_LOG(LogTemp, Warning, TEXT("Server_ResolveHit called but AcknowledgedPawn is null"));
 		return;
 	}
-	const auto ASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(AcknowledgedPawn);
-	if (!ASC)
-	{
-		UE_LOG( LogTemp, Warning, TEXT("Server_HandleMovementEvent called but AcknowledgedPawn has no ASC"));
-		return;
-	}	
-	const auto HitActorASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Hit.GetActor());
-	if (!HitActorASC)
-	{
-		UE_LOG( LogTemp, Warning, TEXT("Server_HandleMovementEvent called but HitActor has no ASC"));
-		return;
-	}
-	
-	auto Spec = ASC->FindAbilitySpecFromClass(EffectClass);
+	auto AttackerCharacter = Cast<ACharacter>(AcknowledgedPawn);
+	if (!AttackerCharacter) return;
+
+	auto AttackerASC = Cast<UBMageAbilitySystemComponent>(AcknowledgedPawn->FindComponentByClass<UAbilitySystemComponent>());
+	if (!AttackerASC) return;
+
+	auto Spec = AttackerASC->FindAbilitySpecFromClass(AbilityClass);
 	if (!Spec)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Server_ApplyEffects_Implementation called but no ability spec found for class %s"), *EffectClass->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("Server_ResolveHit: no ability spec found for class %s"), *AbilityClass->GetName());
 		return;
 	}
 	auto Ability = Cast<UGA_WithEffectsBase>(Spec->Ability);
-	if (!Ability)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Server_ApplyEffects_Implementation called but ability %s is not of type UGA_WithEffectsBase"), *Ability->GetName());
-		return;
-	}
-	
-	Ability->ApplyEffects(Hit.GetActor(), HitActorASC, AcknowledgedPawn, GetOwner());
+	if (!Ability) return;
+
+	AttackerASC->ResolveAuthoritativeHit(AttackerCharacter, Hit, Ability, Ability->GetAssetTags());
 }
 
 void ABattlemageTheEndlessPlayerController::BeginPlay()

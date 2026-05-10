@@ -959,37 +959,48 @@ void UBMageAbilitySystemComponent::OnWeaponHitReceived(ACharacter* Attacker, con
 	auto Owner = GetOwner();
 	if (!Owner) return;
 
-	FGameplayEventData EventData;
-	EventData.Instigator = Attacker;
-
-	// Only the attacker's ASC drives hit resolution — effects, parry, and reactions are
-	// all decided here so parry can gate everything before effects are applied.
+	// Only the attacker's ASC drives hit resolution; the broadcast also fires on the defender's ASC.
 	if (Owner != Attacker)
 		return;
+
+	// Players: route through the server so parry is decided against authoritative defender state. The
+	// defender's block ability/GE isn't replicated to remote clients (Mixed replication mode), so a local
+	// IsParry() check on the attacker's machine would always read stale state.
+	// AI runs on the server already, so it can resolve directly.
+	if (Attacker->IsPlayerControlled())
+	{
+		if (auto BMageController = Cast<ABattlemageTheEndlessPlayerController>(Attacker->GetController()))
+			BMageController->Server_ResolveHit(AttackingAbility->GetClass(), Hit);
+		return;
+	}
+
+	ResolveAuthoritativeHit(Attacker, Hit, AttackingAbility, AttackOwnedTags);
+}
+
+void UBMageAbilitySystemComponent::ResolveAuthoritativeHit(ACharacter* Attacker, const FHitResult& Hit, UGA_WithEffectsBase* AttackingAbility, FGameplayTagContainer AttackOwnedTags)
+{
+	auto Owner = GetOwner();
+	if (!Owner || !Attacker || !IsValid(AttackingAbility) || !Hit.GetActor()) return;
+
+	FGameplayEventData EventData;
+	EventData.Instigator = Attacker;
 
 	auto HitActorBMageAsc = Cast<UBMageAbilitySystemComponent>(Hit.GetActor()->FindComponentByClass<UAbilitySystemComponent>());
 	auto HitCharacter = Cast<ACharacter>(Hit.GetActor());
 
+	// Parry check runs against server-authoritative defender state. The 0.1s ParryWindow is measured from
+	// when the server saw the block start, so a high-ping defender gets less effective window than the UI suggests.
+	// Future improvement if it bites: subtract the defender's PlayerState->ExactPing/2 from the elapsed time
+	// inside IsParry() to lag-compensate against when the player actually pressed block.
 	if (IsValid(HitActorBMageAsc) && IsValid(HitCharacter) && HitCharacter->IsPlayerControlled() && HitActorBMageAsc->IsParry())
 	{
 		const FGameplayTag ReactTag = FGameplayTag::RequestGameplayTag(FName("Ability.React.Parried"));
 		int Activated = HitActorBMageAsc->HandleGameplayEvent(ReactTag, &EventData);
-		if (GEngine)
-			UE_LOG(LogTemp, Warning, TEXT("Activated %d for tag %s"), Activated, *ReactTag.ToString());
+		UE_LOG(LogTemp, Verbose, TEXT("Activated %d for tag %s"), Activated, *ReactTag.ToString());
 		return;
 	}
 
-	// Apply effects exactly once. Players go through the server RPC (authoritative on server,
-	// replicates back). AI runs on the server already, so apply directly.
-	if (Attacker->IsPlayerControlled())
-	{
-		if (auto BMageController = Cast<ABattlemageTheEndlessPlayerController>(Attacker->GetController()))
-			BMageController->Server_ApplyEffects(AttackingAbility->GetClass(), Hit);
-	}
-	else
-	{
-		AttackingAbility->ApplyEffects(Hit.GetActor(), HitActorBMageAsc, Attacker, Owner);
-	}
+	AttackingAbility->ApplyEffects(Hit.GetActor(), HitActorBMageAsc, Attacker, Owner);
 
 	for (auto Tag : AttackOwnedTags)
 	{
@@ -1004,8 +1015,7 @@ void UBMageAbilitySystemComponent::OnWeaponHitReceived(ACharacter* Attacker, con
 		if (ReactTag != FGameplayTag() && IsValid(HitActorBMageAsc))
 		{
 			int Activated = HitActorBMageAsc->HandleGameplayEvent(ReactTag, &EventData);
-			if (GEngine)
-				UE_LOG(LogTemp, Warning, TEXT("Activated %d for tag %s"), Activated, *ReactTag.ToString());
+			UE_LOG(LogTemp, Verbose, TEXT("Activated %d for tag %s"), Activated, *ReactTag.ToString());
 		}
 	}
 }

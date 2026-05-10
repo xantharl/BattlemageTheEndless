@@ -147,6 +147,10 @@ public:
 	void CompleteChargeAbility();
 	bool IsParry();
 
+	/** Server-authoritative hit resolution: checks parry against this ASC's defender state and either fires the
+	 *  parried react event or applies effects + impact reacts. Must be called on the server. */
+	void ResolveAuthoritativeHit(ACharacter* Attacker, const FHitResult& Hit, UGA_WithEffectsBase* AttackingAbility, FGameplayTagContainer AttackOwnedTags);
+
 	UFUNCTION(BlueprintCallable, Category = "Abilities")
 	bool GetCooldownRemainingForTag(FGameplayTagContainer CooldownTags, float& TimeRemaining, float& CooldownDuration);
 
