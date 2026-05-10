@@ -47,6 +47,7 @@ void AAIControllerSmoothFocus::OnHighestAggroChanged(AActor* Enemy, AActor* NewH
 	if (NewHighestThreat)
 	{
 		Swarm->SwitchTargets(NewHighestThreat, GetPawn());
+		SetFocus(NewHighestThreat);
 		return;
 	}
 

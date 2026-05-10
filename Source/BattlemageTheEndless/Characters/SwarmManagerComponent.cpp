@@ -14,6 +14,14 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 
+#if !UE_BUILD_SHIPPING
+static TAutoConsoleVariable<int32> CVarSwarmAggroDebug(
+	TEXT("swarm.AggroDebug"),
+	0,
+	TEXT("Visualize SwarmManager aggro tables. 0 = off, 1 = on."),
+	ECVF_Cheat);
+#endif
+
 // Sets default values for this component's properties
 USwarmManagerComponent::USwarmManagerComponent()
 {
@@ -70,6 +78,10 @@ void USwarmManagerComponent::AddAggro(AActor* Victim, AActor* Attacker, float Am
 	if (Amount <= 0.f) return;
 	if (!ManagedActors.Contains(Victim)) return;
 
+	// Cancel any pending or active decay for this pair so a fresh hit fully resets the decay clock.
+	ActiveDecayRules.RemoveAll(
+		[Victim, Attacker](const FAggroDecayRule& R) { return R.Enemy == Victim && R.Target == Attacker; });
+
 	FAggroTable& Table = AggroTables.FindOrAdd(Victim);
 	float& Current = Table.AggroByTargetActor.FindOrAdd(Attacker);
 	Current += Amount;
@@ -120,7 +132,7 @@ void USwarmManagerComponent::RemoveAggroFromAllTables(AActor* Target)
 	}
 }
 
-void USwarmManagerComponent::DecayAggro(AActor* Enemy, AActor* Target, float DecayRatePerSecond)
+void USwarmManagerComponent::DecayAggro(AActor* Enemy, AActor* Target, float DecayRatePerSecond, float Delay)
 {
 	if (!Enemy || !Target) return;
 
@@ -133,28 +145,37 @@ void USwarmManagerComponent::DecayAggro(AActor* Enemy, AActor* Target, float Dec
 		return;
 	}
 
+	const float ClampedDelay = FMath::Max(0.f, Delay);
+
 	if (ExistingIndex != INDEX_NONE)
 	{
 		ActiveDecayRules[ExistingIndex].RatePerSecond = DecayRatePerSecond;
+		ActiveDecayRules[ExistingIndex].DelayRemaining = ClampedDelay;
 		return;
 	}
 
-	ActiveDecayRules.Add({ Enemy, Target, DecayRatePerSecond });
+	ActiveDecayRules.Add({ Enemy, Target, DecayRatePerSecond, ClampedDelay });
 }
 
 void USwarmManagerComponent::TickAggroDecay(float DeltaTime)
 {
 	for (int32 i = ActiveDecayRules.Num() - 1; i >= 0; --i)
 	{
-		const FAggroDecayRule& Rule = ActiveDecayRules[i];
+		FAggroDecayRule& Rule = ActiveDecayRules[i];
 		if (!Rule.Enemy || !Rule.Target)
 		{
 			ActiveDecayRules.RemoveAt(i);
 			continue;
 		}
 
+		if (Rule.DelayRemaining > 0.f)
+		{
+			Rule.DelayRemaining -= DeltaTime;
+			continue;
+		}
+
 		FAggroTable* Table = AggroTables.Find(Rule.Enemy);
-		if (!Table) continue; 
+		if (!Table) continue;
 		float* Aggro = Table->AggroByTargetActor.Find(Rule.Target);
 		if (!Aggro) continue;
 
@@ -212,7 +233,62 @@ void USwarmManagerComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 	UpdatePlayerSlotLocations();
 	TickAggroDecay(DeltaTime);
+
+#if !UE_BUILD_SHIPPING
+	if (CVarSwarmAggroDebug.GetValueOnGameThread() != 0)
+	{
+		DrawAggroDebug();
+	}
+#endif
 }
+
+#if !UE_BUILD_SHIPPING
+void USwarmManagerComponent::DrawAggroDebug() const
+{
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	for (const TPair<AActor*, FAggroTable>& EnemyEntry : AggroTables)
+	{
+		AActor* Enemy = EnemyEntry.Key;
+		if (!Enemy) continue;
+
+		const FAggroTable& Table = EnemyEntry.Value;
+		if (Table.AggroByTargetActor.Num() == 0) continue;
+
+		float MaxAggro = 0.f;
+		for (const TPair<AActor*, float>& T : Table.AggroByTargetActor)
+		{
+			MaxAggro = FMath::Max(MaxAggro, T.Value);
+		}
+		if (MaxAggro <= 0.f) continue;
+
+		const FVector EnemyLoc = Enemy->GetActorLocation() + FVector(0.f, 0.f, 50.f);
+
+		FString Label = FString::Printf(TEXT("%s"), *Enemy->GetName());
+		for (const TPair<AActor*, float>& Pair : Table.AggroByTargetActor)
+		{
+			AActor* Target = Pair.Key;
+			if (!Target) continue;
+
+			const bool bIsTop = (Target == Table.HighestThreatActor);
+			const float Ratio = FMath::Clamp(Pair.Value / MaxAggro, 0.f, 1.f);
+			const FColor LineColor = bIsTop
+				? FColor::Red
+				: FColor(static_cast<uint8>(255 * Ratio), static_cast<uint8>(255 * (1.f - Ratio)), 0);
+			const float Thickness = bIsTop ? 2.5f : 1.f;
+
+			DrawDebugLine(World, EnemyLoc, Target->GetActorLocation() + FVector(0.f, 0.f, 50.f),
+				LineColor, false, 0.2f, 0, Thickness);
+
+			Label += FString::Printf(TEXT("\n %s%s: %.1f"),
+				bIsTop ? TEXT("* ") : TEXT("  "), *Target->GetName(), Pair.Value);
+		}
+
+		DrawDebugString(World, EnemyLoc + FVector(0.f, 0.f, 40.f), Label, nullptr, FColor::White, 0.2f, true);
+	}
+}
+#endif
 
 void USwarmManagerComponent::InitRelativePositions()
 {

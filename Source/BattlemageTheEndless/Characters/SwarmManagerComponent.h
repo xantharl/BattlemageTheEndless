@@ -55,6 +55,10 @@ struct FAggroDecayRule
 
 	UPROPERTY()
 	float RatePerSecond = 0.f;
+
+	/** Seconds remaining before decay actually begins. Decremented in TickAggroDecay. */
+	UPROPERTY()
+	float DelayRemaining = 0.f;
 };
 
 /** Per-player array of swarm slots; last-tick world locations swarm members can claim */
@@ -142,9 +146,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Aggro")
 	void RemoveAggroFromAllTables(AActor* Target);
 
-	/** Register an aggro decay rule for (Enemy, Target). Call again to update the rate. Pass <= 0 to clear. */
+	/** Register an aggro decay rule for (Enemy, Target). Call again to update the rate/delay.
+	 *  Pass DecayRatePerSecond <= 0 to clear. Delay (seconds) postpones the start of decay; 0 = immediate. */
 	UFUNCTION(BlueprintCallable, Category = "Aggro")
-	void DecayAggro(AActor* Enemy, AActor* Target, float DecayRatePerSecond);
+	void DecayAggro(AActor* Enemy, AActor* Target, float DecayRatePerSecond, float Delay = 0.f);
 
 	/** Active per-pair aggro decay rules; processed in TickComponent. */
 	UPROPERTY()
@@ -195,6 +200,11 @@ private:
 
 	/** Apply each active decay rule once for the given DeltaTime. */
 	void TickAggroDecay(float DeltaTime);
+
+#if !UE_BUILD_SHIPPING
+	/** When the swarm.AggroDebug CVAR is non-zero, draw aggro-table lines/labels for one frame. */
+	void DrawAggroDebug() const;
+#endif
 
 protected:
 	// Called when the game starts
