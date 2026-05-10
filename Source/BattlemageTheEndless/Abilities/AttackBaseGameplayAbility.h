@@ -212,6 +212,26 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MotionWarping, meta = (EditCondition = "bUseCrosshairWarpTarget"))
 	FName WarpTargetName = FName("AttackTarget");
 
+	/** If true, before pushing the crosshair warp target, search for an airborne enemy within
+	 *  AirborneSnapRadius. If one is found, push a warp target located AirborneSnapStandoffDistance
+	 *  away from that enemy along the player->enemy direction (with pitch, so the character can track
+	 *  vertically). Falls back to the crosshair behavior when no airborne enemy is found. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MotionWarping)
+	bool bSnapToAirborneEnemy = false;
+
+	/** Search radius (uu) around the character for airborne enemies. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MotionWarping, meta = (EditCondition = "bSnapToAirborneEnemy", ClampMin = "0.0"))
+	float AirborneSnapRadius = 500.f;
+
+	/** Distance (uu) to leave between the character and the airborne enemy when snapping. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MotionWarping, meta = (EditCondition = "bSnapToAirborneEnemy", ClampMin = "0.0"))
+	float AirborneSnapStandoffDistance = 100.f;
+
+	/** If true, the snap warp target rotation includes pitch so the character can face up/down
+	 *  toward the airborne enemy. If false, only yaw is used (rotation stays level). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = MotionWarping, meta = (EditCondition = "bSnapToAirborneEnemy"))
+	bool bAirborneSnapTrackPitch = false;
+
 	/** Plays between combo stages if needed (next attack not requested yet) */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Animations)
 	UAnimMontage* ComboPauseAnimation;
@@ -340,6 +360,9 @@ public:
 	
 	virtual void EndSelf();
 private:
+	/** Returns true and pushes a warp target if a valid airborne enemy was found within AirborneSnapRadius. */
+	bool TryPushAirborneSnapWarpTarget(class ABattlemageTheEndlessCharacter* Character, class UMotionWarpingComponent* WarpComp) const;
+
 	/** Timer handles for chained abilities, do not reference directly without ensuring it is initialized
 		See GetChainTimerHandles **/
 	TArray<FTimerHandle> chainTimerHandles;

@@ -64,6 +64,11 @@ void UGA_Launched::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 		{
 			TransformedKnockback.Z = 0;
 		}
+		
+		if (BreakPoise)
+		{
+			
+		}
 	}
 
 	UBMageCharacterMovementComponent* MovementComponent = Cast<UBMageCharacterMovementComponent>(TargetCharacter->GetCharacterMovement());

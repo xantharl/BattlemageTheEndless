@@ -5,6 +5,9 @@
 #include "Animation/AnimNotifies/AnimNotifyState.h"
 #include "BattlemageTheEndless/Characters/BattlemageTheEndlessCharacter.h"
 #include "BattlemageTheEndless/Pickups/PickupActor.h"
+#include "EngineUtils.h"
+#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "MotionWarpingComponent.h"
 #include "Net/RepLayout.h"
 
@@ -228,9 +231,61 @@ void UAttackBaseGameplayAbility::CreateAndDispatchMontageTask()
 	ActiveMontageTask->ReadyForActivation();
 }
 
+bool UAttackBaseGameplayAbility::TryPushAirborneSnapWarpTarget(ABattlemageTheEndlessCharacter* Character, UMotionWarpingComponent* WarpComp) const
+{
+	UWorld* World = Character->GetWorld();
+	if (!World) return false;
+
+	const FVector CharLoc = Character->GetActorLocation();
+	const float RadiusSq = AirborneSnapRadius * AirborneSnapRadius;
+
+	ABattlemageTheEndlessCharacter* Best = nullptr;
+	float BestDistSq = TNumericLimits<float>::Max();
+
+	for (TActorIterator<ABattlemageTheEndlessCharacter> It(World); It; ++It)
+	{
+		ABattlemageTheEndlessCharacter* Other = *It;
+		if (!Other || Other == Character) continue;
+		if (Other->Faction == Character->Faction) continue;
+
+		auto* Movement = Other->GetCharacterMovement();
+		if (!Movement || !Movement->IsFalling()) continue;
+
+		const float DistSq = FVector::DistSquared(CharLoc, Other->GetActorLocation());
+		if (DistSq > RadiusSq) continue;
+		if (DistSq >= BestDistSq) continue;
+
+		Best = Other;
+		BestDistSq = DistSq;
+	}
+
+	if (!Best) return false;
+
+	const FVector EnemyLoc = Best->GetActorLocation();
+	FVector ToEnemy = EnemyLoc - CharLoc;
+	if (ToEnemy.IsNearlyZero())
+	{
+		ToEnemy = Character->GetActorForwardVector();
+	}
+	const FVector Dir = ToEnemy.GetSafeNormal();
+	const FVector TargetLoc = EnemyLoc - Dir * AirborneSnapStandoffDistance;
+	FRotator TargetRot = Dir.Rotation();
+	if (!bAirborneSnapTrackPitch)
+	{
+		TargetRot.Pitch = 0.f;
+	}
+
+	FMotionWarpingTarget WarpTarget;
+	WarpTarget.Name = WarpTargetName;
+	WarpTarget.Location = TargetLoc;
+	WarpTarget.Rotation = TargetRot;
+	WarpComp->AddOrUpdateWarpTarget(WarpTarget);
+	return true;
+}
+
 void UAttackBaseGameplayAbility::UpdateCrosshairWarpTarget()
 {
-	if (!bUseCrosshairWarpTarget) return;
+	if (!bUseCrosshairWarpTarget && !bSnapToAirborneEnemy) return;
 	if (!CurrentActorInfo)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UpdateCrosshairWarpTarget [%s]: CurrentActorInfo is null"), *GetName());
@@ -251,6 +306,13 @@ void UAttackBaseGameplayAbility::UpdateCrosshairWarpTarget()
 		return;
 	}
 
+	if (bSnapToAirborneEnemy && TryPushAirborneSnapWarpTarget(Character, WarpComp))
+	{
+		return;
+	}
+
+	if (!bUseCrosshairWarpTarget) return;
+
 	auto* Camera = Character->GetActiveCamera();
 	if (!Camera)
 	{
@@ -260,8 +322,13 @@ void UAttackBaseGameplayAbility::UpdateCrosshairWarpTarget()
 
 	const FVector CameraLoc = Camera->GetComponentLocation();
 	const FVector CameraFwd = Camera->GetForwardVector();
-	// Trace far enough to find what the crosshair is pointing at regardless of MaxRange
-	const float TraceDistance = FMath::Max(MaxRange * 4.f, 50000.f);
+	// If the camera sits on a spring arm, add the boom length so the trace reach isn't
+	// shortened by the camera being pulled back behind the character.
+	float TraceDistance = MaxRange;
+	if (auto* SpringArm = Cast<USpringArmComponent>(Camera->GetAttachParent()))
+	{
+		TraceDistance += SpringArm->TargetArmLength;
+	}
 	const FVector TraceEnd = CameraLoc + CameraFwd * TraceDistance;
 
 	FCollisionQueryParams Params(FName(TEXT("CrosshairWarpTrace")), true, Character);
@@ -372,6 +439,19 @@ void UAttackBaseGameplayAbility::EndAbility(const FGameplayAbilitySpecHandle Han
 		ActiveMontageTask->EndTask();
 	}
 	ActiveMontageTask = nullptr;
+
+	// Clear our warp target so the next ability doesn't inherit a stale one (e.g. a follow-up
+	// combo step without bUseCrosshairWarpTarget would otherwise warp to the previous hit location).
+	if ((bUseCrosshairWarpTarget || bSnapToAirborneEnemy) && ActorInfo)
+	{
+		if (auto* Character = Cast<ABattlemageTheEndlessCharacter>(ActorInfo->OwnerActor))
+		{
+			if (auto* WarpComp = Character->FindComponentByClass<UMotionWarpingComponent>())
+			{
+				WarpComp->RemoveWarpTarget(WarpTargetName);
+			}
+		}
+	}
 
 	// If this is a charge attack, play the attack animation now
 	if (ChargeDuration > 0.0001f)
