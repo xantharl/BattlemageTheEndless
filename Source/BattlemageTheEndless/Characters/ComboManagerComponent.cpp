@@ -389,7 +389,14 @@ bool UComboManagerComponent::TryEndAbilityEarly()
 	if (!LastActivatedAbilityClass)
 		return false;
 	
+	if (!AbilitySystemComponent)
+		return false;
+	
 	auto Spec = AbilitySystemComponent->FindAbilitySpecFromClass(LastActivatedAbilityClass);
+	
+	if (!Spec)
+		return false;
+	
 	AbilitySystemComponent->CancelAbility(Spec->Ability);
 	_bCanContinue = false;
 	
