@@ -80,10 +80,24 @@ public:
 	FGameplayAttributeData DamageModifierFire_Inbound;
 	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, DamageModifierFire_Inbound)
 
+	// Current dodge charges. Consumed by GA_Dodge's Cost GE; refilled by a periodic recharge GE.
+	UPROPERTY(BlueprintReadOnly, Category = "Dodge", ReplicatedUsing = OnRep_DodgeCharges)
+	FGameplayAttributeData DodgeCharges;
+	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, DodgeCharges)
+
+	// Upper bound for DodgeCharges. Modifiable via GE so gear/buffs can extend the pool.
+	UPROPERTY(BlueprintReadOnly, Category = "Dodge", ReplicatedUsing = OnRep_MaxDodgeCharges)
+	FGameplayAttributeData MaxDodgeCharges;
+	ATTRIBUTE_ACCESSORS(UBaseAttributeSet, MaxDodgeCharges)
+
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-	
+
 	// This only runs on the server, so we also use Pre/Post Net Receive for client side notification
 	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
+
+	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
+
+	virtual void PreAttributeBaseChange(const FGameplayAttribute& Attribute, float& NewValue) const override;
 
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 
@@ -128,4 +142,10 @@ protected:
 
 	UFUNCTION()
 	virtual void OnRep_DamageModifierFire_Inbound(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	virtual void OnRep_DodgeCharges(const FGameplayAttributeData& OldValue);
+
+	UFUNCTION()
+	virtual void OnRep_MaxDodgeCharges(const FGameplayAttributeData& OldValue);
 };

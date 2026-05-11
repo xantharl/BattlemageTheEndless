@@ -400,6 +400,12 @@ void ABattlemageTheEndlessCharacter::GiveDefaultAbilities()
 		return;
 	}
 
+	if (AbilitySystemComponent->GetActivatableAbilities().Num() > 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Character %s already has default abilities"), *GetNameSafe(this));
+		return;
+	}
+	
 	// add default abilities
 	for (auto Ability : DefaultAbilities)
 	{

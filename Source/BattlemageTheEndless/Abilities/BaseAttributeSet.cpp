@@ -39,6 +39,12 @@ UBaseAttributeSet::UBaseAttributeSet()
 	
 	DamageModifierFire_Inbound.SetBaseValue(1.f);
 	DamageModifierFire_Inbound.SetCurrentValue(1.f);
+
+	MaxDodgeCharges.SetBaseValue(2.f);
+	MaxDodgeCharges.SetCurrentValue(2.f);
+
+	DodgeCharges.SetBaseValue(2.f);
+	DodgeCharges.SetCurrentValue(2.f);
 }
 
 void UBaseAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -52,6 +58,8 @@ void UBaseAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME_CONDITION_NOTIFY(UBaseAttributeSet, HealthRegenRate, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBaseAttributeSet, MovementSpeed, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBaseAttributeSet, CrouchedSpeed, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UBaseAttributeSet, DodgeCharges, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UBaseAttributeSet, MaxDodgeCharges, COND_None, REPNOTIFY_Always);
 }
 
 void UBaseAttributeSet::PreNetReceive()
@@ -75,6 +83,34 @@ void UBaseAttributeSet::PostNetReceive()
 		const float* OldValue = _preNetAttributeValues.Find(It->GetFName());
 		if (OldValue && !FMath::IsNearlyEqual(*OldValue, Data->GetCurrentValue()))
 			OnAttributeChanged.Broadcast(FGameplayAttribute(*It), *OldValue, Data->GetCurrentValue());
+	}
+}
+
+void UBaseAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
+{
+	Super::PreAttributeChange(Attribute, NewValue);
+
+	if (Attribute == GetDodgeChargesAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxDodgeCharges());
+	}
+	else if (Attribute == GetMaxDodgeChargesAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 0.f);
+	}
+}
+
+void UBaseAttributeSet::PreAttributeBaseChange(const FGameplayAttribute& Attribute, float& NewValue) const
+{
+	Super::PreAttributeBaseChange(Attribute, NewValue);
+
+	if (Attribute == GetDodgeChargesAttribute())
+	{
+		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxDodgeCharges());
+	}
+	else if (Attribute == GetMaxDodgeChargesAttribute())
+	{
+		NewValue = FMath::Max(NewValue, 0.f);
 	}
 }
 
@@ -164,4 +200,14 @@ void UBaseAttributeSet::OnRep_DamageModifierFire_Outbound(const FGameplayAttribu
 void UBaseAttributeSet::OnRep_DamageModifierFire_Inbound(const FGameplayAttributeData& OldValue)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, DamageModifierFire_Inbound, OldValue);
+}
+
+void UBaseAttributeSet::OnRep_DodgeCharges(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, DodgeCharges, OldValue);
+}
+
+void UBaseAttributeSet::OnRep_MaxDodgeCharges(const FGameplayAttributeData& OldValue)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UBaseAttributeSet, MaxDodgeCharges, OldValue);
 }
