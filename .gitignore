@@ -77,3 +77,6 @@ DerivedDataCache/*
 
 **/Imported/**/*
 **/StarterContent/**/*
+
+# Rider user-specific settings
+BattlemageTheEndless.uproject.DotSettings.user
