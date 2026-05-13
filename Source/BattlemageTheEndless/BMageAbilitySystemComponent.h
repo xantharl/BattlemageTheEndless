@@ -233,6 +233,12 @@ private:
 	{
 		return GetAnimatingAbility();
 	}
+
+	// Removes all active instances of EffectClass and re-applies it, restarting its period
+	// from "now". Server-only — bails on non-authority. Intended for things like dodge-charge
+	// recharge GEs that should reset their cooldown clock the moment a charge is consumed.
+	UFUNCTION(BlueprintCallable, Category = "Active Effect")
+	void ResetActiveEffectPeriod(TSubclassOf<UGameplayEffect> EffectClass);
 	
 	// return the first ability found with the specified owned tag
 	TObjectPtr<UGameplayAbility> GetActivatableAbilityByOwnedTag(FName abilityTag);

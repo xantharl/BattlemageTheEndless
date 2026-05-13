@@ -264,13 +264,6 @@ UMovementAbility* UBMageCharacterMovementComponent::TryStartAbility(MovementAbil
 UMovementAbility* UBMageCharacterMovementComponent::TryStartAbilityFromEvent(MovementAbilityType AbilityType,
 	const FGameplayEventData TriggerEventData)
 {
-	// only the client should be running this code, the server uses an RPC to handle activation
-	if (!CharacterOwner->IsLocallyControlled())
-	{		
-		UE_LOG(LogTemp, Warning, TEXT("UBMageCharacterMovementComponent::TryStartAbilityFromEvent called on client"));
-		return nullptr;
-	}
-	
 	if (!MovementAbilities.Contains(AbilityType))
 		return nullptr;
 	

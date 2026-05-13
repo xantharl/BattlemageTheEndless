@@ -17,6 +17,7 @@ void UMovementAbility::onEndTransitionOut()
 
 UMovementAbility::UMovementAbility(const FObjectInitializer& X) : UGameplayAbility(X)
 {
+	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 }
 
 UMovementAbility::~UMovementAbility()

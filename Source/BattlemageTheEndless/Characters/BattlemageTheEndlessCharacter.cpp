@@ -316,7 +316,7 @@ void ABattlemageTheEndlessCharacter::GiveStartingEquipment()
 	Equipment.Add(EquipSlot::Primary, FPickups());
 	Equipment.Add(EquipSlot::Secondary, FPickups());
 
-	// init equipment abiltiy handles
+	// init equipment ability handles
 	if (EquipmentAbilityHandles.Num() == 0)
 	{
 		EquipmentAbilityHandles.Add(EquipSlot::Primary, FAbilityHandles());
@@ -679,8 +679,11 @@ void ABattlemageTheEndlessCharacter::PawnClientRestart()
 	// Add Input Mapping Context and equipment, only do this for controlled players
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
-		AbilitySystemComponent->ClearAllAbilities();
-		GiveDefaultAbilities();
+		if (HasAuthority())
+		{
+			AbilitySystemComponent->ClearAllAbilities();
+			GiveDefaultAbilities();
+		}
 		GiveStartingEquipment();
 	}
 

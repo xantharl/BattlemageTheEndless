@@ -134,7 +134,7 @@ void UGA_WithEffectsBase::ResetTimerAndClearEffects(const FGameplayAbilityActorI
 	}
 
 	// remove any active effects we applied to OwnerActor
-	if (ActorInfo && ActorInfo->AbilitySystemComponent.IsValid())
+	if (ActorInfo->IsNetAuthority() && ActorInfo && ActorInfo->AbilitySystemComponent.IsValid())
 	{
 		for (auto handle : ActiveEffectHandles)
 		{

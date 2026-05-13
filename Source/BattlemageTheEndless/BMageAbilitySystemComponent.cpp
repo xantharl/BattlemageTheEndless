@@ -86,25 +86,6 @@ void UBMageAbilitySystemComponent::ActivatePickup(APickupActor* Pickup, const TA
 			FGameplayAbilitySpecHandle handle = GiveAbility(FGameplayAbilitySpec(ability, 1, static_cast<int32>(EGASAbilityInputId::Confirm), Pickup));
 			ComboManager->AddAbilityToCombo(Pickup, ability->GetDefaultObject<UGA_WithEffectsBase>(), handle);
 		}
-		
-		return;
-	}
-	
-	for (TSubclassOf<UGameplayAbility>& ability : Pickup->Weapon->GrantedAbilities)
-	{
-		auto Spec = FindAbilitySpecFromClass(ability);
-		if (!Spec)
-		{
-			UE_LOG(LogTemp, Error, TEXT("UBMageAbilitySystemComponent::ActivatePickup: Could not find ability spec for ability %s"), *ability->GetName());
-			continue;
-		}
-		auto Handle = FindAbilitySpecFromClass(ability)->Handle;
-		if (!Handle.IsValid())
-		{
-			UE_LOG(LogTemp, Error, TEXT("UBMageAbilitySystemComponent::ActivatePickup: Could not find ability spec for ability %s"), *ability->GetName());
-			continue;
-		}
-		ComboManager->AddAbilityToCombo(Pickup, ability->GetDefaultObject<UGA_WithEffectsBase>(), Handle);
 	}
 }
 
@@ -1030,6 +1011,19 @@ FActiveGameplayEffectHandle UBMageAbilitySystemComponent::FindHandleByClass(
 
 	TArray<FActiveGameplayEffectHandle> Handles = GetActiveEffects(Query);
 	return Handles.Num() > 0 ? Handles[0] : FActiveGameplayEffectHandle();
+}
+
+void UBMageAbilitySystemComponent::ResetActiveEffectPeriod(TSubclassOf<UGameplayEffect> EffectClass)
+{
+	if (!EffectClass || !IsOwnerActorAuthoritative()) return;
+
+	FGameplayEffectQuery Query;
+	Query.EffectDefinition = EffectClass;
+	RemoveActiveEffects(Query);
+
+	FGameplayEffectContextHandle Context = MakeEffectContext();
+	Context.AddSourceObject(this);
+	ApplyGameplayEffectToSelf(EffectClass->GetDefaultObject<UGameplayEffect>(), 1.f, Context);
 }
 
 bool UBMageAbilitySystemComponent::GetCooldownRemainingForTag(FGameplayTagContainer CooldownTags, float & TimeRemaining, float & CooldownDuration)
