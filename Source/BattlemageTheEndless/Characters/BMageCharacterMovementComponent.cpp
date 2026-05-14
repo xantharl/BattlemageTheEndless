@@ -212,6 +212,10 @@ void UBMageCharacterMovementComponent::TickComponent(float DeltaTime, enum ELeve
 	// TODO: check if the system is already tracking this
 	PreviousVelocity = Velocity;
 
+	if (bAirDodgeActive)
+		UE_LOG(LogTemp, Warning, TEXT("[AirDodge] Tick: Velocity=%s Mode=%d HasAnimRootMotion=%d"),
+			*Velocity.ToString(), (int)MovementMode, HasAnimRootMotion() ? 1 : 0);
+
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
@@ -454,6 +458,18 @@ void UBMageCharacterMovementComponent::OnMovementModeChanged(EMovementMode Previ
 		TryEndAbility(MovementAbilityType::Launch);
 		LaunchesPerformed = 0;
 	}
+}
+
+FVector UBMageCharacterMovementComponent::CalcAnimRootMotionVelocity(const FVector& RootMotionDeltaMove, float DeltaSeconds, const FVector& CurrentVelocity) const
+{
+	FVector RootMotionVelocity = Super::CalcAnimRootMotionVelocity(RootMotionDeltaMove, DeltaSeconds, CurrentVelocity);
+	if (bAirDodgeActive && CharacterOwner)
+	{
+		const FVector Rotated = RootMotionVelocity.RotateAngleAxis(-AirDodgePitch, CharacterOwner->GetActorRightVector());
+		UE_LOG(LogTemp, Warning, TEXT("[AirDodge] CalcAnimRootMotionVelocity in=%s pitch=%.1f out=%s"), *RootMotionVelocity.ToString(), AirDodgePitch, *Rotated.ToString());
+		RootMotionVelocity = Rotated;
+	}
+	return RootMotionVelocity;
 }
 
 void UBMageCharacterMovementComponent::SetVaultFootPlanted(bool value)

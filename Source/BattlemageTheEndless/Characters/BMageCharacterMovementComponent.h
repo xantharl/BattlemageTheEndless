@@ -160,6 +160,14 @@ public:
 
 	virtual void OnMovementModeChanged(EMovementMode PreviousMovementMode, uint8 PreviousCustomMode) override;
 
+	// Set by UDodgeAbility for the duration of an airborne dodge. The dodge montages carry
+	// horizontal-only root motion, so CalcAnimRootMotionVelocity rotates it by AirDodgePitch
+	// to let the dodge follow look pitch.
+	bool bAirDodgeActive = false;
+	float AirDodgePitch = 0.f;
+
+	virtual FVector CalcAnimRootMotionVelocity(const FVector& RootMotionDeltaMove, float DeltaSeconds, const FVector& CurrentVelocity) const override;
+
 	/// <summary>
 	/// Exposes UVaultAbility::FootPlanted to blueprint for animnotify purposes
 	/// </summary>

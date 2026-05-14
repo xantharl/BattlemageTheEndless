@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "DodgeAbility.h"
+#include "BattlemageTheEndless/Characters/BMageCharacterMovementComponent.h"
 
 UDodgeAbility::UDodgeAbility(const FObjectInitializer& X) : Super(X)
 {
@@ -33,14 +34,38 @@ void UDodgeAbility::Begin(const FMovementEventData& MovementEventData)
 	FVector WorldImpulse = Character->GetActorTransform().TransformVectorNoScale(DodgeVector);
 
 	// modify impulse if in air
-	if (Movement->MovementMode == EMovementMode::MOVE_Falling)
+	if (!Movement->IsWalking())
 	{
 		float LookPitch = FRotator::NormalizeAxis(Character->GetControlRotation().Pitch);
+		//Character->bUseControllerRotationPitch = true;
 		WorldImpulse = WorldImpulse.RotateAngleAxis(-LookPitch, Character->GetActorRightVector());
 		WorldImpulse *= ImpulseMultiplierAir;
+
+		// Fly for the dodge duration so gravity doesn't drag it down; restored in End().
+		// Set velocity directly rather than LaunchCharacter, whose pending launch forces MOVE_Falling.
+		PreviousMovementMode = Movement->MovementMode;
+		bChangedMovementMode = true;
+		Movement->Velocity = WorldImpulse;
+		Movement->SetMovementMode(MOVE_Flying);
+
+		// The dodge montage's root motion is horizontal-only and would otherwise flatten the
+		// trajectory; have the movement component rotate it to follow look pitch.
+		if (UBMageCharacterMovementComponent* MageMovement = Cast<UBMageCharacterMovementComponent>(Movement))
+		{
+			MageMovement->bAirDodgeActive = true;
+			MageMovement->AirDodgePitch = LookPitch;
+			UE_LOG(LogTemp, Warning, TEXT("[AirDodge] Begin: LookPitch=%.1f WorldImpulse=%s"), LookPitch, *WorldImpulse.ToString());
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[AirDodge] Begin: cast to UBMageCharacterMovementComponent FAILED"));
+		}
 	}
-	
-	Character->LaunchCharacter(WorldImpulse, true, true);
+	else
+	{
+		Character->LaunchCharacter(WorldImpulse, true, true);
+	}
+
 	Character->GetWorldTimerManager().SetTimer(DodgeEndTimer, this, &UDodgeAbility::OnEndTimer, DodgeDurationSeconds, false);
 
 	Super::Begin(MovementEventData);
@@ -50,6 +75,17 @@ void UDodgeAbility::End(bool bForce)
 {
 	Super::End(bForce);
 	Movement->GroundFriction = PreviousFriction;
+	if (bChangedMovementMode)
+	{
+		// FRotator Rotation = Character->GetActorRotation();
+		// Rotation.Pitch = 0.f;
+		// Character->SetActorRotation(Rotation);
+		// Character->bUseControllerRotationPitch = false;
+		Movement->SetMovementMode(MOVE_Falling);
+		bChangedMovementMode = false;
+		if (UBMageCharacterMovementComponent* MageMovement = Cast<UBMageCharacterMovementComponent>(Movement))
+			MageMovement->bAirDodgeActive = false;
+	}
 }
 
 FVector UDodgeAbility::ComputeDodgeImpulse(const FVector& LocalInput) const

@@ -17,6 +17,8 @@ class BATTLEMAGETHEENDLESS_API UDodgeAbility : public UMovementAbility
 public:
 	FTimerHandle DodgeEndTimer;
 	float PreviousFriction = 8.0f;
+	TEnumAsByte<EMovementMode> PreviousMovementMode = MOVE_Walking;
+	bool bChangedMovementMode = false;
 
 	UDodgeAbility(const FObjectInitializer& X);
 
